@@ -1,4 +1,4 @@
-import { Plugin, TAbstractFile, TFile } from "obsidian";
+import { Notice, Plugin, requestUrl, TAbstractFile, TFile } from "obsidian";
 import { SettingTab } from "./settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings";
 
@@ -9,7 +9,7 @@ interface NotePayload {
 
 export default class MyPlugin extends Plugin {
 	private readonly MARKDOWN_EXTENSION = "md";
-	private readonly API_ENDPOINT = "https://api.pineconedb.com/notes";
+	private readonly PINECONE_API_ENDPOINT = "https://api.pineconedb.com/notes";
 
 	settings: PluginSettings;
 
@@ -68,34 +68,63 @@ export default class MyPlugin extends Plugin {
 				};
 
 				// 파인콘DB API 호출
-				const response = await fetch(this.API_ENDPOINT, {
+				const response = await requestUrl({
+					url: this.PINECONE_API_ENDPOINT,
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: "Bearer YOUR_API_KEY", // API 키 필요
+						Authorization: `Bearer ${this.settings.pineconeApiKey}`,
 					},
 					body: JSON.stringify(payload),
 				});
 
-				if (!response.ok) {
-					throw new Error("Failed to save note to PineconeDB");
+				if (response.status >= 400) {
+					throw new Error(
+						`Failed to save note to PineconeDB: ${response.status}`
+					);
 				}
 
 				console.log("Note successfully saved to PineconeDB");
+				new Notice("Note successfully saved to PineconeDB");
 			}
 		} catch (error) {
 			console.error("노트 처리 중 오류 발생:", error);
+			new Notice("Failed to save note to PineconeDB");
 		}
 	}
 
 	async handleNoteDelete(file: TAbstractFile): Promise<void> {
-		if (
-			file instanceof TFile &&
-			file.extension === this.MARKDOWN_EXTENSION
-		) {
-			// 노트 삭제 시 파인콘DB에서 삭제
-			console.log(`Note deleted: ${file.path}`);
-			// 파인콘DB에서 삭제하는 로직 추가
+		try {
+			if (
+				file instanceof TFile &&
+				file.extension === this.MARKDOWN_EXTENSION
+			) {
+				// 노트 삭제 시 파인콘DB에서 삭제
+				console.log(`Note deleted: ${file.path}`);
+
+				// requestUrl을 사용하여 파인콘DB에서 삭제
+				const response = await requestUrl({
+					url: `${this.PINECONE_API_ENDPOINT}/${encodeURIComponent(
+						file.path
+					)}`,
+					method: "DELETE",
+					headers: {
+						Authorization: `Bearer ${this.settings.pineconeApiKey}`,
+					},
+				});
+
+				if (response.status >= 400) {
+					throw new Error(
+						`Failed to delete note from PineconeDB: ${response.status}`
+					);
+				}
+
+				console.log("Note successfully deleted from PineconeDB");
+				new Notice("Note successfully deleted from PineconeDB");
+			}
+		} catch (error) {
+			console.error(`Failed to delete note ${file.path}:`, error);
+			new Notice("Failed to delete note from PineconeDB");
 		}
 	}
 }
