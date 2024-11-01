@@ -6,3 +6,39 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+.index-list-container {
+	margin-top: 20px;
+	padding: 10px;
+}
+
+.index-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 10px;
+}
+
+.index-table th,
+.index-table td {
+	padding: 8px;
+	text-align: left;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.index-table th {
+	font-weight: bold;
+	background-color: var(--background-secondary);
+}
+
+.index-table tr:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.error-message {
+	color: var(--text-error);
+	padding: 10px;
+}
+
+.no-indexes-message {
+	color: var(--text-muted);
+	padding: 10px;
+}
