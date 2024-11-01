@@ -2,8 +2,14 @@ import { Plugin, TAbstractFile, TFile } from "obsidian";
 import { SettingTab } from "./settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings";
 
+interface NotePayload {
+	path: string;
+	content: string;
+}
+
 export default class MyPlugin extends Plugin {
 	private readonly MARKDOWN_EXTENSION = "md";
+	private readonly API_ENDPOINT = "https://api.pineconedb.com/notes";
 
 	settings: PluginSettings;
 
@@ -56,17 +62,17 @@ export default class MyPlugin extends Plugin {
 
 				// 파인콘DB에 저장하는 로직 추가
 				const noteContent = await this.app.vault.read(file);
-				const payload = {
+				const payload: NotePayload = {
 					path: file.path,
 					content: noteContent,
 				};
 
 				// 파인콘DB API 호출
-				const response = await fetch("https://api.pineconedb.com/notes", {
+				const response = await fetch(this.API_ENDPOINT, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						"Authorization": "Bearer YOUR_API_KEY", // API 키 필요
+						Authorization: "Bearer YOUR_API_KEY", // API 키 필요
 					},
 					body: JSON.stringify(payload),
 				});
