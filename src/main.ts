@@ -249,6 +249,13 @@ class SearchNotesModal extends SuggestModal<
 	async getSuggestions(
 		query: string
 	): Promise<ScoredPineconeRecord<RecordMetadata>[]> {
+		const trimmedQuery = query.trim();
+
+		// 쿼리가 비어있거나 2글자 미만인 경우 빈 배열 반환
+		if (!trimmedQuery || trimmedQuery.length < 2) {
+			return [];
+		}
+		
 		return this.debouncedGetSuggestions(query);
 	}
 
