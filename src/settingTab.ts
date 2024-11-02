@@ -1,4 +1,4 @@
-import { IndexModel, Pinecone } from "@pinecone-database/pinecone";
+import { Pinecone } from "@pinecone-database/pinecone";
 import {
 	App,
 	Modal,
@@ -21,8 +21,7 @@ export class SettingTab extends PluginSettingTab {
 	}
 
 	async initialize() {
-		const indexes = await this.fetchPineconeIndexes();
-		this.displayIndexes(indexes);
+		await this.fetchPineconeIndexes();
 	}
 
 	display(): void {
@@ -81,8 +80,7 @@ export class SettingTab extends PluginSettingTab {
 				.setTooltip("인덱스 목록 새로고침")
 				.onClick(async () => {
 					try {
-						const indexes = await this.fetchPineconeIndexes();
-						this.displayIndexes(indexes);
+						await this.fetchPineconeIndexes();
 						new Notice("인덱스 목록을 새로고침했습니다");
 					} catch (error) {
 						new Notice(
@@ -107,30 +105,60 @@ export class SettingTab extends PluginSettingTab {
 	}
 
 	// Pinecone API를 호출하여 인덱스 목록을 가져오는 함수
-	async fetchPineconeIndexes(): Promise<IndexModel[]> {
+	async fetchPineconeIndexes() {
 		const pc = new Pinecone({
 			apiKey: this.plugin.settings.pineconeApiKey,
 		});
-		const { indexes = [] } = await pc.listIndexes();
-		return indexes.filter((e) => e.dimension === EMBEDDING_DIMENSION);
-	}
-
-	// 인덱스 목록을 화면에 표시하는 함수
-	displayIndexes(indexes: IndexModel[]): void {
-		if (this.indexSelectEl !== null) {
+		if (this.indexSelectEl) {
+			// 로딩 상태 표시
 			this.indexSelectEl.empty();
-			indexes.forEach((index) => {
-				const optionEl = this.indexSelectEl?.createEl("option", {
-					text: index.name,
-					value: index.name,
-				});
-				if (
-					optionEl &&
-					index.name === this.plugin.settings.selectedIndex
-				) {
-					optionEl.selected = true;
-				}
+			const optionEl = this.indexSelectEl.createEl("option", {
+				text: "인덱스 목록을 불러오는 중...",
+				value: "",
 			});
+			optionEl.disabled = true;
+		}
+		try {
+			const { indexes = [] } = await pc.listIndexes();
+			const filteredIndexes = indexes.filter(
+				(e) => e.dimension === EMBEDDING_DIMENSION
+			);
+
+			if (this.indexSelectEl) {
+				this.indexSelectEl.empty();
+
+				// 인덱스가 없는 경우
+				if (filteredIndexes.length === 0) {
+					const optionEl = this.indexSelectEl.createEl("option", {
+						text: "사용 가능한 인덱스가 없습니다",
+						value: "",
+					});
+					optionEl.disabled = true;
+				} else {
+					filteredIndexes.forEach(({ name }) => {
+						const optionEl = this.indexSelectEl?.createEl(
+							"option",
+							{ text: name, value: name }
+						);
+						if (
+							optionEl &&
+							name === this.plugin.settings.selectedIndex
+						) {
+							optionEl.selected = true;
+						}
+					});
+				}
+			}
+		} catch (error) {
+			if (this.indexSelectEl) {
+				this.indexSelectEl.empty();
+				const optionEl = this.indexSelectEl.createEl("option", {
+					text: "인덱스 목록 로딩 실패",
+					value: "",
+				});
+				optionEl.disabled = true;
+			}
+			console.error("Failed to fetch indexes:", error);
 		}
 	}
 }
