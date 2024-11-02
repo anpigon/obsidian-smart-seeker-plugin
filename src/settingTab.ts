@@ -1,5 +1,5 @@
 import { IndexModel, Pinecone } from "@pinecone-database/pinecone";
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting, Modal, TextComponent, Notice } from "obsidian";
 import MyPlugin from "./main";
 import { EMBEDDING_DIMENSION } from "./contants";
 
@@ -85,6 +85,16 @@ export class SettingTab extends PluginSettingTab {
 			cls: "index-list-container",
 		});
 
+		// 파인콘 DB 생성 버튼 추가
+		new Setting(containerEl)
+			.setName("파인콘 DB 생성")
+			.setDesc("새로운 파인콘 인덱스를 생성합니다.")
+			.addButton((button) => {
+				button.setButtonText("생성").onClick(() => {
+					new CreatePineconeIndexModal(this.app, this.plugin).open();
+				});
+			});
+
 		this.initialize();
 	}
 
@@ -132,5 +142,65 @@ export class SettingTab extends PluginSettingTab {
 		};
 
 		this.indexListEl.appendChild(selectEl);
+	}
+}
+
+// 파인콘 인덱스 생성 다이아로그
+class CreatePineconeIndexModal extends Modal {
+	plugin: MyPlugin;
+	indexNameInput: TextComponent;
+
+	constructor(app: App, plugin: MyPlugin) {
+		super(app);
+		this.plugin = plugin;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.createEl("h2", { text: "새로운 파인콘 인덱스 생성" });
+
+		new Setting(contentEl)
+			.setName("인덱스 이름")
+			.setDesc("생성할 인덱스의 이름을 입력하세요.")
+			.addText((text) => {
+				this.indexNameInput = text;
+			});
+
+		new Setting(contentEl)
+			.addButton((button) => {
+				button.setButtonText("생성").onClick(async () => {
+					const indexName = this.indexNameInput.getValue();
+					if (indexName) {
+						await this.createPineconeIndex(indexName);
+						this.close();
+					} else {
+						new Notice("인덱스 이름을 입력하세요.");
+					}
+				});
+			});
+	}
+
+	async createPineconeIndex(indexName: string) {
+		try {
+			const pc = new Pinecone({
+				apiKey: this.plugin.settings.pineconeApiKey,
+			});
+			await pc.createIndex({
+				name: indexName,
+				dimension: 1536,
+				metric: "dotproduct",
+				spec: {
+					serverless: {
+						cloud: "aws",
+						region: "us-east-1",
+					},
+				},
+			});
+			new Notice(`인덱스 '${indexName}'가 생성되었습니다.`);
+		} catch (error) {
+			console.error("인덱스 생성 실패:", error);
+			new Notice("인덱스 생성에 실패했습니다. API 키를 확인해주세요.");
+		}
 	}
 }
