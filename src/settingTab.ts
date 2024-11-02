@@ -12,6 +12,11 @@ export class SettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+	async initialize() {
+		const indexes = await this.fetchPineconeIndexes();
+		this.displayIndexes(indexes);
+	}
+
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
@@ -47,7 +52,7 @@ export class SettingTab extends PluginSettingTab {
 			});
 
 		// 인덱스 목록을 표시할 컨테이너 생성
-		containerEl.createEl("h3", { text: "Pinecone 인덱스 목록" });
+		containerEl.createEl("h3", { text: "Pinecone 인덱스 선택" });
 
 		// 인덱스 목록 가져오기 버튼 생성
 		new Setting(containerEl)
@@ -79,6 +84,8 @@ export class SettingTab extends PluginSettingTab {
 		this.indexListEl = containerEl.createEl("div", {
 			cls: "index-list-container",
 		});
+
+		this.initialize();
 	}
 
 	// Pinecone API를 호출하여 인덱스 목록을 가져오는 함수
@@ -104,26 +111,26 @@ export class SettingTab extends PluginSettingTab {
 			return;
 		}
 
-		const table = this.indexListEl.createEl("table", {
-			cls: "index-table",
+		// 드롭다운 메뉴 생성
+		const selectEl = this.indexListEl.createEl("select", {
+			cls: "index-select",
 		});
 
-		// 테이블 헤더 생성
-		const thead = table.createEl("thead");
-		const headerRow = thead.createEl("tr");
-		["이름", "차원", "메트릭", "호스트", "상태"].forEach((header) => {
-			headerRow.createEl("th", { text: header });
-		});
-
-		// 테이블 본문 생성
-		const tbody = table.createEl("tbody");
 		indexes.forEach((index) => {
-			const row = tbody.createEl("tr");
-			row.createEl("td", { text: index.name });
-			row.createEl("td", { text: index.dimension.toString() });
-			row.createEl("td", { text: index.metric });
-			row.createEl("td", { text: index.host });
-			row.createEl("td", { text: index.status.state });
+			const optionEl = selectEl.createEl("option", {
+				text: index.name,
+				value: index.name,
+			});
+			if (index.name === this.plugin.settings.selectedIndex) {
+				optionEl.selected = true;
+			}
 		});
+
+		selectEl.onchange = async () => {
+			this.plugin.settings.selectedIndex = selectEl.value;
+			await this.plugin.saveSettings();
+		};
+
+		this.indexListEl.appendChild(selectEl);
 	}
 }

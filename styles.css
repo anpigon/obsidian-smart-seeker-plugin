@@ -7,8 +7,7 @@ If your plugin does not need CSS, delete this file.
 
 */
 .index-list-container {
-	margin-top: 20px;
-	padding: 10px;
+	display: block;
 }
 
 .index-table {
