@@ -1,96 +1,47 @@
-# Obsidian Sample Plugin
+# Obsidian Smart Seeker Plugin
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+This plugin enhances your Obsidian experience by integrating with PineconeDB and OpenAI to provide advanced note management and search capabilities.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-**Note:** The Obsidian API is still in early alpha and is subject to change at any time!
+- **Note Management**: Automatically detects note creation, modification, and deletion events in Obsidian and updates PineconeDB accordingly.
+- **Search Functionality**: Provides a modal to search notes using PineconeDB, leveraging OpenAI's embedding model for vectorization.
+- **Settings**: Includes a settings tab for configuring PineconeDB and OpenAI API keys.
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+## Installation
 
-## First time developing plugins?
+1. Clone this repository.
+2. Ensure your NodeJS version is at least v16 (`node --version`).
+3. Run `pnpm install` to install dependencies.
+4. Use `pnpm run dev` to start the plugin in development mode.
 
-Quick starting guide for new plugin devs:
+## Configuration
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+- **PineconeDB**: Set your PineconeDB API key and select an index in the settings tab.
+- **OpenAI**: Set your OpenAI API key in the settings tab.
 
-## Releasing new releases
+## Usage
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+- **Search Notes**: Use the "Search notes" command to open the search modal and find notes based on their content.
+- **Note Events**: The plugin will automatically handle note creation, modification, and deletion, updating PineconeDB as needed.
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+## Releasing New Versions
 
-## Adding your plugin to the community plugin list
+- Update `manifest.json` and `versions.json` with the new version details.
+- Create a new GitHub release and upload the necessary files.
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+## Community Plugin List
 
-## How to use
+- Follow the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines) to add your plugin to the community list.
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+## Improve Code Quality
 
-## Manually installing the plugin
+- Use [ESLint](https://eslint.org/) to analyze and improve your code quality.
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+## Funding
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
+You can include funding URLs in your `manifest.json` to allow users to support your work.
 
 ## API Documentation
 
-See https://github.com/obsidianmd/obsidian-api
+For more details, see the [Obsidian API documentation](https://github.com/obsidianmd/obsidian-api).
