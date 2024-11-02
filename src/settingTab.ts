@@ -1,6 +1,7 @@
 import { IndexModel, Pinecone } from "@pinecone-database/pinecone";
 import { App, PluginSettingTab, Setting } from "obsidian";
 import MyPlugin from "./main";
+import { EMBEDDING_DIMENSION } from "./contants";
 
 export class SettingTab extends PluginSettingTab {
 	plugin: MyPlugin;
@@ -86,7 +87,7 @@ export class SettingTab extends PluginSettingTab {
 			apiKey: this.plugin.settings.pineconeApiKey,
 		});
 		const { indexes = [] } = await pc.listIndexes();
-		return indexes;
+		return indexes.filter((e) => e.dimension === EMBEDDING_DIMENSION);
 	}
 
 	// 인덱스 목록을 화면에 표시하는 함수
