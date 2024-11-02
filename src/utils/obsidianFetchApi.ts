@@ -1,6 +1,6 @@
 import { requestUrl } from "obsidian";
 
-const obsidianRequest = async (
+const obsidianFetchApi = async (
 	input: RequestInfo | URL,
 	init?: RequestInit
 ) => {
@@ -22,4 +22,4 @@ const obsidianRequest = async (
 	}
 };
 
-export default obsidianRequest;
+export default obsidianFetchApi;
