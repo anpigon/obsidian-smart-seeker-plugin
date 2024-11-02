@@ -1,18 +1,10 @@
-import * as crypto from "crypto";
-import {
-	Notice,
-	parseYaml,
-	Plugin,
-	requestUrl,
-	TAbstractFile,
-	TFile,
-} from "obsidian";
+import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
+import { EMBEDDING_MODEL } from "./contants";
 import { SettingTab } from "./settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings";
+import { createPathHash } from "./utils/hash";
 import { createOpenAIClient } from "./utils/openai";
 import { createPineconeClient } from "./utils/pinecone";
-import { EMBEDDING_MODEL } from "./contants";
-import { createPathHash } from "./utils/hash";
 
 export default class MyPlugin extends Plugin {
 	private readonly MARKDOWN_EXTENSION = "md";
