@@ -1,4 +1,3 @@
-import { Pinecone } from "@pinecone-database/pinecone";
 import {
 	App,
 	Modal,
@@ -7,7 +6,7 @@ import {
 	Setting,
 	TextComponent,
 } from "obsidian";
-import { EMBEDDING_DIMENSION } from "./contants";
+import { EMBEDDING_DIMENSION, PINECONE_CONFIG } from "./contants";
 import MyPlugin from "./main";
 import { createPineconeClient } from "./utils/pinecone";
 
@@ -203,19 +202,14 @@ class CreatePineconeIndexModal extends Modal {
 
 	async createPineconeIndex(indexName: string) {
 		try {
-			const pc = new Pinecone({
-				apiKey: this.plugin.settings.pineconeApiKey,
-			});
+			const pc = createPineconeClient(
+				this.plugin.settings.pineconeApiKey
+			);
 			await pc.createIndex({
 				name: indexName,
-				dimension: 1536,
-				metric: "dotproduct",
-				spec: {
-					serverless: {
-						cloud: "aws",
-						region: "us-east-1",
-					},
-				},
+				dimension: EMBEDDING_DIMENSION,
+				metric: PINECONE_CONFIG.metric,
+				spec: PINECONE_CONFIG.spec,
 			});
 			new Notice(`인덱스 '${indexName}'가 생성되었습니다.`);
 		} catch (error) {
