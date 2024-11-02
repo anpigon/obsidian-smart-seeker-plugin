@@ -7,15 +7,15 @@ import {
 	TextComponent,
 } from "obsidian";
 import { EMBEDDING_DIMENSION, PINECONE_CONFIG } from "./contants";
-import MyPlugin from "./main";
+import SmartSeekerPlugin from "./main";
 import { createPineconeClient } from "./utils/pinecone";
 
 export class SettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: SmartSeekerPlugin;
 	indexListEl: HTMLElement | null = null;
 	indexSelectEl: HTMLSelectElement | null = null;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: SmartSeekerPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -164,9 +164,9 @@ export class SettingTab extends PluginSettingTab {
 // Pinecone 인덱스 생성 다이아로그
 class CreatePineconeIndexModal extends Modal {
 	private indexNameInput: TextComponent;
-	private readonly plugin: MyPlugin;
+	private readonly plugin: SmartSeekerPlugin;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: SmartSeekerPlugin) {
 		super(app);
 		this.plugin = plugin;
 	}
