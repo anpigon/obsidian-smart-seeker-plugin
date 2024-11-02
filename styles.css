@@ -6,10 +6,6 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
-.index-list-container {
-	display: block;
-}
-
 .index-table {
 	width: 100%;
 	border-collapse: collapse;
@@ -34,7 +30,6 @@ If your plugin does not need CSS, delete this file.
 
 .error-message {
 	color: var(--text-error);
-	padding: 10px;
 }
 
 .no-indexes-message {
