@@ -227,12 +227,11 @@ class SearchNotesModal extends SuggestModal<
 		const title = item.metadata?.title?.toString() || "Untitled";
 		const score = item.score !== undefined ? item.score.toFixed(2) : "N/A";
 
-		const titleEl = el.createEl("div", { text: title });
+		el.createEl("div", { text: title });
 		const scoreEl = el.createEl("span", { text: ` (Score: ${score})` });
 
 		// 스타일 적용
-		scoreEl.style.fontSize = "0.8em"; // 글자 크기 작게
-		scoreEl.style.color = "gray"; // 글자 색 연하게
+		scoreEl.className = "search-notes-modal__score";
 	}
 
 	onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {

@@ -35,3 +35,8 @@ If your plugin does not need CSS, delete this file.
 .no-indexes-message {
 	color: var(--text-muted);
 }
+
+.search-notes-modal__score {
+	font-size: 0.8em;
+	color: gray;Ø
+}
