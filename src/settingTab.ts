@@ -64,7 +64,7 @@ export class SettingTab extends PluginSettingTab {
 
 		// 인덱스 선택 드롭다운
 		const indexSetting = new Setting(containerEl)
-			.setName("인덱스")
+			.setName("Pinecone 인덱스")
 			.setDesc("사용할 Pinecone 인덱스를 선택하세요")
 			.addDropdown((dropdown) => {
 				dropdown.onChange(async (value) => {
@@ -78,7 +78,7 @@ export class SettingTab extends PluginSettingTab {
 		indexSetting.addButton((button) =>
 			button
 				.setIcon("refresh-cw")
-				.setTooltip("인덱스 목록 새로고침")
+				.setTooltip("Pinecone 인덱스 목록 새로고침")
 				.onClick(async () => {
 					try {
 						await this.fetchPineconeIndexes();
@@ -92,9 +92,9 @@ export class SettingTab extends PluginSettingTab {
 				})
 		);
 
-		// 파인콘 DB 인덱스 생성 버튼
+		// Pinecone DB 인덱스 생성 버튼
 		new Setting(containerEl)
-			.setName("파인콘 DB 생성")
+			.setName("Pinecone 인덱스 생성")
 			.setDesc("새로운 Pinecone 인덱스를 생성합니다")
 			.addButton((button) =>
 				button.setButtonText("생성").onClick(() => {
@@ -162,7 +162,7 @@ export class SettingTab extends PluginSettingTab {
 	}
 }
 
-// 파인콘 인덱스 생성 다이아로그
+// Pinecone 인덱스 생성 다이아로그
 class CreatePineconeIndexModal extends Modal {
 	private indexNameInput: TextComponent;
 	private readonly plugin: MyPlugin;
@@ -175,7 +175,7 @@ class CreatePineconeIndexModal extends Modal {
 	onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
-		contentEl.createEl("h2", { text: "새로운 파인콘 인덱스 생성" });
+		contentEl.createEl("h2", { text: "새로운 Pinecone 인덱스 생성" });
 
 		new Setting(contentEl)
 			.setName("인덱스 이름")
