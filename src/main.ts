@@ -1,4 +1,7 @@
-import { RecordMetadata } from "@pinecone-database/pinecone";
+import {
+	RecordMetadata,
+	ScoredPineconeRecord,
+} from "@pinecone-database/pinecone";
 import {
 	App,
 	Notice,
@@ -63,6 +66,7 @@ export default class SmartSeekerPlugin extends Plugin {
 				}
 				new SearchNotesModal(
 					this.app,
+					this.settings.openAIApiKey,
 					this.settings.pineconeApiKey,
 					this.settings.selectedIndex
 				).open();
@@ -175,16 +179,21 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 }
 
-class SearchNotesModal extends SuggestModal<RecordMetadata> {
+class SearchNotesModal extends SuggestModal<
+	ScoredPineconeRecord<RecordMetadata>
+> {
 	constructor(
 		app: App,
+		private openAIApiKey: string,
 		private pineconeApiKey: string,
 		private selectedIndex: string
 	) {
 		super(app);
 	}
 
-	async getSuggestions(query: string): Promise<RecordMetadata[]> {
+	async getSuggestions(
+		query: string
+	): Promise<ScoredPineconeRecord<RecordMetadata>[]> {
 		try {
 			const pc = createPineconeClient(this.pineconeApiKey);
 			const index = pc.index(this.selectedIndex);
@@ -193,7 +202,8 @@ class SearchNotesModal extends SuggestModal<RecordMetadata> {
 				topK: 10,
 				includeMetadata: true,
 			});
-			return results.matches || [];
+
+			return results.matches;
 		} catch (error) {
 			console.error("Search error:", error);
 			new Notice("Failed to search notes");
@@ -202,7 +212,7 @@ class SearchNotesModal extends SuggestModal<RecordMetadata> {
 	}
 
 	private async getQueryVector(query: string): Promise<number[]> {
-		const openai = createOpenAIClient(this.settings.openAIApiKey);
+		const openai = createOpenAIClient(this.openAIApiKey);
 		const response = await openai.embeddings.create({
 			input: query,
 			model: EMBEDDING_MODEL,
@@ -210,15 +220,20 @@ class SearchNotesModal extends SuggestModal<RecordMetadata> {
 		return response.data[0].embedding;
 	}
 
-	renderSuggestion(item: RecordMetadata, el: HTMLElement) {
-		const title = item.metadata?.title || "Untitled";
+	renderSuggestion(
+		item: ScoredPineconeRecord<RecordMetadata>,
+		el: HTMLElement
+	) {
+		const title = item.metadata?.title?.toString() || "Untitled";
 		el.createEl("div", { text: title });
 	}
 
-	onChooseSuggestion(item: RecordMetadata) {
+	onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {
 		const filePath = item.metadata?.filePath;
 		if (filePath) {
-			const file = this.app.vault.getAbstractFileByPath(filePath);
+			const file = this.app.vault.getAbstractFileByPath(
+				filePath.toString()
+			);
 			if (file instanceof TFile) {
 				this.app.workspace.getLeaf().openFile(file);
 			}
