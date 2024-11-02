@@ -225,8 +225,14 @@ class SearchNotesModal extends SuggestModal<
 		el: HTMLElement
 	) {
 		const title = item.metadata?.title?.toString() || "Untitled";
-		const score = item.score !== undefined ? item.score.toFixed(2) : "N/A"; // score가 undefined인 경우 "N/A"로 표시
-		el.createEl("div", { text: `${title} (Score: ${score})` });
+		const score = item.score !== undefined ? item.score.toFixed(2) : "N/A";
+
+		const titleEl = el.createEl("div", { text: title });
+		const scoreEl = el.createEl("span", { text: ` (Score: ${score})` });
+
+		// 스타일 적용
+		scoreEl.style.fontSize = "0.8em"; // 글자 크기 작게
+		scoreEl.style.color = "gray"; // 글자 색 연하게
 	}
 
 	onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {
