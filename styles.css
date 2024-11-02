@@ -39,5 +39,4 @@ If your plugin does not need CSS, delete this file.
 
 .no-indexes-message {
 	color: var(--text-muted);
-	padding: 10px;
 }
