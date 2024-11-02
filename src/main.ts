@@ -21,6 +21,8 @@ import { getFileNameSafe } from "./utils/fileUtils";
 import { createPathHash } from "./utils/hash";
 import { createOpenAIClient } from "./utils/openai";
 import { createPineconeClient } from "./utils/pinecone";
+import { Logger, LogLevel } from "./utils/logger";
+
 
 export default class SmartSeekerPlugin extends Plugin {
 	settings: PluginSettings;
@@ -185,6 +187,7 @@ export default class SmartSeekerPlugin extends Plugin {
 class SearchNotesModal extends SuggestModal<
 	ScoredPineconeRecord<RecordMetadata>
 > {
+	private logger: Logger;
 	private debouncedGetSuggestions: (
 		query: string
 	) => Promise<ScoredPineconeRecord<RecordMetadata>[]>;
@@ -199,6 +202,12 @@ class SearchNotesModal extends SuggestModal<
 		private selectedIndex: string
 	) {
 		super(app);
+		this.logger = new Logger("SearchNotesModal", LogLevel.DEBUG);
+
+		this.logger.debug("모달 초기화", {
+			selectedIndex: this.selectedIndex,
+		});
+
 		this.openai = createOpenAIClient(this.openAIApiKey);
 		this.pc = createPineconeClient(this.pineconeApiKey);
 		this.index = this.pc.index(this.selectedIndex);
@@ -220,6 +229,7 @@ class SearchNotesModal extends SuggestModal<
 				topK: 10,
 				includeMetadata: true,
 			});
+			this.logger.debug("검색 결과:", results);
 			return results.matches;
 		} catch (error) {
 			console.error("Search error:", error);
@@ -253,9 +263,13 @@ class SearchNotesModal extends SuggestModal<
 
 		// 쿼리가 비어있거나 2글자 미만인 경우 빈 배열 반환
 		if (!trimmedQuery || trimmedQuery.length < 2) {
+			this.logger.debug("검색어가 너무 짧음", {
+				query: trimmedQuery,
+				length: trimmedQuery.length,
+			});
 			return [];
 		}
-		
+
 		return this.debouncedGetSuggestions(query);
 	}
 
