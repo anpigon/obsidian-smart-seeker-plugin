@@ -1,11 +1,18 @@
-import { Notice, Plugin, requestUrl, TAbstractFile, TFile } from "obsidian";
+import * as crypto from "crypto";
+import {
+	Notice,
+	parseYaml,
+	Plugin,
+	requestUrl,
+	TAbstractFile,
+	TFile,
+} from "obsidian";
 import { SettingTab } from "./settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings";
-
-interface NotePayload {
-	path: string;
-	content: string;
-}
+import { createOpenAIClient } from "./utils/openai";
+import { createPineconeClient } from "./utils/pinecone";
+import { EMBEDDING_MODEL } from "./contants";
+import { createPathHash } from "./utils/hash";
 
 export default class MyPlugin extends Plugin {
 	private readonly MARKDOWN_EXTENSION = "md";
@@ -60,29 +67,38 @@ export default class MyPlugin extends Plugin {
 				// 노트 생성 또는 업데이트 시 파인콘DB에 저장
 				console.log(`Note created or updated: ${file.path}`);
 
-				// 파인콘DB에 저장하는 로직 추가
+				// 노트 내용 읽기
 				const noteContent = await this.app.vault.read(file);
-				const payload: NotePayload = {
-					path: file.path,
-					content: noteContent,
-				};
 
-				// 파인콘DB API 호출
-				const response = await requestUrl({
-					url: this.PINECONE_API_ENDPOINT,
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${this.settings.pineconeApiKey}`,
-					},
-					body: JSON.stringify(payload),
+				// 파일 경로로부터 해시 생성
+				const hash = createPathHash(file.path);
+
+				// 프론트매터 파싱
+				const frontMatterMatch = noteContent.match(
+					/^---\n([\s\S]+?)\n---/
+				);
+				let metadata = {};
+				if (frontMatterMatch) {
+					metadata = parseYaml(frontMatterMatch[1]);
+				}
+
+				const openai = createOpenAIClient(this.settings.openAIApiKey);
+				const embeddings = await openai.embeddings.create({
+					input: noteContent,
+					model: EMBEDDING_MODEL,
 				});
 
-				if (response.status >= 400) {
-					throw new Error(
-						`Failed to save note to PineconeDB: ${response.status}`
-					);
-				}
+				console.log("노트 파일명", file.path);
+				console.log("파인콘 인덱스", this.settings.selectedIndex);
+				const pc = createPineconeClient(this.settings.pineconeApiKey);
+				const index = pc.index(this.settings.selectedIndex);
+				await index.upsert([
+					{
+						id: hash,
+						values: embeddings.data[0].embedding,
+						metadata: metadata,
+					},
+				]);
 
 				console.log("Note successfully saved to PineconeDB");
 				new Notice("Note successfully saved to PineconeDB");
@@ -102,22 +118,13 @@ export default class MyPlugin extends Plugin {
 				// 노트 삭제 시 파인콘DB에서 삭제
 				console.log(`Note deleted: ${file.path}`);
 
-				// requestUrl을 사용하여 파인콘DB에서 삭제
-				const response = await requestUrl({
-					url: `${this.PINECONE_API_ENDPOINT}/${encodeURIComponent(
-						file.path
-					)}`,
-					method: "DELETE",
-					headers: {
-						Authorization: `Bearer ${this.settings.pineconeApiKey}`,
-					},
-				});
+				// 파일 경로로부터 해시 생성
+				const hash = createPathHash(file.path);
 
-				if (response.status >= 400) {
-					throw new Error(
-						`Failed to delete note from PineconeDB: ${response.status}`
-					);
-				}
+				// Pinecone 클라이언트 생성 및 벡터 삭제
+				const pc = createPineconeClient(this.settings.pineconeApiKey);
+				const index = pc.index(this.settings.selectedIndex);
+				await index.deleteMany([hash]);
 
 				console.log("Note successfully deleted from PineconeDB");
 				new Notice("Note successfully deleted from PineconeDB");
