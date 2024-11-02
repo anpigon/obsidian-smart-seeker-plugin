@@ -225,7 +225,8 @@ class SearchNotesModal extends SuggestModal<
 		el: HTMLElement
 	) {
 		const title = item.metadata?.title?.toString() || "Untitled";
-		el.createEl("div", { text: title });
+		const score = item.score !== undefined ? item.score.toFixed(2) : "N/A"; // score가 undefined인 경우 "N/A"로 표시
+		el.createEl("div", { text: `${title} (Score: ${score})` });
 	}
 
 	onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {
