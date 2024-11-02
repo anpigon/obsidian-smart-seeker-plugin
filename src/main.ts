@@ -1,4 +1,6 @@
 import {
+	Index,
+	Pinecone,
 	RecordMetadata,
 	ScoredPineconeRecord,
 } from "@pinecone-database/pinecone";
@@ -11,6 +13,7 @@ import {
 	TAbstractFile,
 	TFile,
 } from "obsidian";
+import OpenAI from "openai";
 import { EMBEDDING_MODEL } from "./contants";
 import { SettingTab } from "./settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings";
@@ -182,6 +185,13 @@ export default class SmartSeekerPlugin extends Plugin {
 class SearchNotesModal extends SuggestModal<
 	ScoredPineconeRecord<RecordMetadata>
 > {
+	private debouncedGetSuggestions: (
+		query: string
+	) => Promise<ScoredPineconeRecord<RecordMetadata>[]>;
+	private openai: OpenAI;
+	private pc: Pinecone;
+	private index: Index<RecordMetadata>;
+
 	constructor(
 		app: App,
 		private openAIApiKey: string,
@@ -189,20 +199,27 @@ class SearchNotesModal extends SuggestModal<
 		private selectedIndex: string
 	) {
 		super(app);
+		this.openai = createOpenAIClient(this.openAIApiKey);
+		this.pc = createPineconeClient(this.pineconeApiKey);
+		this.index = this.pc.index(this.selectedIndex);
+
+		// debounce 함수 생성 (300ms 딜레이)
+		this.debouncedGetSuggestions = this.debounce(
+			(query: string) => this.searchNotes(query),
+			300
+		);
 	}
 
-	async getSuggestions(
+	// 실제 검색 로직을 별도의 메서드로 분리
+	private async searchNotes(
 		query: string
 	): Promise<ScoredPineconeRecord<RecordMetadata>[]> {
 		try {
-			const pc = createPineconeClient(this.pineconeApiKey);
-			const index = pc.index(this.selectedIndex);
-			const results = await index.query({
+			const results = await this.index.query({
 				vector: await this.getQueryVector(query),
 				topK: 10,
 				includeMetadata: true,
 			});
-
 			return results.matches;
 		} catch (error) {
 			console.error("Search error:", error);
@@ -211,9 +228,32 @@ class SearchNotesModal extends SuggestModal<
 		}
 	}
 
+	// debounce 유틸리티 함수
+	private debounce<T extends (...args: unknown[]) => Promise<unknown>>(
+		func: T,
+		wait: number
+	): (...args: Parameters<T>) => ReturnType<T> {
+		let timeout: NodeJS.Timeout;
+
+		return (...args: Parameters<T>): ReturnType<T> => {
+			return new Promise((resolve) => {
+				clearTimeout(timeout);
+				timeout = setTimeout(async () => {
+					const result = await func.apply(this, args);
+					resolve(result);
+				}, wait);
+			}) as ReturnType<T>;
+		};
+	}
+
+	async getSuggestions(
+		query: string
+	): Promise<ScoredPineconeRecord<RecordMetadata>[]> {
+		return this.debouncedGetSuggestions(query);
+	}
+
 	private async getQueryVector(query: string): Promise<number[]> {
-		const openai = createOpenAIClient(this.openAIApiKey);
-		const response = await openai.embeddings.create({
+		const response = await this.openai.embeddings.create({
 			input: query,
 			model: EMBEDDING_MODEL,
 		});
