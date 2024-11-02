@@ -9,6 +9,7 @@ import {
 } from "obsidian";
 import { EMBEDDING_DIMENSION } from "./contants";
 import MyPlugin from "./main";
+import { createPineconeClient } from "./utils/pinecone";
 
 export class SettingTab extends PluginSettingTab {
 	plugin: MyPlugin;
@@ -106,9 +107,7 @@ export class SettingTab extends PluginSettingTab {
 
 	// Pinecone API를 호출하여 인덱스 목록을 가져오는 함수
 	async fetchPineconeIndexes() {
-		const pc = new Pinecone({
-			apiKey: this.plugin.settings.pineconeApiKey,
-		});
+		const pc = createPineconeClient(this.plugin.settings.pineconeApiKey);
 		if (this.indexSelectEl) {
 			// 로딩 상태 표시
 			this.indexSelectEl.empty();
