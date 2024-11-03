@@ -14,7 +14,7 @@ import {
 	TFile,
 } from "obsidian";
 import OpenAI from "openai";
-import { EMBEDDING_MODEL, PLUGIN_ID } from "./contants";
+import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./contants";
 import { SettingTab } from "./settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings";
 import { getFileNameSafe } from "./utils/fileUtils";
@@ -110,7 +110,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		const openai = createOpenAIClient(this.settings.openAIApiKey);
 		const response = await openai.embeddings.create({
 			input: content,
-			model: EMBEDDING_MODEL,
+			model: DEFAULT_EMBEDDING_MODEL,
 		});
 		return response.data[0].embedding;
 	}
@@ -155,7 +155,7 @@ export default class SmartSeekerPlugin extends Plugin {
 				return;
 			}
 			// 플러그인 폴더 경로 가져오기
-			const pluginDir = `${this.app.vault.configDir}/plugins/${PLUGIN_ID}`;
+			const pluginDir = `${this.app.vault.configDir}/plugins/${PLUGIN_APP_ID}`;
 			const cacheFilePath = `${pluginDir}/cache.json`;
 			const adapter = this.app.vault.adapter;
 			if (!(await adapter.exists(pluginDir))) adapter.mkdir(pluginDir);
@@ -317,7 +317,7 @@ class SearchNotesModal extends SuggestModal<
 	private async getQueryVector(query: string): Promise<number[]> {
 		const response = await this.openai.embeddings.create({
 			input: query,
-			model: EMBEDDING_MODEL,
+			model: DEFAULT_EMBEDDING_MODEL,
 		});
 		return response.data[0].embedding;
 	}

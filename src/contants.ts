@@ -1,7 +1,7 @@
-export const PLUGIN_ID = "smart-seeker";
+export const PLUGIN_APP_ID = "smart-seeker";
 
-export const EMBEDDING_DIMENSION = 1536;
-export const EMBEDDING_MODEL = "text-embedding-3-small";
+export const DEFAULT_EMBEDDING_DIMENSION = 1536;
+export const DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
 
 export const PINECONE_CONFIG = {
 	metric: "dotproduct",

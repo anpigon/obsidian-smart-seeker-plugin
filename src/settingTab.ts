@@ -6,7 +6,7 @@ import {
 	Setting,
 	TextComponent,
 } from "obsidian";
-import { EMBEDDING_DIMENSION, PINECONE_CONFIG } from "./contants";
+import { DEFAULT_EMBEDDING_DIMENSION, PINECONE_CONFIG } from "./contants";
 import SmartSeekerPlugin from "./main";
 import { createPineconeClient } from "./utils/pinecone";
 
@@ -119,7 +119,7 @@ export class SettingTab extends PluginSettingTab {
 		try {
 			const { indexes = [] } = await pc.listIndexes();
 			const filteredIndexes = indexes.filter(
-				(e) => e.dimension === EMBEDDING_DIMENSION
+				(e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION
 			);
 
 			if (this.indexSelectEl) {
@@ -207,9 +207,11 @@ class CreatePineconeIndexModal extends Modal {
 			);
 			await pc.createIndex({
 				name: indexName,
-				dimension: EMBEDDING_DIMENSION,
+				dimension: DEFAULT_EMBEDDING_DIMENSION,
 				metric: PINECONE_CONFIG.metric,
-				spec: PINECONE_CONFIG.spec,
+				spec: {
+					...PINECONE_CONFIG.spec,
+				},
 			});
 			new Notice(`인덱스 '${indexName}'가 생성되었습니다.`);
 		} catch (error) {
