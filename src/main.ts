@@ -150,13 +150,17 @@ export default class SmartSeekerPlugin extends Plugin {
 		await index.upsert(data);
 	}
 
+	private validateNote(file: TAbstractFile): file is TFile {
+		return (
+			file instanceof TFile &&
+			file.extension === "md" &&
+			this.app.workspace.layoutReady
+		);
+	}
+
 	async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
 		try {
-			if (!(file instanceof TFile) || file.extension !== "md") {
-				return;
-			}
-
-			if (!this.app.workspace.layoutReady) {
+			if (!this.validateNote(file)) {
 				return;
 			}
 
@@ -211,7 +215,11 @@ export default class SmartSeekerPlugin extends Plugin {
 			await this.saveToPinecone(data);
 
 			// 캐시 업데이트
-			await this.cacheManager.updateCache(file, noteContent, embeddings.flat());
+			await this.cacheManager.updateCache(
+				file,
+				noteContent,
+				embeddings.flat()
+			);
 
 			// 캐시 크기 관리
 			await this.cacheManager.pruneCache();
