@@ -17,7 +17,7 @@ const obsidianFetchApi = async (
 			headers: new Headers(response.headers),
 		});
 	} catch (error) {
-		console.error("Pinecone API request failed:", error);
+		console.error("Pinecone API request failed:", error, error?.response);
 		throw error;
 	}
 };
