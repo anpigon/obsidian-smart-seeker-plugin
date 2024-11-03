@@ -1,7 +1,7 @@
 import { ScoredPineconeRecord, RecordMetadata, Pinecone, Index } from "@pinecone-database/pinecone";
 import { SuggestModal, App, Notice, TFile } from "obsidian";
 import OpenAI from "openai";
-import { DEFAULT_EMBEDDING_MODEL } from "src/contants";
+import { DEFAULT_EMBEDDING_MODEL } from "src/constants";
 import { createOpenAIClient } from "src/services/OpenAIManager";
 import { createPineconeClient } from "src/services/PineconeManager";
 import { Logger, LogLevel } from "src/utils/logger";
