@@ -46,6 +46,14 @@ export class SearchNotesModal extends SuggestModal<
 		);
 	}
 
+
+	onClose(): void {
+		// 1. 진행 중인 작업 정리
+		if (this.debouncedGetSuggestions) {
+			clearTimeout(this.debouncedGetSuggestions as never);
+		}
+	}
+
 	// 실제 검색 로직을 별도의 메서드로 분리
 	private async searchNotes(
 		query: string
