@@ -10,11 +10,12 @@ import { NoteMetadata } from "./types";
 import { getFileNameSafe } from "./utils/fileUtils";
 import { createHash } from "./utils/hash";
 import { Logger, LogLevel } from "./utils/logger";
+import { CacheManager } from "./services/CacheManager";
 
 export default class SmartSeekerPlugin extends Plugin {
-	settings: PluginSettings;
-
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
+	private cacheManager: CacheManager;
+	settings: PluginSettings;
 
 	private registerVaultEvents(): void {
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
@@ -36,6 +37,9 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	async onload() {
+		// CacheManager 초기화
+		this.cacheManager = new CacheManager(this.app.vault, PLUGIN_APP_ID);
+
 		await this.loadSettings();
 
 		// 설정 탭 추가
@@ -144,42 +148,28 @@ export default class SmartSeekerPlugin extends Plugin {
 				);
 				return;
 			}
-			// 플러그인 폴더 경로 가져오기
-			const pluginDir = `${this.app.vault.configDir}/plugins/${PLUGIN_APP_ID}`;
-			const cacheFilePath = `${pluginDir}/cache.json`;
-			const adapter = this.app.vault.adapter;
-			if (!(await adapter.exists(pluginDir))) adapter.mkdir(pluginDir);
-			const cachedData = (await adapter.exists(cacheFilePath))
-				? JSON.parse(await adapter.read(cacheFilePath))
-				: {};
-			const cacheKey = await createHash(file.path + noteContent);
 
-			// 이전 해시와 비교하여 변경된 경우에만 임베딩 생성
-			if (cachedData[cacheKey]) {
-				console.log(`Note skipped due to no changes: ${file.path}`);
+			// 캐시 체크
+			if (await this.cacheManager.checkCache(file, noteContent)) {
+				this.logger.debug(
+					`Note skipped due to cache hit: ${file.path}`
+				);
 				return;
 			}
 
+			// 새로운 임베딩 생성
 			const hash = await createHash(file.path);
 			const metadata = await this.extractMetadata(file, noteContent);
-
 			const embeddings = await this.createEmbeddings(noteContent);
+
+			// Pinecone에 저장
 			await this.saveToPinecone(hash, embeddings, metadata);
 
-			// 해시 업데이트
-			try {
-				await adapter.write(
-					cacheFilePath,
-					JSON.stringify({ ...cachedData, [cacheKey]: embeddings })
-				);
+			// 캐시 업데이트
+			await this.cacheManager.updateCache(file, noteContent, embeddings);
 
-				console.log("JSON 파일이 성공적으로 생성되었습니다.");
-			} catch (error) {
-				console.error("JSON 파일 생성 중 오류 발생:", error);
-			}
-
-			// this.settings.previousHashes[file.path] = hash;
-			await this.saveSettings();
+			// 캐시 크기 관리
+			await this.cacheManager.pruneCache();
 
 			new Notice("Note successfully saved to PineconeDB");
 		} catch (error) {
