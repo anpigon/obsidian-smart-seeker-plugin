@@ -114,11 +114,27 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	private async createEmbeddings(content: string) {
 		const openai = createOpenAIClient(this.settings.openAIApiKey);
-		const response = await openai.embeddings.create({
-			input: content,
-			model: DEFAULT_EMBEDDING_MODEL,
-		});
-		return response.data[0].embedding;
+		const maxTokens = 8192; // 최대 토큰 수 설정
+		const contentChunks = this.splitContentIntoChunks(content, maxTokens);
+
+		const embeddings = [];
+		for (const chunk of contentChunks) {
+			const response = await openai.embeddings.create({
+				input: chunk,
+				model: DEFAULT_EMBEDDING_MODEL,
+			});
+			embeddings.push(...response.data[0].embedding);
+		}
+		return embeddings;
+	}
+
+	private splitContentIntoChunks(content: string, maxTokens: number): string[] {
+		const words = content.split(/\s+/);
+		const chunks = [];
+		for (let i = 0; i < words.length; i += maxTokens) {
+			chunks.push(words.slice(i, i + maxTokens).join(' '));
+		}
+		return chunks;
 	}
 
 	private async saveToPinecone(
