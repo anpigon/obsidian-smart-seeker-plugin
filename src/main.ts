@@ -1,6 +1,9 @@
-import { RecordMetadata } from "@pinecone-database/pinecone";
+import { PineconeRecord, RecordMetadata } from "@pinecone-database/pinecone";
+import { getEncoding } from "js-tiktoken";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
+import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./constants";
 import { SearchNotesModal } from "./modals/SearchNotesModal";
+import { CacheManager } from "./services/CacheManager";
 import { createOpenAIClient } from "./services/OpenAIManager";
 import { createPineconeClient } from "./services/PineconeManager";
 import { SettingTab } from "./settings/settingTab";
@@ -9,8 +12,6 @@ import { NoteMetadata } from "./types";
 import { getFileNameSafe } from "./utils/fileUtils";
 import { createHash } from "./utils/hash";
 import { Logger, LogLevel } from "./utils/logger";
-import { CacheManager } from "./services/CacheManager";
-import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./constants";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
@@ -114,43 +115,39 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	private async createEmbeddings(content: string) {
 		const openai = createOpenAIClient(this.settings.openAIApiKey);
-		const maxTokens = 8192; // 최대 토큰 수 설정
-		const contentChunks = this.splitContentIntoChunks(content, maxTokens);
-
-		const embeddings = [];
-		for (const chunk of contentChunks) {
-			const response = await openai.embeddings.create({
-				input: chunk,
-				model: DEFAULT_EMBEDDING_MODEL,
-			});
-			embeddings.push(...response.data[0].embedding);
-		}
-		return embeddings;
+		const response = await openai.embeddings.create({
+			input: content,
+			model: DEFAULT_EMBEDDING_MODEL,
+		});
+		return response.data[0].embedding;
 	}
 
-	private splitContentIntoChunks(content: string, maxTokens: number): string[] {
-		const words = content.split(/\s+/);
-		const chunks = [];
-		for (let i = 0; i < words.length; i += maxTokens) {
-			chunks.push(words.slice(i, i + maxTokens).join(' '));
+	private splitContentIntoChunks(
+		content: string,
+		maxTokens: number
+	): string[] {
+		const enc = getEncoding("cl100k_base");
+		const tokens = enc.encode(content);
+
+		const chunks: string[] = [];
+		let currentChunk: number[] = [];
+
+		for (let i = 0; i < tokens.length; i++) {
+			currentChunk.push(tokens[i]);
+
+			if (currentChunk.length >= maxTokens || i === tokens.length - 1) {
+				chunks.push(enc.decode(currentChunk));
+				currentChunk = [];
+			}
 		}
+
 		return chunks;
 	}
 
-	private async saveToPinecone(
-		hash: string,
-		embeddings: number[],
-		metadata?: RecordMetadata | undefined
-	) {
+	private async saveToPinecone(data: Array<PineconeRecord<RecordMetadata>>) {
 		const pc = createPineconeClient(this.settings.pineconeApiKey);
 		const index = pc.index(this.settings.selectedIndex);
-		await index.upsert([
-			{
-				id: hash,
-				values: embeddings,
-				metadata: metadata,
-			},
-		]);
+		await index.upsert(data);
 	}
 
 	async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
@@ -188,13 +185,32 @@ export default class SmartSeekerPlugin extends Plugin {
 			// 새로운 임베딩 생성
 			const hash = await createHash(file.path);
 			const metadata = await this.extractMetadata(file, noteContent);
-			const embeddings = await this.createEmbeddings(noteContent);
+			const maxTokens = 8000; // 최대 토큰 수 설정
+			const contentChunks = this.splitContentIntoChunks(
+				noteContent,
+				maxTokens
+			);
+			const embeddings: number[][] = [];
+			for (const chunk of contentChunks) {
+				const response =
+					(await this.cacheManager.getEmbeddings(file, chunk)) ||
+					(await this.createEmbeddings(chunk));
+				embeddings.push(response);
+			}
+			const data = embeddings.map((embedding, index) => ({
+				id: `${hash}_${index}`,
+				values: embedding,
+				metadata: {
+					...metadata,
+					hash,
+				},
+			}));
 
 			// Pinecone에 저장
-			await this.saveToPinecone(hash, embeddings, metadata);
+			await this.saveToPinecone(data);
 
 			// 캐시 업데이트
-			await this.cacheManager.updateCache(file, noteContent, embeddings);
+			await this.cacheManager.updateCache(file, noteContent, embeddings.flat());
 
 			// 캐시 크기 관리
 			await this.cacheManager.pruneCache();
