@@ -72,6 +72,18 @@ export default class SmartSeekerPlugin extends Plugin {
 		});
 	}
 
+	async onunload() {
+		// 설정 데이터 최종 저장
+		try {
+			await this.saveData(this.settings);
+		} catch (error) {
+			console.error("Failed to save settings on unload:", error);
+		}
+
+		// 로깅
+		this.logger?.debug("Plugin unloaded");
+	}
+
 	async loadSettings() {
 		this.settings = Object.assign(
 			{},
