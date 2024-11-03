@@ -144,6 +144,14 @@ export default class SmartSeekerPlugin extends Plugin {
 			console.log(`Note created or updated: ${file.path}`);
 
 			const noteContent = await this.app.vault.read(file);
+
+			// 노트의 토큰 수 계산
+			const tokenCount = noteContent.split(/\s+/).length;
+			if (tokenCount < 200) {
+				console.log(`Note skipped due to insufficient tokens: ${tokenCount}`);
+				return;
+			}
+
 			const hash = await createPathHash(file.path);
 			const metadata = await this.extractMetadata(file, noteContent);
 
