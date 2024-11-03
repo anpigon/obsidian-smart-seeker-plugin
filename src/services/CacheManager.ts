@@ -56,12 +56,8 @@ export class CacheManager {
 	/**
 	 * 캐시에서 임베딩 벡터 가져오기
 	 */
-	public async getEmbeddings(
-		file: TFile,
-		content: string
-	): Promise<number[] | null> {
+	public async getEmbeddings(cacheKey: string): Promise<number[] | null> {
 		try {
-			const cacheKey = await createHash(file.path + content);
 			return this.cache[cacheKey] || null;
 		} catch (error) {
 			this.logger.error("Error getting embeddings from cache:", error);

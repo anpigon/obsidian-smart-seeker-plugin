@@ -97,7 +97,10 @@ export default class SmartSeekerPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	private async extractMetadata(file: TFile, content: string) {
+	private async extractMetadata(
+		file: TFile,
+		content: string
+	): Promise<NoteMetadata> {
 		const metadata: NoteMetadata = {
 			filePath: file.path,
 			ctime: file.stat.ctime,
@@ -122,10 +125,8 @@ export default class SmartSeekerPlugin extends Plugin {
 		return response.data[0].embedding;
 	}
 
-	private splitContentIntoChunks(
-		content: string,
-		maxTokens: number
-	): string[] {
+	private splitContentIntoChunks(content: string): string[] {
+		const maxTokens = 8000; // 최대 토큰 수 설정
 		const enc = getEncoding("cl100k_base");
 		const tokens = enc.encode(content);
 
@@ -158,6 +159,18 @@ export default class SmartSeekerPlugin extends Plugin {
 		);
 	}
 
+	private async generateEmbeddings(contentChunks: string[]) {
+		const embeddings: number[][] = [];
+		for (const chunk of contentChunks) {
+			const cacheKey = await createHash(chunk);
+			const response =
+				(await this.cacheManager.getEmbeddings(cacheKey)) ||
+				(await this.createEmbeddings(chunk));
+			embeddings.push(response);
+		}
+		return embeddings;
+	}
+
 	async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
 		try {
 			if (!this.validateNote(file)) {
@@ -166,7 +179,6 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			// 노트 생성 또는 업데이트 시 파인콘DB에 저장
 			this.logger.info(`Note created or updated: ${file.path}`);
-
 			const noteContent = await this.app.vault.read(file);
 
 			// 노트의 토큰 수 계산
@@ -186,22 +198,17 @@ export default class SmartSeekerPlugin extends Plugin {
 				return;
 			}
 
+			// 노트 청크 분할
+			const contentChunks = this.splitContentIntoChunks(noteContent);
+
 			// 새로운 임베딩 생성
-			const hash = await createHash(file.path);
+			const embeddings = await this.generateEmbeddings(contentChunks);
+
+			// 메타 데이터 
 			const metadata = await this.extractMetadata(file, noteContent);
-			const maxTokens = 8000; // 최대 토큰 수 설정
-			const contentChunks = this.splitContentIntoChunks(
-				noteContent,
-				maxTokens
-			);
-			const embeddings: number[][] = [];
-			for (const chunk of contentChunks) {
-				const response =
-					(await this.cacheManager.getEmbeddings(file, chunk)) ||
-					(await this.createEmbeddings(chunk));
-				embeddings.push(response);
-			}
-			const data = embeddings.map((embedding, index) => ({
+
+			const hash = await createHash(file.path);
+			const records = embeddings.map((embedding, index) => ({
 				id: `${hash}_${index}`,
 				values: embedding,
 				metadata: {
@@ -212,7 +219,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			}));
 
 			// Pinecone에 저장
-			await this.saveToPinecone(data);
+			await this.saveToPinecone(records);
 
 			// 캐시 업데이트
 			await this.cacheManager.updateCache(
