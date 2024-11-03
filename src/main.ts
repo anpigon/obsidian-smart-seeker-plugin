@@ -17,19 +17,14 @@ import OpenAI from "openai";
 import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./contants";
 import { SettingTab } from "./settings/settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
+import { NoteMetadata } from "./types";
 import { getFileNameSafe } from "./utils/fileUtils";
 import { createHash } from "./utils/hash";
 import { Logger, LogLevel } from "./utils/logger";
 import { createOpenAIClient } from "./utils/openai";
 import { createPineconeClient } from "./utils/pinecone";
 
-interface NoteMetadata {
-	filePath: string;
-	ctime: number;
-	mtime: number;
-	title: string;
-	[key: string]: unknown;
-}
+
 
 export default class SmartSeekerPlugin extends Plugin {
 	settings: PluginSettings;
