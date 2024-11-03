@@ -93,6 +93,8 @@ export default class SmartSeekerPlugin extends Plugin {
 	private async extractMetadata(file: TFile, content: string) {
 		const metadata = {
 			filePath: file.path,
+			ctime: file.stat.ctime,
+			mtime: file.stat.mtime,
 			title: getFileNameSafe(file.path),
 		};
 
@@ -157,6 +159,7 @@ export default class SmartSeekerPlugin extends Plugin {
 				this.app.vault.configDir + "/plugins/smart-seeker";
 			const cacheFilePath = `${pluginDir}/cache.json`;
 			const adapter = this.app.vault.adapter;
+			if (!(await adapter.exists(pluginDir))) adapter.mkdir(pluginDir);
 			const cachedData = (await adapter.exists(cacheFilePath))
 				? JSON.parse(await adapter.read(cacheFilePath))
 				: {};
