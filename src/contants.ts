@@ -1,3 +1,5 @@
+export const PLUGIN_ID = "smart-seeker";
+
 export const EMBEDDING_DIMENSION = 1536;
 export const EMBEDDING_MODEL = "text-embedding-3-small";
 

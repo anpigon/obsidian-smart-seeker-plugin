@@ -14,7 +14,7 @@ import {
 	TFile,
 } from "obsidian";
 import OpenAI from "openai";
-import { EMBEDDING_MODEL } from "./contants";
+import { EMBEDDING_MODEL, PLUGIN_ID } from "./contants";
 import { SettingTab } from "./settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings";
 import { getFileNameSafe } from "./utils/fileUtils";
@@ -155,8 +155,7 @@ export default class SmartSeekerPlugin extends Plugin {
 				return;
 			}
 			// 플러그인 폴더 경로 가져오기
-			const pluginDir =
-				this.app.vault.configDir + "/plugins/smart-seeker";
+			const pluginDir = `${this.app.vault.configDir}/plugins/${PLUGIN_ID}`;
 			const cacheFilePath = `${pluginDir}/cache.json`;
 			const adapter = this.app.vault.adapter;
 			if (!(await adapter.exists(pluginDir))) adapter.mkdir(pluginDir);
