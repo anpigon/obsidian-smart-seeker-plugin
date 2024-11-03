@@ -1,6 +1,5 @@
 import { RecordMetadata } from "@pinecone-database/pinecone";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
-import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./contants";
 import { SearchNotesModal } from "./modals/SearchNotesModal";
 import { createOpenAIClient } from "./services/OpenAIManager";
 import { createPineconeClient } from "./services/PineconeManager";
@@ -11,6 +10,7 @@ import { getFileNameSafe } from "./utils/fileUtils";
 import { createHash } from "./utils/hash";
 import { Logger, LogLevel } from "./utils/logger";
 import { CacheManager } from "./services/CacheManager";
+import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./constants";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
@@ -136,14 +136,14 @@ export default class SmartSeekerPlugin extends Plugin {
 			}
 
 			// 노트 생성 또는 업데이트 시 파인콘DB에 저장
-			console.log(`Note created or updated: ${file.path}`);
+			this.logger.info(`Note created or updated: ${file.path}`);
 
 			const noteContent = await this.app.vault.read(file);
 
 			// 노트의 토큰 수 계산
 			const tokenCount = noteContent.split(/\s+/).length;
 			if (tokenCount < 200) {
-				console.log(
+				this.logger.info(
 					`Note skipped due to insufficient tokens: ${tokenCount}`
 				);
 				return;
@@ -173,7 +173,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			new Notice("Note successfully saved to PineconeDB");
 		} catch (error) {
-			console.error("노트 처리 중 오류 발생:", error);
+			this.logger.error("노트 처리 중 오류 발생:", error);
 			new Notice("Failed to save note to PineconeDB");
 		}
 	}
@@ -189,7 +189,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			}
 
 			// 노트 삭제 시 파인콘DB에서 삭제
-			console.log(`Note deleted: ${file.path}`);
+			this.logger.info(`Note deleted: ${file.path}`);
 
 			// 파일 경로로부터 해시 생성
 			const hash = await createHash(file.path);
@@ -199,7 +199,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			new Notice("Note successfully deleted from PineconeDB");
 		} catch (error) {
-			console.error(`Failed to delete note ${file.path}:`, error);
+			this.logger.error(`Failed to delete note ${file.path}:`, error);
 			new Notice("Failed to delete note from PineconeDB");
 		}
 	}
