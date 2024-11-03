@@ -6,9 +6,9 @@ import {
 	Setting,
 	TextComponent,
 } from "obsidian";
-import { DEFAULT_EMBEDDING_DIMENSION, PINECONE_CONFIG } from "./contants";
-import SmartSeekerPlugin from "./main";
-import { createPineconeClient } from "./utils/pinecone";
+import { DEFAULT_EMBEDDING_DIMENSION, PINECONE_CONFIG } from "../contants";
+import SmartSeekerPlugin from "../main";
+import { createPineconeClient } from "../utils/pinecone";
 
 export class SettingTab extends PluginSettingTab {
 	plugin: SmartSeekerPlugin;

@@ -15,16 +15,26 @@ import {
 } from "obsidian";
 import OpenAI from "openai";
 import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./contants";
-import { SettingTab } from "./settingTab";
-import { DEFAULT_SETTINGS, PluginSettings } from "./settings";
+import { SettingTab } from "./settings/settingTab";
+import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
 import { getFileNameSafe } from "./utils/fileUtils";
 import { createHash } from "./utils/hash";
 import { Logger, LogLevel } from "./utils/logger";
 import { createOpenAIClient } from "./utils/openai";
 import { createPineconeClient } from "./utils/pinecone";
 
+interface NoteMetadata {
+	filePath: string;
+	ctime: number;
+	mtime: number;
+	title: string;
+	[key: string]: unknown;
+}
+
 export default class SmartSeekerPlugin extends Plugin {
 	settings: PluginSettings;
+
+	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
 
 	private registerVaultEvents(): void {
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
@@ -91,7 +101,7 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	private async extractMetadata(file: TFile, content: string) {
-		const metadata = {
+		const metadata: NoteMetadata = {
 			filePath: file.path,
 			ctime: file.stat.ctime,
 			mtime: file.stat.mtime,
