@@ -18,11 +18,10 @@ import { EMBEDDING_MODEL } from "./contants";
 import { SettingTab } from "./settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings";
 import { getFileNameSafe } from "./utils/fileUtils";
-import { createPathHash } from "./utils/hash";
+import { createHash } from "./utils/hash";
+import { Logger, LogLevel } from "./utils/logger";
 import { createOpenAIClient } from "./utils/openai";
 import { createPineconeClient } from "./utils/pinecone";
-import { Logger, LogLevel } from "./utils/logger";
-
 
 export default class SmartSeekerPlugin extends Plugin {
 	settings: PluginSettings;
@@ -148,15 +147,47 @@ export default class SmartSeekerPlugin extends Plugin {
 			// 노트의 토큰 수 계산
 			const tokenCount = noteContent.split(/\s+/).length;
 			if (tokenCount < 200) {
-				console.log(`Note skipped due to insufficient tokens: ${tokenCount}`);
+				console.log(
+					`Note skipped due to insufficient tokens: ${tokenCount}`
+				);
+				return;
+			}
+			// 플러그인 폴더 경로 가져오기
+			const pluginDir =
+				this.app.vault.configDir + "/plugins/smart-seeker";
+			const cacheFilePath = `${pluginDir}/cache.json`;
+			const adapter = this.app.vault.adapter;
+			const cachedData = (await adapter.exists(cacheFilePath))
+				? JSON.parse(await adapter.read(cacheFilePath))
+				: {};
+			const cacheKey = await createHash(file.path + noteContent);
+
+			// 이전 해시와 비교하여 변경된 경우에만 임베딩 생성
+			if (cachedData[cacheKey]) {
+				console.log(`Note skipped due to no changes: ${file.path}`);
 				return;
 			}
 
-			const hash = await createPathHash(file.path);
+			const hash = await createHash(file.path);
 			const metadata = await this.extractMetadata(file, noteContent);
 
 			const embeddings = await this.createEmbeddings(noteContent);
 			await this.saveToPinecone(hash, embeddings, metadata);
+
+			// 해시 업데이트
+			try {
+				await adapter.write(
+					cacheFilePath,
+					JSON.stringify({ ...cachedData, [cacheKey]: embeddings })
+				);
+
+				console.log("JSON 파일이 성공적으로 생성되었습니다.");
+			} catch (error) {
+				console.error("JSON 파일 생성 중 오류 발생:", error);
+			}
+
+			// this.settings.previousHashes[file.path] = hash;
+			await this.saveSettings();
 
 			new Notice("Note successfully saved to PineconeDB");
 		} catch (error) {
@@ -179,7 +210,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			console.log(`Note deleted: ${file.path}`);
 
 			// 파일 경로로부터 해시 생성
-			const hash = await createPathHash(file.path);
+			const hash = await createHash(file.path);
 			const pc = createPineconeClient(this.settings.pineconeApiKey);
 			const index = pc.index(this.settings.selectedIndex);
 			await index.deleteMany([hash]);
