@@ -78,7 +78,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		try {
 			await this.saveData(this.settings);
 		} catch (error) {
-			console.error("Failed to save settings on unload:", error);
+			this.logger.error("Failed to save settings on unload:", error);
 		}
 
 		// 로깅
@@ -203,6 +203,7 @@ export default class SmartSeekerPlugin extends Plugin {
 				metadata: {
 					...metadata,
 					hash,
+					// TODO: 노트 청크 위치를 메타데이터에 포함할 것
 				},
 			}));
 
