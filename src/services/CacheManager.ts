@@ -1,4 +1,3 @@
-import { BaseStore } from "@langchain/core/stores";
 import { TFile, Vault } from "obsidian";
 import { createHash } from "../helpers/utils/hash";
 import { Logger, LogLevel } from "../helpers/utils/logger";
@@ -125,69 +124,6 @@ export class CacheManager {
 			this.cache = Object.fromEntries(entries.slice(-maxEntries));
 			await this.saveCache();
 			this.logger.debug("Cache pruned successfully");
-		}
-	}
-}
-
-export class InLocalStore<T = unknown> extends BaseStore<string, T> {
-	private cacheManager: CacheManager;
-
-	lc_namespace = ["langchain", "storage"];
-
-	constructor(private vault: Vault, private pluginId: string) {
-		super();
-		this.cacheManager = new CacheManager(vault, pluginId);
-	}
-
-	/**
-	 * 여러 키에 대한 값들을 한번에 가져옴
-	 */
-	async mget(keys: string[]) {
-		const results: T[] = [];
-		for (const key of keys) {
-			const value = await this.cacheManager.getEmbeddings(key);
-			results.push(value as T);
-		}
-		return results;
-	}
-
-	/**
-	 * 여러 키-값 쌍을 한번에 저장
-	 */
-	async mset(keyValuePairs: [string, T][]): Promise<void> {
-		for (const [key, value] of keyValuePairs) {
-			// CacheManager의 updateCache 메서드를 사용하되,
-			// 파일과 컨텐츠 대신 키를 직접 사용
-			await this.cacheManager.updateCache(
-				{ path: key } as TFile, // 임시 TFile 객체 생성
-				key, // 컨텐츠로 키를 사용
-				value as number[] // T를 number[]로 캐스팅
-			);
-		}
-	}
-
-	/**
-	 * 여러 키를 한번에 삭제
-	 */
-	async mdelete(keys: string[]): Promise<void> {
-		for (const key of keys) {
-			await this.cacheManager.removeFromCache(
-				{ path: key } as TFile // 임시 TFile 객체 생성
-			);
-		}
-	}
-
-	/**
-	 * 저장소의 키들을 순회하는 제너레이터
-	 * prefix가 주어지면 해당 접두어로 시작하는 키만 반환
-	 */
-	async *yieldKeys(prefix?: string): AsyncGenerator<string> {
-		// CacheManager의 cache 객체의 키들을 순회
-		const keys = Object.keys(await this.cacheManager["cache"]);
-		for (const key of keys) {
-			if (prefix === undefined || key.startsWith(prefix)) {
-				yield key;
-			}
 		}
 	}
 }
