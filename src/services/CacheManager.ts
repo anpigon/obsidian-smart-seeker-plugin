@@ -107,7 +107,10 @@ export class CacheManager {
 	private async saveCache(): Promise<void> {
 		try {
 			const adapter = this.vault.adapter;
-			await adapter.write(this.cacheFilePath, JSON.stringify(this.cache));
+			await adapter.write(
+				this.cacheFilePath,
+				JSON.stringify(this.cache, null, 2)
+			);
 		} catch (error) {
 			this.logger.error("Error saving cache:", error);
 		}
@@ -126,13 +129,12 @@ export class CacheManager {
 	}
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class InLocalStore<T = any> extends BaseStore<string, T> {
+export class InLocalStore<T = unknown> extends BaseStore<string, T> {
 	private cacheManager: CacheManager;
 
 	lc_namespace = ["langchain", "storage"];
 
-	constructor(vault: Vault, pluginId: string) {
+	constructor(private vault: Vault, private pluginId: string) {
 		super();
 		this.cacheManager = new CacheManager(vault, pluginId);
 	}
