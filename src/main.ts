@@ -5,15 +5,15 @@ import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
 import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./constants";
 import { InLocalStore } from "./helpers/langchain/store";
-import { SearchNotesModal } from "./modals/SearchNotesModal";
+import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
 import { createOpenAIClient } from "./services/OpenAIManager";
 import { createPineconeClient } from "./services/PineconeManager";
 import { SettingTab } from "./settings/settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
 import { NoteMetadata } from "./types";
-import { getFileNameSafe } from "./utils/fileUtils";
-import { createHash } from "./utils/hash";
-import { Logger, LogLevel } from "./utils/logger";
+import { getFileNameSafe } from "./helpers/utils/fileUtils";
+import { createHash } from "./helpers/utils/hash";
+import { Logger, LogLevel } from "./helpers/utils/logger";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);

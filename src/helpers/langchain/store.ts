@@ -1,6 +1,6 @@
 import { BaseStore } from "@langchain/core/stores";
 import { Vault } from "obsidian";
-import { Logger, LogLevel } from "src/utils/logger";
+import { Logger, LogLevel } from "src/helpers/utils/logger";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class InLocalStore<T = any> extends BaseStore<string, T> {

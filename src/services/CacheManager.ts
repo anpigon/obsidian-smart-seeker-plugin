@@ -1,7 +1,7 @@
 import { BaseStore } from "@langchain/core/stores";
 import { TFile, Vault } from "obsidian";
-import { createHash } from "../utils/hash";
-import { Logger, LogLevel } from "../utils/logger";
+import { createHash } from "../helpers/utils/hash";
+import { Logger, LogLevel } from "../helpers/utils/logger";
 
 interface CacheData {
 	[key: string]: number[]; // 파일 경로+내용 해시: 임베딩 벡터
