@@ -55,7 +55,7 @@ jobs:
           git log "$(git describe --tags --abbrev=0)"..HEAD --oneline > release-notes.md
     
           # 파일 존재 확인
-          files=("manifest.json" "build/main.js" "build/styles.css")
+          files=("manifest.json" "main.js" "styles.css")
           for file in "${files[@]}"; do
             if [ ! -f "$file" ]; then
               echo "Error: 빌드 결과물 '$file'을 찾을 수 없습니다. 빌드 단계가 성공적으로 완료되었는지 확인해주세요."
@@ -66,4 +66,4 @@ jobs:
           gh release create "$tag" \
             --title="Release $tag" \
             --notes-file="release-notes.md" \
-            manifest.json build/main.js build/styles.css
+            manifest.json main.js styles.css

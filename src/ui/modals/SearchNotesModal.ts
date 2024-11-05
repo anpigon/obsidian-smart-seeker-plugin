@@ -9,7 +9,7 @@ import OpenAI from "openai";
 import { DEFAULT_EMBEDDING_MODEL } from "src/constants";
 import { createOpenAIClient } from "src/services/OpenAIManager";
 import { createPineconeClient } from "src/services/PineconeManager";
-import { Logger, LogLevel } from "src/utils/logger";
+import { Logger, LogLevel } from "src/helpers/logger";
 
 export class SearchNotesModal extends SuggestModal<
 	ScoredPineconeRecord<RecordMetadata>
