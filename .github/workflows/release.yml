@@ -52,13 +52,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
-          git log $(git describe --tags --abbrev=0)..HEAD --oneline > release-notes.md
+          git log "$(git describe --tags --abbrev=0)"..HEAD --oneline > release-notes.md
     
           # 파일 존재 확인
           files=("manifest.json" "build/main.js" "build/styles.css")
           for file in "${files[@]}"; do
             if [ ! -f "$file" ]; then
-              echo "Error: $file not found"
+              echo "Error: 빌드 결과물 '$file'을 찾을 수 없습니다. 빌드 단계가 성공적으로 완료되었는지 확인해주세요."
               exit 1
             fi
           done
