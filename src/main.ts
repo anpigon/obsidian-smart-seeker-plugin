@@ -13,7 +13,7 @@ import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
 import { NoteMetadata } from "./types";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
 import { createHash } from "./helpers/utils/hash";
-import { Logger, LogLevel } from "./helpers/utils/logger";
+import { Logger, LogLevel } from "./helpers/logger";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
