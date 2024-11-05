@@ -196,6 +196,7 @@ export default class SmartSeekerPlugin extends Plugin {
 				return;
 			}
 
+			// TODO: 띄어쓰기를 제외하고 비교하여 변경사항이 없다면 아래 로직을 실행하지 않아야 한다.
 			// 캐시 체크
 			// if (await this.cacheManager.checkCache(file, noteContent)) {
 			// 	this.logger.debug(
