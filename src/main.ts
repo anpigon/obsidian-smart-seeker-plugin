@@ -1,9 +1,11 @@
+import { OpenAIEmbeddings } from "@langchain/openai";
 import { PineconeRecord, RecordMetadata } from "@pinecone-database/pinecone";
 import { getEncoding } from "js-tiktoken";
+import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
 import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./constants";
+import { InLocalStore } from "./helpers/langchain/store";
 import { SearchNotesModal } from "./modals/SearchNotesModal";
-import { CacheManager } from "./services/CacheManager";
 import { createOpenAIClient } from "./services/OpenAIManager";
 import { createPineconeClient } from "./services/PineconeManager";
 import { SettingTab } from "./settings/settingTab";
@@ -15,7 +17,7 @@ import { Logger, LogLevel } from "./utils/logger";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
-	private cacheManager: CacheManager;
+	private localStore: InLocalStore;
 	settings: PluginSettings;
 
 	private registerVaultEvents(): void {
@@ -38,8 +40,8 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	async onload() {
-		// CacheManager 초기화
-		this.cacheManager = new CacheManager(this.app.vault, PLUGIN_APP_ID);
+		// InLocalStore 초기화
+		this.localStore = new InLocalStore(this.app.vault, PLUGIN_APP_ID);
 
 		await this.loadSettings();
 
@@ -160,15 +162,19 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	private async generateEmbeddings(contentChunks: string[]) {
-		const embeddings: number[][] = [];
-		for (const chunk of contentChunks) {
-			const cacheKey = await createHash(chunk);
-			const response =
-				(await this.cacheManager.getEmbeddings(cacheKey)) ||
-				(await this.createEmbeddings(chunk));
-			embeddings.push(response);
-		}
-		return embeddings;
+		const underlyingEmbeddings = new OpenAIEmbeddings({
+			openAIApiKey: this.settings.openAIApiKey,
+			modelName: DEFAULT_EMBEDDING_MODEL,
+		});
+		const cacheBackedEmbeddings = CacheBackedEmbeddings.fromBytesStore(
+			underlyingEmbeddings,
+			// new InMemoryStore(),
+			this.localStore,
+			{
+				namespace: underlyingEmbeddings.modelName,
+			}
+		);
+		return await cacheBackedEmbeddings.embedDocuments(contentChunks);
 	}
 
 	async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
@@ -191,12 +197,12 @@ export default class SmartSeekerPlugin extends Plugin {
 			}
 
 			// 캐시 체크
-			if (await this.cacheManager.checkCache(file, noteContent)) {
-				this.logger.debug(
-					`Note skipped due to cache hit: ${file.path}`
-				);
-				return;
-			}
+			// if (await this.cacheManager.checkCache(file, noteContent)) {
+			// 	this.logger.debug(
+			// 		`Note skipped due to cache hit: ${file.path}`
+			// 	);
+			// 	return;
+			// }
 
 			// 노트 청크 분할
 			const contentChunks = this.splitContentIntoChunks(noteContent);
@@ -204,7 +210,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			// 새로운 임베딩 생성
 			const embeddings = await this.generateEmbeddings(contentChunks);
 
-			// 메타 데이터 
+			// 메타 데이터
 			const metadata = await this.extractMetadata(file, noteContent);
 
 			const hash = await createHash(file.path);
@@ -222,14 +228,14 @@ export default class SmartSeekerPlugin extends Plugin {
 			await this.saveToPinecone(records);
 
 			// 캐시 업데이트
-			await this.cacheManager.updateCache(
-				file,
-				noteContent,
-				embeddings.flat()
-			);
+			// await this.cacheManager.updateCache(
+			// 	file,
+			// 	noteContent,
+			// 	embeddings.flat()
+			// );
 
 			// 캐시 크기 관리
-			await this.cacheManager.pruneCache();
+			// await this.cacheManager.pruneCache();
 
 			new Notice("Note successfully saved to PineconeDB");
 		} catch (error) {
