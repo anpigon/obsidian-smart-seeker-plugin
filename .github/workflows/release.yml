@@ -3,7 +3,7 @@ name: Release Obsidian plugin
 on:
   push:
     tags:
-      - "*"
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 permissions:
   contents: write
@@ -31,7 +31,7 @@ jobs:
           node-version-file: '.nvmrc'
 
       - name: Cache pnpm modules
-        id: pnpm-cache # use this to check for `cache-hit` ==> if: steps.npm-cache.outputs.cache-hit != 'true'
+        id: pnpm-cache # use this to check for `cache-hit` ==> if: steps.pnpm-cache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: ~/.pnpm-store
