@@ -1,15 +1,15 @@
+import { PineconeStore } from "@langchain/pinecone";
 import {
 	Index,
-	Pinecone,
 	RecordMetadata,
 	ScoredPineconeRecord,
 } from "@pinecone-database/pinecone";
 import { App, Notice, SuggestModal, TFile } from "obsidian";
 import OpenAI from "openai";
 import { DEFAULT_EMBEDDING_MODEL } from "src/constants";
+import { Logger, LogLevel } from "src/helpers/logger";
 import { createOpenAIClient } from "src/services/OpenAIManager";
 import { createPineconeClient } from "src/services/PineconeManager";
-import { Logger, LogLevel } from "src/helpers/logger";
 
 export class SearchNotesModal extends SuggestModal<
 	ScoredPineconeRecord<RecordMetadata>
@@ -19,8 +19,7 @@ export class SearchNotesModal extends SuggestModal<
 		query: string
 	) => Promise<ScoredPineconeRecord<RecordMetadata>[]>;
 	private openai: OpenAI;
-	private pc: Pinecone;
-	private index: Index<RecordMetadata>;
+	private pineconeIndex: Index<RecordMetadata>;
 
 	constructor(
 		app: App,
@@ -36,8 +35,8 @@ export class SearchNotesModal extends SuggestModal<
 		});
 
 		this.openai = createOpenAIClient(this.openAIApiKey);
-		this.pc = createPineconeClient(this.pineconeApiKey);
-		this.index = this.pc.index(this.selectedIndex);
+		const pinecone = createPineconeClient(this.pineconeApiKey);
+		this.pineconeIndex = pinecone.Index(this.selectedIndex);
 
 		// debounce 함수 생성 (300ms 딜레이)
 		this.debouncedGetSuggestions = this.debounce(
@@ -45,7 +44,6 @@ export class SearchNotesModal extends SuggestModal<
 			300
 		);
 	}
-
 
 	onClose(): void {
 		// 1. 진행 중인 작업 정리
@@ -55,14 +53,20 @@ export class SearchNotesModal extends SuggestModal<
 	}
 
 	// 실제 검색 로직을 별도의 메서드로 분리
-	private async searchNotes(
-		query: string
-	): Promise<ScoredPineconeRecord<RecordMetadata>[]> {
+	private async searchNotes(query: string, topK = 10) {
 		try {
-			const results = await this.index.query({
+			// const vectorStore = await PineconeStore.fromExistingIndex(
+			// 	embeddings,
+			// 	this.pineconeIndex
+			// );
+			// const results = await vectorStore.similaritySearchWithScore(
+			// 	query,
+			// 	topK
+			// );
+			const results = await this.pineconeIndex.query({
 				vector: await this.getQueryVector(query),
-				topK: 10,
 				includeMetadata: true,
+				topK,
 			});
 			this.logger.debug("검색 결과:", results);
 			return results.matches;
