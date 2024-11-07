@@ -196,15 +196,6 @@ export default class SmartSeekerPlugin extends Plugin {
 				return;
 			}
 
-			// TODO: 띄어쓰기를 제외하고 비교하여 변경사항이 없다면 아래 로직을 실행하지 않아야 한다.
-			// 캐시 체크
-			// if (await this.cacheManager.checkCache(file, noteContent)) {
-			// 	this.logger.debug(
-			// 		`Note skipped due to cache hit: ${file.path}`
-			// 	);
-			// 	return;
-			// }
-
 			// 노트 청크 분할
 			const contentChunks = this.splitContentIntoChunks(noteContent);
 
@@ -214,29 +205,22 @@ export default class SmartSeekerPlugin extends Plugin {
 			// 메타 데이터
 			const metadata = await this.extractMetadata(file, noteContent);
 
-			const hash = await createHash(file.path);
-			const records = embeddings.map((embedding, index) => ({
-				id: `${hash}_${index}`,
-				values: embedding,
-				metadata: {
-					...metadata,
-					hash,
-					// TODO: 노트 청크 위치를 메타데이터에 포함할 것
-				},
-			}));
+			const records = [];
+			for (let i = 0; i < contentChunks.length; i++) {
+				const hash = await createHash(contentChunks[i]);
+				records.push({
+					id: `${hash}_${i}`,
+					values: embeddings[i],
+					metadata: {
+						...metadata,
+						hash,
+						// TODO: 노트 청크 위치를 메타데이터에 포함할 것
+					},
+				});
+			}
 
 			// Pinecone에 저장
 			await this.saveToPinecone(records);
-
-			// 캐시 업데이트
-			// await this.cacheManager.updateCache(
-			// 	file,
-			// 	noteContent,
-			// 	embeddings.flat()
-			// );
-
-			// 캐시 크기 관리
-			// await this.cacheManager.pruneCache();
 
 			new Notice("Note successfully saved to PineconeDB");
 		} catch (error) {
