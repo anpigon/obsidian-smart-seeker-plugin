@@ -1,19 +1,21 @@
+import { Document } from "@langchain/core/documents";
 import { OpenAIEmbeddings } from "@langchain/openai";
-import { PineconeRecord, RecordMetadata } from "@pinecone-database/pinecone";
-import { getEncoding } from "js-tiktoken";
+import { PineconeStore } from "@langchain/pinecone";
+import { TokenTextSplitter } from "@langchain/textsplitters";
+import { Index as PineconeIndex } from "@pinecone-database/pinecone";
 import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
 import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./constants";
 import { InLocalStore } from "./helpers/langchain/store";
-import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
-import { createOpenAIClient } from "./services/OpenAIManager";
+import { Logger, LogLevel } from "./helpers/logger";
+import { getFileNameSafe } from "./helpers/utils/fileUtils";
+import { createHash } from "./helpers/utils/hash";
+import { strip } from "./helpers/utils/stringUtils";
 import { createPineconeClient } from "./services/PineconeManager";
 import { SettingTab } from "./settings/settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
 import { NoteMetadata } from "./types";
-import { getFileNameSafe } from "./helpers/utils/fileUtils";
-import { createHash } from "./helpers/utils/hash";
-import { Logger, LogLevel } from "./helpers/logger";
+import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
@@ -118,39 +120,30 @@ export default class SmartSeekerPlugin extends Plugin {
 		return metadata;
 	}
 
-	private async createEmbeddings(content: string) {
-		const openai = createOpenAIClient(this.settings.openAIApiKey);
-		const response = await openai.embeddings.create({
-			input: content,
-			model: DEFAULT_EMBEDDING_MODEL,
+	private async splitContent(documents: Document[]) {
+		const textSplitter = new TokenTextSplitter({
+			chunkSize: 1000,
+			chunkOverlap: 200,
 		});
-		return response.data[0].embedding;
+		return await textSplitter.splitDocuments(documents, {
+			appendChunkOverlapHeader: true,
+		});
 	}
 
-	private splitContentIntoChunks(content: string): string[] {
-		const maxTokens = 8000; // 최대 토큰 수 설정
-		const enc = getEncoding("cl100k_base");
-		const tokens = enc.encode(content);
-
-		const chunks: string[] = [];
-		let currentChunk: number[] = [];
-
-		for (let i = 0; i < tokens.length; i++) {
-			currentChunk.push(tokens[i]);
-
-			if (currentChunk.length >= maxTokens || i === tokens.length - 1) {
-				chunks.push(enc.decode(currentChunk));
-				currentChunk = [];
-			}
-		}
-
-		return chunks;
-	}
-
-	private async saveToPinecone(data: Array<PineconeRecord<RecordMetadata>>) {
-		const pc = createPineconeClient(this.settings.pineconeApiKey);
-		const index = pc.index(this.settings.selectedIndex);
-		await index.upsert(data);
+	private async saveToPinecone(
+		documents: Array<Document>,
+		ids?: Array<string>
+	) {
+		const pinecone = createPineconeClient(this.settings.pineconeApiKey);
+		const pineconeIndex: PineconeIndex = pinecone.Index(
+			this.settings.selectedIndex
+		);
+		const embedding = this.getEmbeddings();
+		const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
+			pineconeIndex,
+			maxConcurrency: 5,
+		});
+		await vectorStore.addDocuments(documents, { ids });
 	}
 
 	private validateNote(file: TAbstractFile): file is TFile {
@@ -161,20 +154,19 @@ export default class SmartSeekerPlugin extends Plugin {
 		);
 	}
 
-	private async generateEmbeddings(contentChunks: string[]) {
+	private getEmbeddings() {
 		const underlyingEmbeddings = new OpenAIEmbeddings({
 			openAIApiKey: this.settings.openAIApiKey,
 			modelName: DEFAULT_EMBEDDING_MODEL,
 		});
 		const cacheBackedEmbeddings = CacheBackedEmbeddings.fromBytesStore(
 			underlyingEmbeddings,
-			// new InMemoryStore(),
 			this.localStore,
 			{
 				namespace: underlyingEmbeddings.modelName,
 			}
 		);
-		return await cacheBackedEmbeddings.embedDocuments(contentChunks);
+		return cacheBackedEmbeddings;
 	}
 
 	async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
@@ -185,10 +177,10 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			// 노트 생성 또는 업데이트 시 파인콘DB에 저장
 			this.logger.info(`Note created or updated: ${file.path}`);
-			const noteContent = await this.app.vault.read(file);
+			const pageContent = await this.app.vault.read(file);
 
-			// 노트의 토큰 수 계산
-			const tokenCount = noteContent.split(/\s+/).length;
+			// TODO: 노트의 토큰 수 계산하여 200자 미만인 경우는 제외한다.
+			const tokenCount = pageContent.split(/\s+/).length;
 			if (tokenCount < 200) {
 				this.logger.info(
 					`Note skipped due to insufficient tokens: ${tokenCount}`
@@ -196,31 +188,20 @@ export default class SmartSeekerPlugin extends Plugin {
 				return;
 			}
 
-			// 노트 청크 분할
-			const contentChunks = this.splitContentIntoChunks(noteContent);
+			// 메타 데이터 파싱하기
+			const metadata = await this.extractMetadata(file, pageContent);
 
-			// 새로운 임베딩 생성
-			const embeddings = await this.generateEmbeddings(contentChunks);
-
-			// 메타 데이터
-			const metadata = await this.extractMetadata(file, noteContent);
-
-			const records = [];
-			for (let i = 0; i < contentChunks.length; i++) {
-				const hash = await createHash(contentChunks[i]);
-				records.push({
-					id: `${hash}_${i}`,
-					values: embeddings[i],
-					metadata: {
-						...metadata,
-						hash,
-						// TODO: 노트 청크 위치를 메타데이터에 포함할 것
-					},
-				});
-			}
+			// FIXME: 노트 청크 분할
+			const chunks = await this.splitContent([
+				new Document({ pageContent, metadata }),
+			]);
 
 			// Pinecone에 저장
-			await this.saveToPinecone(records);
+			const ids = [];
+			for (const chunk in chunks) {
+				ids.push(await createHash(strip(chunk)));
+			}
+			await this.saveToPinecone(chunks, ids);
 
 			new Notice("Note successfully saved to PineconeDB");
 		} catch (error) {
@@ -242,11 +223,14 @@ export default class SmartSeekerPlugin extends Plugin {
 			// 노트 삭제 시 파인콘DB에서 삭제
 			this.logger.info(`Note deleted: ${file.path}`);
 
-			// 파일 경로로부터 해시 생성
-			const hash = await createHash(file.path);
 			const pc = createPineconeClient(this.settings.pineconeApiKey);
-			const index = pc.index(this.settings.selectedIndex);
-			await index.deleteMany([hash]);
+			const pineconeIndex = pc.index(this.settings.selectedIndex);
+			const deleteRequest = {
+				filter: {
+					filePath: { $eq: file.path },
+				},
+			};
+			await pineconeIndex.deleteMany({ deleteRequest: deleteRequest });
 
 			new Notice("Note successfully deleted from PineconeDB");
 		} catch (error) {
