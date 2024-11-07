@@ -10,16 +10,22 @@ importers:
     dependencies:
       '@langchain/community':
         specifier: ^0.3.11
-        version: 0.3.11(@ibm-cloud/watsonx-ai@1.1.2)(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))(@pinecone-database/pinecone@4.0.0)(axios@1.7.4)(encoding@0.1.13)(ibm-cloud-sdk-core@5.1.0)(ignore@5.3.2)(jsonwebtoken@9.0.2)(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))
+        version: 0.3.11(@ibm-cloud/watsonx-ai@1.1.2)(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))(@pinecone-database/pinecone@3.0.3)(axios@1.7.4)(encoding@0.1.13)(ibm-cloud-sdk-core@5.1.0)(ignore@5.3.2)(jsonwebtoken@9.0.2)(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))
       '@langchain/core':
         specifier: ^0.3.17
         version: 0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))
       '@langchain/openai':
         specifier: ^0.3.11
         version: 0.3.11(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))(encoding@0.1.13)
+      '@langchain/pinecone':
+        specifier: ^0.1.1
+        version: 0.1.1(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))
+      '@langchain/textsplitters':
+        specifier: ^0.1.0
+        version: 0.1.0(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))
       '@pinecone-database/pinecone':
-        specifier: ^4.0.0
-        version: 4.0.0
+        specifier: ^3.0.0
+        version: 3.0.3
       js-tiktoken:
         specifier: ^1.0.15
         version: 1.0.15
@@ -609,6 +615,12 @@ packages:
     peerDependencies:
       '@langchain/core': '>=0.2.26 <0.4.0'
 
+  '@langchain/pinecone@0.1.1':
+    resolution: {integrity: sha512-NxIqag6tp2rFKXjy9DTx+wBERXgDlWLlZ56nyje9G/mEd3TCSs9bZk8Tjx8rkT19BgvdHOSqyMyiTzEz6o5cKw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@langchain/core': '>=0.2.21 <0.4.0'
+
   '@langchain/textsplitters@0.1.0':
     resolution: {integrity: sha512-djI4uw9rlkAb5iMhtLED+xJebDdAG935AdP4eRTB02R7OB/act55Bj9wsskhZsvuyQRpO4O1wQOp85s6T6GWmw==}
     engines: {node: '>=18'}
@@ -627,8 +639,8 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@pinecone-database/pinecone@4.0.0':
-    resolution: {integrity: sha512-INYS+GBys9v5BRTyn0tv8srVsPTlSRvE3BPE4Wkc/lOEyAIyB9F7DEMXbeF19FOLEgRwCuHTLjzm1niENl+4FA==}
+  '@pinecone-database/pinecone@3.0.3':
+    resolution: {integrity: sha512-0cAG0d/6knVZgVyXM1II4qG3dyOepLuAQsCXTOJomdA7iQxf+/Om9mq9Cw4QObr56oZ+lqtptlw5qz0BQaBX2Q==}
     engines: {node: '>=18.0.0'}
 
   '@tokenizer/token@0.3.0':
@@ -1676,7 +1688,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@langchain/community@0.3.11(@ibm-cloud/watsonx-ai@1.1.2)(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))(@pinecone-database/pinecone@4.0.0)(axios@1.7.4)(encoding@0.1.13)(ibm-cloud-sdk-core@5.1.0)(ignore@5.3.2)(jsonwebtoken@9.0.2)(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))':
+  '@langchain/community@0.3.11(@ibm-cloud/watsonx-ai@1.1.2)(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))(@pinecone-database/pinecone@3.0.3)(axios@1.7.4)(encoding@0.1.13)(ibm-cloud-sdk-core@5.1.0)(ignore@5.3.2)(jsonwebtoken@9.0.2)(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))':
     dependencies:
       '@ibm-cloud/watsonx-ai': 1.1.2
       '@langchain/core': 0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))
@@ -1692,7 +1704,7 @@ snapshots:
       zod: 3.23.8
       zod-to-json-schema: 3.23.5(zod@3.23.8)
     optionalDependencies:
-      '@pinecone-database/pinecone': 4.0.0
+      '@pinecone-database/pinecone': 3.0.3
       ignore: 5.3.2
       jsonwebtoken: 9.0.2
     transitivePeerDependencies:
@@ -1736,6 +1748,13 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  '@langchain/pinecone@0.1.1(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))':
+    dependencies:
+      '@langchain/core': 0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))
+      '@pinecone-database/pinecone': 3.0.3
+      flat: 5.0.2
+      uuid: 10.0.0
+
   '@langchain/textsplitters@0.1.0(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))':
     dependencies:
       '@langchain/core': 0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))
@@ -1753,7 +1772,7 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.17.1
 
-  '@pinecone-database/pinecone@4.0.0':
+  '@pinecone-database/pinecone@3.0.3':
     dependencies:
       encoding: 0.1.13
 
