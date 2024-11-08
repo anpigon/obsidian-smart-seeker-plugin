@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@biomejs/biome':
-        specifier: ^1.9.4
-        version: 1.9.4
       '@langchain/community':
         specifier: ^0.3.11
         version: 0.3.11(@ibm-cloud/watsonx-ai@1.1.2)(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))(@pinecone-database/pinecone@3.0.3)(axios@1.7.4)(encoding@0.1.13)(ibm-cloud-sdk-core@5.1.0)(ignore@5.3.2)(jsonwebtoken@9.0.2)(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))
@@ -39,6 +36,9 @@ importers:
         specifier: ^4.70.2
         version: 4.70.2(encoding@0.1.13)(zod@3.23.8)
     devDependencies:
+      '@biomejs/biome':
+        specifier: ^1.9.4
+        version: 1.9.4
       '@types/node':
         specifier: ^16.11.6
         version: 16.18.118
@@ -2351,7 +2351,7 @@ snapshots:
       isstream: 0.1.2
       jsonwebtoken: 9.0.2
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.7.4)
+      retry-axios: 2.6.0(axios@1.7.4(debug@4.3.7))
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -2630,7 +2630,7 @@ snapshots:
 
   resolve-from@4.0.0: {}
 
-  retry-axios@2.6.0(axios@1.7.4):
+  retry-axios@2.6.0(axios@1.7.4(debug@4.3.7)):
     dependencies:
       axios: 1.7.4(debug@4.3.7)
 
