@@ -10,7 +10,7 @@ import { InLocalStore } from "./helpers/langchain/store";
 import { Logger, LogLevel } from "./helpers/logger";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
 import { createHash } from "./helpers/utils/hash";
-import { strip } from "./helpers/utils/stringUtils";
+import { removeAllWhitespace } from "./helpers/utils/stringUtils";
 import { createPineconeClient } from "./services/PineconeManager";
 import { SettingTab } from "./settings/settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
@@ -199,7 +199,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			// Pinecone에 저장
 			const ids = [];
 			for (const chunk in chunks) {
-				ids.push(await createHash(strip(chunk)));
+				ids.push(await createHash(removeAllWhitespace(chunk)));
 			}
 			await this.saveToPinecone(chunks, ids);
 
@@ -230,6 +230,7 @@ export default class SmartSeekerPlugin extends Plugin {
 					filePath: { $eq: file.path },
 				},
 			};
+			// FIXME: 삭제시 오류 발생
 			await pineconeIndex.deleteMany({ deleteRequest: deleteRequest });
 
 			new Notice("Note successfully deleted from PineconeDB");
