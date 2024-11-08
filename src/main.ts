@@ -6,7 +6,13 @@ import { Index as PineconeIndex } from "@pinecone-database/pinecone";
 import { getEncoding } from "js-tiktoken";
 import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
-import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./constants";
+import {
+	DEFAULT_CHUNK_OVERLAP,
+	DEFAULT_CHUNK_SIZE,
+	DEFAULT_EMBEDDING_MODEL,
+	DEFAULT_MIN_TOKEN_COUNT,
+	PLUGIN_APP_ID,
+} from "./constants";
 import { InLocalStore } from "./helpers/langchain/store";
 import { Logger, LogLevel } from "./helpers/logger";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
@@ -43,9 +49,6 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	async onload() {
-		// InLocalStore 초기화
-		this.localStore = new InLocalStore(this.app.vault, PLUGIN_APP_ID);
-
 		await this.loadSettings();
 
 		// 설정 탭 추가
@@ -53,6 +56,9 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		// 워크스페이스가 준비된 후에 이벤트 리스너 등록
 		this.app.workspace.onLayoutReady(() => {
+			// InLocalStore 초기화
+			this.localStore = new InLocalStore(this.app.vault, PLUGIN_APP_ID);
+
 			this.registerVaultEvents();
 		});
 
@@ -123,8 +129,8 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	private async splitContent(documents: Document[]) {
 		const textSplitter = new TokenTextSplitter({
-			chunkSize: 1000,
-			chunkOverlap: 200,
+			chunkSize: DEFAULT_CHUNK_SIZE,
+			chunkOverlap: DEFAULT_CHUNK_OVERLAP,
 		});
 		return await textSplitter.splitDocuments(documents, {
 			appendChunkOverlapHeader: true,
@@ -180,11 +186,11 @@ export default class SmartSeekerPlugin extends Plugin {
 			this.logger.info(`Note created or updated: ${file.path}`);
 			const pageContent = await this.app.vault.read(file);
 
-			// TODO: 노트의 글자수 계산하여 200 토큰 미만인 경우는 제외한다.
+			// TODO: 토큰 수 계산 로직을 별도 유틸리티 함수로 분리
 			const enc = getEncoding("cl100k_base");
 			const tokenCount = enc.encode(pageContent).length;
-			console.log("tokenCount", tokenCount);
-			if (tokenCount < 200) {
+			this.logger.debug("tokenCount", tokenCount);
+			if (tokenCount < DEFAULT_MIN_TOKEN_COUNT) {
 				this.logger.info(
 					`Note skipped due to insufficient tokens: ${tokenCount}`
 				);
@@ -194,10 +200,10 @@ export default class SmartSeekerPlugin extends Plugin {
 			// 메타 데이터 파싱하기
 			const metadata = await this.extractMetadata(file, pageContent);
 
-			// FIXME: 노트 청크 분할
-			const chunks = await this.splitContent([
-				new Document({ pageContent, metadata }),
-			]);
+			const documents = [new Document({ pageContent, metadata })];
+
+			// FIXME: 노트 청크 분할 로직 최적화 필요 - 현재 중복된 내용이 발생할 수 있음
+			const chunks = await this.splitContent(documents);
 
 			// Pinecone에 저장
 			const ids = [];
@@ -212,18 +218,14 @@ export default class SmartSeekerPlugin extends Plugin {
 			noticeMessage.createDiv().innerHTML = `Note "${file.path}"<br/>successfully saved to PineconeDB`;
 			new Notice(noticeMessage);
 		} catch (error) {
-			this.logger.error("노트 처리 중 오류 발생:", error);
-			new Notice("Failed to save note to PineconeDB");
+			this.logger.error(`Failed to process note ${file.path}:`, error);
+			new Notice(`Failed to save note "${file.path}" to PineconeDB`);
 		}
 	}
 
 	async handleNoteDelete(file: TAbstractFile): Promise<void> {
 		try {
-			if (!(file instanceof TFile) || file.extension !== "md") {
-				return;
-			}
-
-			if (!this.app.workspace.layoutReady) {
+			if (!this.validateNote(file)) {
 				return;
 			}
 

@@ -12,3 +12,7 @@ export const PINECONE_CONFIG = {
 		},
 	},
 } as const;
+
+export const DEFAULT_MIN_TOKEN_COUNT = 200;
+export const DEFAULT_CHUNK_SIZE = 1000;
+export const DEFAULT_CHUNK_OVERLAP = 200;
