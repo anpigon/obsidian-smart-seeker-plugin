@@ -14,6 +14,7 @@ import {
 } from "./constants";
 import { InLocalStore } from "./helpers/langchain/store";
 import { Logger, LogLevel } from "./helpers/logger";
+import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
 import { createHash } from "./helpers/utils/hash";
 import { removeAllWhitespace } from "./helpers/utils/stringUtils";
@@ -22,8 +23,6 @@ import { SettingTab } from "./settings/settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
 import { NoteMetadata } from "./types";
 import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
-import { getEncoding } from "js-tiktoken";
-import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
@@ -31,7 +30,7 @@ export default class SmartSeekerPlugin extends Plugin {
 	settings: PluginSettings;
 	private debounceTimer: NodeJS.Timeout | null = null;
 	private saveTimer: NodeJS.Timeout | null = null;
-	private notesToSave: Array<{ document: Document; id: string }> = [];
+	private notesToSave: Record<string, string> = [];
 
 	private registerVaultEvents(): void {
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
@@ -212,6 +211,8 @@ export default class SmartSeekerPlugin extends Plugin {
 				return;
 			}
 
+			this.notesToSave[file.path] = pageContent;
+
 			// 메타 데이터 파싱하기
 			const metadata = await this.extractMetadata(file, pageContent);
 
@@ -241,6 +242,50 @@ export default class SmartSeekerPlugin extends Plugin {
 		} catch (error) {
 			this.logger.error(`Failed to process note ${file.path}:`, error);
 			new Notice(`Failed to save note "${file.path}" to PineconeDB`);
+		}
+	}
+
+	async embeddingNotes() {
+		if (Object.keys(this.notesToSave).length === 0) {
+			return;
+		}
+
+		try {
+			const documents: Document[] = [];
+			for (const filePath in this.notesToSave) {
+				const file = this.app.vault.getFileByPath(filePath);
+				if (file) {
+					const pageContent = this.notesToSave[filePath];
+					const metadata = await this.extractMetadata(
+						file,
+						pageContent
+					);
+					documents.push(new Document({ pageContent, metadata }));
+				}
+			}
+
+			// FIXME: 노트 청크 분할 로직 최적화 필요 - 현재 중복된 내용이 발생할 수 있음
+			const chunks = await this.splitContent(documents);
+
+			// Pinecone에 저장
+			const ids: string[] = [];
+			for (const chunk of chunks) {
+				const cleaned = removeAllWhitespace(chunk.pageContent);
+				const id = await createHash(cleaned);
+				ids.push(id);
+			}
+
+			await this.saveToPinecone(chunks, ids);
+			const noteCount = Object.keys(this.notesToSave).length;
+			new Notice(
+				`${noteCount}개의 노트가 PineconeDB에 성공적으로 저장되었습니다`
+			);
+		} catch (error) {
+			const failedPaths = Object.keys(this.notesToSave).join(", ");
+			this.logger.error(`노트 처리 실패: ${failedPaths}:`, error);
+			new Notice(
+				`노트 저장 실패: PineconeDB 저장 중 오류가 발생했습니다`
+			);
 		}
 	}
 
