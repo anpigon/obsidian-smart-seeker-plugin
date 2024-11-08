@@ -3,7 +3,6 @@ import { OpenAIEmbeddings } from "@langchain/openai";
 import { PineconeStore } from "@langchain/pinecone";
 import { TokenTextSplitter } from "@langchain/textsplitters";
 import { Index as PineconeIndex } from "@pinecone-database/pinecone";
-import { getEncoding } from "js-tiktoken";
 import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
 import {
@@ -23,11 +22,13 @@ import { SettingTab } from "./settings/settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
 import { NoteMetadata } from "./types";
 import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
+import { getEncoding } from "js-tiktoken";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
 	private localStore: InLocalStore;
 	settings: PluginSettings;
+	private debounceTimer: NodeJS.Timeout | null = null;
 
 	private registerVaultEvents(): void {
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
@@ -127,7 +128,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		return metadata;
 	}
 
-	private async splitContent(documents: Document[]) {
+	private async splitContent(documents: Document[]): Promise<Document[]> {
 		const textSplitter = new TokenTextSplitter({
 			chunkSize: DEFAULT_CHUNK_SIZE,
 			chunkOverlap: DEFAULT_CHUNK_OVERLAP,
@@ -139,7 +140,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	private async saveToPinecone(
 		documents: Array<Document>,
-		ids?: Array<string>
+		ids: Array<string>
 	) {
 		const pinecone = createPineconeClient(this.settings.pineconeApiKey);
 		const pineconeIndex: PineconeIndex = pinecone.Index(
@@ -186,7 +187,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			this.logger.info(`Note created or updated: ${file.path}`);
 			const pageContent = await this.app.vault.read(file);
 
-			// TODO: 토큰 수 계산 로직을 별도 유틸리티 함수로 분리
+			// TODO: 노트의 토큰 수 계산하여 200자 미만인 경우는 제외한다.
 			const enc = getEncoding("cl100k_base");
 			const tokenCount = enc.encode(pageContent).length;
 			this.logger.debug("tokenCount", tokenCount);
@@ -206,17 +207,23 @@ export default class SmartSeekerPlugin extends Plugin {
 			const chunks = await this.splitContent(documents);
 
 			// Pinecone에 저장
-			const ids = [];
+			const ids: string[] = [];
 			for (const chunk of chunks) {
 				const cleaned = removeAllWhitespace(chunk.pageContent);
 				const id = await createHash(cleaned);
 				ids.push(id);
 			}
-			await this.saveToPinecone(chunks, ids);
 
-			const noticeMessage = new DocumentFragment();
-			noticeMessage.createDiv().innerHTML = `Note "${file.path}"<br/>successfully saved to PineconeDB`;
-			new Notice(noticeMessage);
+			// Debounce 적용
+			if (this.debounceTimer) {
+				clearTimeout(this.debounceTimer);
+			}
+			this.debounceTimer = setTimeout(async () => {
+				await this.saveToPinecone(chunks, ids);
+				new Notice(
+					`Note "${file.path}" successfully saved to PineconeDB`
+				);
+			}, 500);
 		} catch (error) {
 			this.logger.error(`Failed to process note ${file.path}:`, error);
 			new Notice(`Failed to save note "${file.path}" to PineconeDB`);
