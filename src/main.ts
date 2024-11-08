@@ -23,12 +23,15 @@ import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
 import { NoteMetadata } from "./types";
 import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
 import { getEncoding } from "js-tiktoken";
+import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
 	private localStore: InLocalStore;
 	settings: PluginSettings;
 	private debounceTimer: NodeJS.Timeout | null = null;
+	private saveTimer: NodeJS.Timeout | null = null;
+	private notesToSave: Array<{ document: Document; id: string }> = [];
 
 	private registerVaultEvents(): void {
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
@@ -177,6 +180,24 @@ export default class SmartSeekerPlugin extends Plugin {
 		return cacheBackedEmbeddings;
 	}
 
+	// 토큰 수 검증 함수
+	private validateTokenCount(
+		text: string,
+		minTokenCount: number = DEFAULT_MIN_TOKEN_COUNT
+	): boolean {
+		const tokenCount = calculateTokenCount(text);
+		this.logger.debug("tokenCount", tokenCount);
+
+		// TODO: 노트의 토큰 수 계산하여 200자 미만인 경우는 제외한다.
+		if (tokenCount < minTokenCount) {
+			this.logger.info(
+				`Note skipped due to insufficient tokens: ${tokenCount}`
+			);
+			return false;
+		}
+		return true;
+	}
+
 	async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
 		try {
 			if (!this.validateNote(file)) {
@@ -187,14 +208,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			this.logger.info(`Note created or updated: ${file.path}`);
 			const pageContent = await this.app.vault.read(file);
 
-			// TODO: 노트의 토큰 수 계산하여 200자 미만인 경우는 제외한다.
-			const enc = getEncoding("cl100k_base");
-			const tokenCount = enc.encode(pageContent).length;
-			this.logger.debug("tokenCount", tokenCount);
-			if (tokenCount < DEFAULT_MIN_TOKEN_COUNT) {
-				this.logger.info(
-					`Note skipped due to insufficient tokens: ${tokenCount}`
-				);
+			if (!this.validateTokenCount(pageContent)) {
 				return;
 			}
 
