@@ -183,7 +183,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			// TODO: 노트의 글자수 계산하여 200 토큰 미만인 경우는 제외한다.
 			const enc = getEncoding("cl100k_base");
 			const tokenCount = enc.encode(pageContent).length;
-			console.log("tokenCount", tokenCount);
+			this.logger.debug("tokenCount", tokenCount);
 			if (tokenCount < 200) {
 				this.logger.info(
 					`Note skipped due to insufficient tokens: ${tokenCount}`
