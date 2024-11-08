@@ -1,4 +1,3 @@
-import { PineconeStore } from "@langchain/pinecone";
 import {
 	Index,
 	RecordMetadata,
@@ -52,17 +51,14 @@ export class SearchNotesModal extends SuggestModal<
 		}
 	}
 
-	// 실제 검색 로직을 별도의 메서드로 분리
+	/**
+	 * 주어진 쿼리로 노트를 검색합니다.
+	 * @param query - 검색할 텍스트
+	 * @param topK - 반환할 최대 결과 수 (기본값: 10)
+	 * @returns 검색된 노트 목록과 유사도 점수
+	 */
 	private async searchNotes(query: string, topK = 10) {
 		try {
-			// const vectorStore = await PineconeStore.fromExistingIndex(
-			// 	embeddings,
-			// 	this.pineconeIndex
-			// );
-			// const results = await vectorStore.similaritySearchWithScore(
-			// 	query,
-			// 	topK
-			// );
 			const results = await this.pineconeIndex.query({
 				vector: await this.getQueryVector(query),
 				includeMetadata: true,
