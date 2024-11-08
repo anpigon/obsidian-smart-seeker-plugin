@@ -179,9 +179,8 @@ export default class SmartSeekerPlugin extends Plugin {
 			this.logger.info(`Note created or updated: ${file.path}`);
 			const pageContent = await this.app.vault.read(file);
 
-			// TODO: 노트의 토큰 수 계산하여 200 토큰 미만인 경우는 제외한다.
-			const encoder = new TextEncoder();
-			const tokenCount = encoder.encode(pageContent).length;
+			// TODO: 노트의 글자수 계산하여 200 글자 미만인 경우는 제외한다.
+			const tokenCount = pageContent.length;
 			console.log("tokenCount", tokenCount);
 			if (tokenCount < 200) {
 				this.logger.info(
