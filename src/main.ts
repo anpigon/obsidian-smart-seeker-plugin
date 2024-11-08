@@ -205,7 +205,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			}
 			await this.saveToPinecone(chunks, ids);
 
-			new Notice("Note successfully saved to PineconeDB");
+			new Notice(`Note "${file.path}" successfully saved to PineconeDB`);
 		} catch (error) {
 			this.logger.error("노트 처리 중 오류 발생:", error);
 			new Notice("Failed to save note to PineconeDB");
