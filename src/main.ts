@@ -6,7 +6,13 @@ import { Index as PineconeIndex } from "@pinecone-database/pinecone";
 import { getEncoding } from "js-tiktoken";
 import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
-import { DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_EMBEDDING_MODEL, DEFAULT_MIN_TOKEN_COUNT, PLUGIN_APP_ID } from "./constants";
+import {
+	DEFAULT_CHUNK_OVERLAP,
+	DEFAULT_CHUNK_SIZE,
+	DEFAULT_EMBEDDING_MODEL,
+	DEFAULT_MIN_TOKEN_COUNT,
+	PLUGIN_APP_ID,
+} from "./constants";
 import { InLocalStore } from "./helpers/langchain/store";
 import { Logger, LogLevel } from "./helpers/logger";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
@@ -194,10 +200,10 @@ export default class SmartSeekerPlugin extends Plugin {
 			// 메타 데이터 파싱하기
 			const metadata = await this.extractMetadata(file, pageContent);
 
+			const documents = [new Document({ pageContent, metadata })];
+
 			// FIXME: 노트 청크 분할 로직 최적화 필요 - 현재 중복된 내용이 발생할 수 있음
-			const chunks = await this.splitContent([
-				new Document({ pageContent, metadata }),
-			]);
+			const chunks = await this.splitContent(documents);
 
 			// Pinecone에 저장
 			const ids = [];
