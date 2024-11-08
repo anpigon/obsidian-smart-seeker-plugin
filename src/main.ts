@@ -6,7 +6,7 @@ import { Index as PineconeIndex } from "@pinecone-database/pinecone";
 import { getEncoding } from "js-tiktoken";
 import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
-import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./constants";
+import { DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_EMBEDDING_MODEL, DEFAULT_MIN_TOKEN_COUNT, PLUGIN_APP_ID } from "./constants";
 import { InLocalStore } from "./helpers/langchain/store";
 import { Logger, LogLevel } from "./helpers/logger";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
@@ -123,8 +123,8 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	private async splitContent(documents: Document[]) {
 		const textSplitter = new TokenTextSplitter({
-			chunkSize: 1000,
-			chunkOverlap: 200,
+			chunkSize: DEFAULT_CHUNK_SIZE,
+			chunkOverlap: DEFAULT_CHUNK_OVERLAP,
 		});
 		return await textSplitter.splitDocuments(documents, {
 			appendChunkOverlapHeader: true,
@@ -184,7 +184,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			const enc = getEncoding("cl100k_base");
 			const tokenCount = enc.encode(pageContent).length;
 			this.logger.debug("tokenCount", tokenCount);
-			if (tokenCount < 200) {
+			if (tokenCount < DEFAULT_MIN_TOKEN_COUNT) {
 				this.logger.info(
 					`Note skipped due to insufficient tokens: ${tokenCount}`
 				);
