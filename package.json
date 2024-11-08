@@ -22,6 +22,7 @@
 	"author": "anpigon <markan82@gmail.com>",
 	"license": "MIT",
 	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
