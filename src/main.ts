@@ -180,7 +180,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			this.logger.info(`Note created or updated: ${file.path}`);
 			const pageContent = await this.app.vault.read(file);
 
-			// TODO: 노트의 글자수 계산하여 200 토큰 미만인 경우는 제외한다.
+			// TODO: 토큰 수 계산 로직을 별도 유틸리티 함수로 분리
 			const enc = getEncoding("cl100k_base");
 			const tokenCount = enc.encode(pageContent).length;
 			this.logger.debug("tokenCount", tokenCount);
@@ -194,7 +194,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			// 메타 데이터 파싱하기
 			const metadata = await this.extractMetadata(file, pageContent);
 
-			// FIXME: 노트 청크 분할
+			// FIXME: 노트 청크 분할 로직 최적화 필요 - 현재 중복된 내용이 발생할 수 있음
 			const chunks = await this.splitContent([
 				new Document({ pageContent, metadata }),
 			]);
