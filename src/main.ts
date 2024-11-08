@@ -198,8 +198,8 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			// Pinecone에 저장
 			const ids = [];
-			for (const chunk in chunks) {
-				ids.push(await createHash(removeAllWhitespace(chunk)));
+			for (const chunk of chunks) {
+				ids.push(await createHash(removeAllWhitespace(chunk.pageContent)));
 			}
 			await this.saveToPinecone(chunks, ids);
 
