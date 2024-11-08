@@ -3,6 +3,7 @@ import { OpenAIEmbeddings } from "@langchain/openai";
 import { PineconeStore } from "@langchain/pinecone";
 import { TokenTextSplitter } from "@langchain/textsplitters";
 import { Index as PineconeIndex } from "@pinecone-database/pinecone";
+import { getEncoding } from "js-tiktoken";
 import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
 import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "./constants";
@@ -179,8 +180,9 @@ export default class SmartSeekerPlugin extends Plugin {
 			this.logger.info(`Note created or updated: ${file.path}`);
 			const pageContent = await this.app.vault.read(file);
 
-			// TODO: 노트의 글자수 계산하여 200 글자 미만인 경우는 제외한다.
-			const tokenCount = pageContent.length;
+			// TODO: 노트의 글자수 계산하여 200 토큰 미만인 경우는 제외한다.
+			const enc = getEncoding("cl100k_base");
+			const tokenCount = enc.encode(pageContent).length;
 			console.log("tokenCount", tokenCount);
 			if (tokenCount < 200) {
 				this.logger.info(
@@ -200,7 +202,9 @@ export default class SmartSeekerPlugin extends Plugin {
 			// Pinecone에 저장
 			const ids = [];
 			for (const chunk of chunks) {
-				ids.push(await createHash(removeAllWhitespace(chunk.pageContent)));
+				ids.push(
+					await createHash(removeAllWhitespace(chunk.pageContent))
+				);
 			}
 			await this.saveToPinecone(chunks, ids);
 
