@@ -219,11 +219,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	async handleNoteDelete(file: TAbstractFile): Promise<void> {
 		try {
-			if (!(file instanceof TFile) || file.extension !== "md") {
-				return;
-			}
-
-			if (!this.app.workspace.layoutReady) {
+			if (!this.validateNote(file)) {
 				return;
 			}
 
