@@ -43,9 +43,6 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	async onload() {
-		// InLocalStore 초기화
-		this.localStore = new InLocalStore(this.app.vault, PLUGIN_APP_ID);
-
 		await this.loadSettings();
 
 		// 설정 탭 추가
@@ -53,6 +50,9 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		// 워크스페이스가 준비된 후에 이벤트 리스너 등록
 		this.app.workspace.onLayoutReady(() => {
+			// InLocalStore 초기화
+			this.localStore = new InLocalStore(this.app.vault, PLUGIN_APP_ID);
+
 			this.registerVaultEvents();
 		});
 
