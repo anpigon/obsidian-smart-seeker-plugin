@@ -9,7 +9,7 @@ import {
 	DEFAULT_MIN_TOKEN_COUNT,
 	PLUGIN_APP_ID,
 } from "./constants";
-import { InLocalStore } from "./helpers/langchain/store";
+import { InLocalStore } from "./helpers/langchain/store/InLocalStore";
 import { Logger, LogLevel } from "./helpers/logger";
 import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
@@ -21,12 +21,14 @@ import { SettingTab } from "./settings/settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
 import { NoteMetadata } from "./types";
 import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
+import NoteHashStorage from "./helpers/storage/NoteHashStorage";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
 	private localStore: InLocalStore;
 	private notesToSave: Record<string, string> = {};
 	private isProcessing = false;
+	private hashStorage: NoteHashStorage;
 	settings: PluginSettings;
 
 	private registerVaultEvents(): void {
@@ -64,6 +66,12 @@ export default class SmartSeekerPlugin extends Plugin {
 		);
 	}
 
+	private async initializeNoteHashStorage() {
+		if (!this.hashStorage) {
+			this.hashStorage = new NoteHashStorage();
+		}
+	}
+
 	private async initializeLocalStore() {
 		if (!this.localStore) {
 			// InLocalStore 초기화
@@ -87,6 +95,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	private async initializePlugin() {
 		await this.initializeLocalStore();
+		await this.initializeNoteHashStorage();
 		this.registerVaultEvents();
 	}
 
@@ -252,7 +261,21 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			if (!this.validateTokenCount(pageContent)) return;
 
-			this.notesToSave[file.path] = pageContent;
+			// 기존 노트의 해시값을 가져옵니다.
+			const existingHash = await this.hashStorage.getHash(file.path);
+
+			// 새로운 컨텐츠의 해시값을 생성합니다.
+			const newContentHash = await createHash(
+				removeAllWhitespace(pageContent)
+			);
+
+			// 해시값이 다를 경우에만 업데이트를 진행합니다.
+			if (existingHash !== newContentHash) {
+				this.notesToSave[file.path] = pageContent;
+				await this.hashStorage.saveHash(file.path, newContentHash);
+			} else {
+				this.logger.info(`No changes detected for note: ${file.path}`);
+			}
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
