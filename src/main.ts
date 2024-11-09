@@ -51,6 +51,21 @@ export default class SmartSeekerPlugin extends Plugin {
 		);
 	}
 
+	private async initializeLocalStore() {
+		if (!this.localStore) {
+			// InLocalStore 초기화
+			this.localStore = new InLocalStore(this.app.vault, PLUGIN_APP_ID);
+		}
+	}
+
+	private validateApiKeys(): boolean {
+		return !!(
+			this.settings.pineconeApiKey?.trim() &&
+			this.settings.openAIApiKey?.trim() &&
+			this.settings.selectedIndex?.trim()
+		);
+	}
+
 	async onload() {
 		await this.loadSettings();
 
@@ -59,8 +74,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		// 워크스페이스가 준비된 후에 이벤트 리스너 등록
 		this.app.workspace.onLayoutReady(() => {
-			// InLocalStore 초기화
-			this.localStore = new InLocalStore(this.app.vault, PLUGIN_APP_ID);
+			this.initializeLocalStore();
 
 			this.registerVaultEvents();
 		});
@@ -93,6 +107,10 @@ export default class SmartSeekerPlugin extends Plugin {
 			await this.saveData(this.settings);
 		} catch (error) {
 			this.logger.error("Failed to save settings on unload:", error);
+		}
+
+		if (Object.keys(this.notesToSave).length > 0) {
+			await this.embeddingNotes();
 		}
 
 		// 로깅
@@ -257,9 +275,8 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	async handleNoteDelete(file: TAbstractFile): Promise<void> {
 		try {
-			if (!this.validateNote(file)) {
-				return;
-			}
+			if (!this.validateNote(file)) return;
+			if (!this.validateApiKeys()) return;
 
 			// 노트 삭제 시 파인콘DB에서 삭제
 			this.logger.info(`Note deleted: ${file.path}`);
@@ -276,8 +293,12 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			new Notice("Note successfully deleted from PineconeDB");
 		} catch (error) {
-			this.logger.error(`Failed to delete note ${file.path}:`, error);
-			new Notice("Failed to delete note from PineconeDB");
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
+			this.logger.error(
+				`Failed to delete note ${file.path}: ${errorMessage}`
+			);
+			new Notice(`Failed to delete note: ${errorMessage}`);
 		}
 	}
 }
