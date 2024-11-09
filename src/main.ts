@@ -1,20 +1,19 @@
 import { Document } from "@langchain/core/documents";
-import { OpenAIEmbeddings } from "@langchain/openai";
 import { PineconeStore } from "@langchain/pinecone";
 import { TokenTextSplitter } from "@langchain/textsplitters";
 import { Index as PineconeIndex } from "@pinecone-database/pinecone";
-import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
 import {
 	DEFAULT_CHUNK_OVERLAP,
 	DEFAULT_CHUNK_SIZE,
-	DEFAULT_EMBEDDING_MODEL,
 	DEFAULT_MIN_TOKEN_COUNT,
 	PLUGIN_APP_ID,
 } from "./constants";
-import { InLocalStore } from "./helpers/langchain/store";
+import { InLocalStore } from "./helpers/langchain/store/InLocalStore";
 import { Logger, LogLevel } from "./helpers/logger";
+import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
+import getEmbeddingModel from "./helpers/utils/getEmbeddingModel";
 import { createHash } from "./helpers/utils/hash";
 import { removeAllWhitespace } from "./helpers/utils/stringUtils";
 import { createPineconeClient } from "./services/PineconeManager";
@@ -22,48 +21,85 @@ import { SettingTab } from "./settings/settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
 import { NoteMetadata } from "./types";
 import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
-import { getEncoding } from "js-tiktoken";
+import NoteHashStorage from "./helpers/storage/NoteHashStorage";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
 	private localStore: InLocalStore;
+	private notesToSave: Record<string, string> = {};
+	private isProcessing = false;
+	private hashStorage: NoteHashStorage;
 	settings: PluginSettings;
-	private debounceTimer: NodeJS.Timeout | null = null;
 
 	private registerVaultEvents(): void {
+		if (!this.app.workspace.layoutReady) {
+			this.logger.warn(
+				"Workspace not ready, skipping event registration"
+			);
+			return;
+		}
+
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
 		this.registerEvent(
-			this.app.vault.on(
-				"create",
-				this.handleNoteCreateOrUpdate.bind(this)
+			this.app.vault.on("create", (file) =>
+				this.handleNoteCreateOrUpdate(file)
 			)
 		);
+
 		this.registerEvent(
-			this.app.vault.on(
-				"modify",
-				this.handleNoteCreateOrUpdate.bind(this)
+			this.app.vault.on("modify", (file) =>
+				this.handleNoteCreateOrUpdate(file)
 			)
 		);
+
 		this.registerEvent(
-			this.app.vault.on("delete", this.handleNoteDelete.bind(this))
+			this.app.vault.on("delete", (file) => this.handleNoteDelete(file))
+		);
+
+		// 주기적인 임베딩 처리
+		this.registerInterval(
+			window.setInterval(() => {
+				if (this.app.workspace.layoutReady) {
+					this.embeddingNotes();
+				}
+			}, 10 * 1000)
 		);
 	}
 
-	async onload() {
-		await this.loadSettings();
+	private async initializeNoteHashStorage() {
+		if (!this.hashStorage) {
+			this.hashStorage = new NoteHashStorage();
+		}
+	}
 
-		// 설정 탭 추가
-		this.addSettingTab(new SettingTab(this.app, this));
-
-		// 워크스페이스가 준비된 후에 이벤트 리스너 등록
-		this.app.workspace.onLayoutReady(() => {
+	private async initializeLocalStore() {
+		if (!this.localStore) {
 			// InLocalStore 초기화
 			this.localStore = new InLocalStore(this.app.vault, PLUGIN_APP_ID);
+		}
+	}
 
-			this.registerVaultEvents();
-		});
+	private validateApiKeys(): boolean {
+		const isValid = !!(
+			this.settings.pineconeApiKey?.trim() &&
+			this.settings.openAIApiKey?.trim() &&
+			this.settings.selectedIndex?.trim()
+		);
 
-		// 명령어 추가
+		if (!isValid) {
+			this.logger.warn("API configuration is missing or invalid");
+		}
+
+		return isValid;
+	}
+
+	private async initializePlugin() {
+		await this.initializeLocalStore();
+		await this.initializeNoteHashStorage();
+		this.registerVaultEvents();
+	}
+
+	private addCommands() {
 		this.addCommand({
 			id: "search-notes",
 			name: "Search notes",
@@ -85,12 +121,32 @@ export default class SmartSeekerPlugin extends Plugin {
 		});
 	}
 
+	async onload() {
+		await this.loadSettings();
+
+		// 설정 탭 추가
+		this.addSettingTab(new SettingTab(this.app, this));
+
+		// 워크스페이스가 준비된 후에 이벤트 리스너 등록
+		this.app.workspace.onLayoutReady(async () => {
+			await this.initializePlugin();
+		});
+
+		// 명령어 추가
+		this.addCommands();
+	}
+
 	async onunload() {
-		// 설정 데이터 최종 저장
 		try {
+			// 남은 데이터 처리
+			if (Object.keys(this.notesToSave).length > 0) {
+				await this.embeddingNotes();
+			}
+
+			// 설정 저장
 			await this.saveData(this.settings);
 		} catch (error) {
-			this.logger.error("Failed to save settings on unload:", error);
+			this.logger?.error("Failed to cleanup on unload:", error);
 		}
 
 		// 로깅
@@ -146,7 +202,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		const pineconeIndex: PineconeIndex = pinecone.Index(
 			this.settings.selectedIndex
 		);
-		const embedding = this.getEmbeddings();
+		const embedding = getEmbeddingModel(this.settings);
 		const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
 			pineconeIndex,
 			maxConcurrency: 5,
@@ -155,104 +211,175 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	private validateNote(file: TAbstractFile): file is TFile {
-		return (
-			file instanceof TFile &&
-			file.extension === "md" &&
-			this.app.workspace.layoutReady
-		);
+		if (!this.app.workspace.layoutReady) {
+			this.logger.debug("Workspace not ready, skipping note validation");
+			return false;
+		}
+
+		if (!(file instanceof TFile)) {
+			this.logger.debug("Not a file:", file);
+			return false;
+		}
+
+		if (file.extension !== "md") {
+			this.logger.debug("Not a markdown file:", file.path);
+			return false;
+		}
+
+		return true;
 	}
 
-	private getEmbeddings() {
-		const underlyingEmbeddings = new OpenAIEmbeddings({
-			openAIApiKey: this.settings.openAIApiKey,
-			modelName: DEFAULT_EMBEDDING_MODEL,
-		});
-		const cacheBackedEmbeddings = CacheBackedEmbeddings.fromBytesStore(
-			underlyingEmbeddings,
-			this.localStore,
-			{
-				namespace: underlyingEmbeddings.modelName,
+	// 토큰 수 검증 함수
+	private validateTokenCount(
+		text: string,
+		minTokenCount: number = DEFAULT_MIN_TOKEN_COUNT
+	): boolean {
+		try {
+			const tokenCount = calculateTokenCount(text);
+			this.logger.debug("Token count:", tokenCount);
+
+			if (tokenCount < minTokenCount) {
+				this.logger.info(
+					`Note skipped due to insufficient tokens (${tokenCount}/${minTokenCount})`
+				);
+				return false;
 			}
-		);
-		return cacheBackedEmbeddings;
+			return true;
+		} catch (error) {
+			this.logger.error("Error calculating token count:", error);
+			return false;
+		}
 	}
 
 	async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
 		try {
-			if (!this.validateNote(file)) {
-				return;
+			if (!this.validateNote(file)) return;
+			if (!this.validateApiKeys()) return;
+
+			this.logger.info(`Processing note: ${file.path}`);
+			const content = await this.app.vault.cachedRead(file);
+
+			if (!this.validateTokenCount(content)) return;
+
+			// 기존 노트의 해시값을 가져옵니다.
+			const existingHash = await this.hashStorage.getHash(file.path);
+
+			const newContent = content.replace(/^---\n.*?\n---\n/s, "");
+
+			// 새로운 컨텐츠의 해시값을 생성합니다.
+			const newContentHash = await createHash(
+				removeAllWhitespace(newContent)
+			);
+
+			// 해시값이 다를 경우에만 업데이트를 진행합니다.
+			if (existingHash !== newContentHash) {
+				this.notesToSave[file.path] = content;
+				await this.hashStorage.saveHash(file.path, newContentHash);
+			} else {
+				this.logger.info(`No changes detected for note: ${file.path}`);
+			}
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
+			this.logger.error(
+				`Failed to process note ${file.path}: ${errorMessage}`
+			);
+			new Notice(`Failed to process note: ${errorMessage}`);
+		}
+	}
+
+	async prepareDocuments(notesToProcess: Record<string, string>) {
+		const documents: Document[] = [];
+		for (const filePath in notesToProcess) {
+			const file = this.app.vault.getFileByPath(filePath);
+			if (file) {
+				const pageContent = notesToProcess[filePath];
+				const metadata = await this.extractMetadata(file, pageContent);
+				documents.push(new Document({ pageContent, metadata }));
+			}
+		}
+		return documents;
+	}
+
+	async generateChunkIds(chunks: Document<Record<string, unknown>>[]) {
+		const ids: string[] = [];
+		for (const chunk of chunks) {
+			const cleaned = removeAllWhitespace(chunk.pageContent);
+			const id = await createHash(cleaned);
+			ids.push(id);
+		}
+		return ids;
+	}
+
+	async embeddingNotes() {
+		if (this.isProcessing || Object.keys(this.notesToSave).length === 0) {
+			return;
+		}
+
+		this.isProcessing = true;
+		const notesToProcess = { ...this.notesToSave };
+
+		try {
+			// API 키 검증
+			if (!this.validateApiKeys()) {
+				throw new Error("API configuration is missing or invalid");
 			}
 
-			// 노트 생성 또는 업데이트 시 파인콘DB에 저장
-			this.logger.info(`Note created or updated: ${file.path}`);
-			const pageContent = await this.app.vault.read(file);
-
-			// TODO: 노트의 토큰 수 계산하여 200자 미만인 경우는 제외한다.
-			const enc = getEncoding("cl100k_base");
-			const tokenCount = enc.encode(pageContent).length;
-			this.logger.debug("tokenCount", tokenCount);
-			if (tokenCount < DEFAULT_MIN_TOKEN_COUNT) {
-				this.logger.info(
-					`Note skipped due to insufficient tokens: ${tokenCount}`
-				);
-				return;
-			}
-
-			// 메타 데이터 파싱하기
-			const metadata = await this.extractMetadata(file, pageContent);
-
-			const documents = [new Document({ pageContent, metadata })];
+			const documents = await this.prepareDocuments(notesToProcess);
 
 			// FIXME: 노트 청크 분할 로직 최적화 필요 - 현재 중복된 내용이 발생할 수 있음
 			const chunks = await this.splitContent(documents);
+			const ids = await this.generateChunkIds(chunks);
 
 			// Pinecone에 저장
-			const ids: string[] = [];
-			for (const chunk of chunks) {
-				const cleaned = removeAllWhitespace(chunk.pageContent);
-				const id = await createHash(cleaned);
-				ids.push(id);
-			}
+			await this.saveToPinecone(chunks, ids);
+			const noteCount = Object.keys(notesToProcess).length;
+			new Notice(`${noteCount} notes successfully saved to PineconeDB`);
 
-			// Debounce 적용
-			if (this.debounceTimer) {
-				clearTimeout(this.debounceTimer);
-			}
-			this.debounceTimer = setTimeout(async () => {
-				await this.saveToPinecone(chunks, ids);
-				new Notice(
-					`Note "${file.path}" successfully saved to PineconeDB`
-				);
-			}, 500);
+			// 처리된 노트 제거
+			Object.keys(notesToProcess).forEach(
+				(key) => delete this.notesToSave[key]
+			);
 		} catch (error) {
-			this.logger.error(`Failed to process note ${file.path}:`, error);
-			new Notice(`Failed to save note "${file.path}" to PineconeDB`);
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
+			const failedPaths = Object.keys(notesToProcess).join(", ");
+			this.logger.error(
+				`Failed to process notes (${failedPaths}): ${errorMessage}`
+			);
+			new Notice(`Failed to save notes: ${errorMessage}`);
+		} finally {
+			this.isProcessing = false;
 		}
 	}
 
 	async handleNoteDelete(file: TAbstractFile): Promise<void> {
 		try {
-			if (!this.validateNote(file)) {
-				return;
-			}
+			if (!this.validateNote(file)) return;
+			if (!this.validateApiKeys()) return;
 
-			// 노트 삭제 시 파인콘DB에서 삭제
-			this.logger.info(`Note deleted: ${file.path}`);
+			this.logger.info(`Deleting note: ${file.path}`);
 
 			const pc = createPineconeClient(this.settings.pineconeApiKey);
 			const pineconeIndex = pc.index(this.settings.selectedIndex);
+
 			const deleteRequest = {
 				filter: {
 					filePath: { $eq: file.path },
 				},
 			};
-			// FIXME: 삭제시 오류 발생
-			await pineconeIndex.deleteMany({ deleteRequest: deleteRequest });
 
-			new Notice("Note successfully deleted from PineconeDB");
+			await pineconeIndex.deleteMany({ deleteRequest });
+			new Notice(
+				`Note successfully deleted from PineconeDB: ${file.path}`
+			);
 		} catch (error) {
-			this.logger.error(`Failed to delete note ${file.path}:`, error);
-			new Notice("Failed to delete note from PineconeDB");
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
+			this.logger.error(
+				`Failed to delete note ${file.path}: ${errorMessage}`
+			);
+			new Notice(`Failed to delete note: ${errorMessage}`);
 		}
 	}
 }
