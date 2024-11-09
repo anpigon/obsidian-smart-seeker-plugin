@@ -149,14 +149,41 @@ export class SearchNotesModal extends SuggestModal<
 		}
 	}
 
-	onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {
+	async onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {
 		const filePath = item.metadata?.filePath;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const lineNumber = (item.metadata?.loc as any)?.lines?.from ?? 0;
+
 		if (filePath) {
 			const file = this.app.vault.getAbstractFileByPath(
 				filePath.toString()
 			);
+
 			if (file instanceof TFile) {
-				this.app.workspace.getLeaf().openFile(file);
+				// 파일을 열고 특정 라인으로 이동
+				const leaf = this.app.workspace.getLeaf();
+				await leaf.openFile(file);
+
+				// 에디터가 준비되면 해당 라인으로 스크롤
+				if (lineNumber !== undefined) {
+					const view = leaf.view;
+					if (view.getViewType() === "markdown") {
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
+						const editor = (view as any).editor;
+						if (editor) {
+							// 해당 라인으로 스크롤
+							editor.setCursor(lineNumber - 1);
+							// 에디터 뷰 중앙으로 스크롤
+							editor.scrollIntoView(
+								{
+									from: { line: lineNumber - 1, ch: 0 },
+									to: { line: lineNumber - 1, ch: 0 },
+								},
+								true
+							);
+						}
+					}
+				}
 			}
 		}
 	}
