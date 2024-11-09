@@ -1,6 +1,6 @@
 import { Document } from "@langchain/core/documents";
 import { PineconeStore } from "@langchain/pinecone";
-import { TokenTextSplitter } from "@langchain/textsplitters";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Index as PineconeIndex } from "@pinecone-database/pinecone";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
 import {
@@ -11,6 +11,7 @@ import {
 } from "./constants";
 import { InLocalStore } from "./helpers/langchain/store/InLocalStore";
 import { Logger, LogLevel } from "./helpers/logger";
+import NoteHashStorage from "./helpers/storage/NoteHashStorage";
 import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
 import getEmbeddingModel from "./helpers/utils/getEmbeddingModel";
@@ -21,7 +22,6 @@ import { SettingTab } from "./settings/settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
 import { NoteMetadata } from "./types";
 import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
-import NoteHashStorage from "./helpers/storage/NoteHashStorage";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
@@ -184,16 +184,6 @@ export default class SmartSeekerPlugin extends Plugin {
 		return metadata;
 	}
 
-	private async splitContent(documents: Document[]): Promise<Document[]> {
-		const textSplitter = new TokenTextSplitter({
-			chunkSize: DEFAULT_CHUNK_SIZE,
-			chunkOverlap: DEFAULT_CHUNK_OVERLAP,
-		});
-		return await textSplitter.splitDocuments(documents, {
-			appendChunkOverlapHeader: true,
-		});
-	}
-
 	private async saveToPinecone(
 		documents: Array<Document>,
 		ids: Array<string>
@@ -326,10 +316,27 @@ export default class SmartSeekerPlugin extends Plugin {
 			}
 
 			const documents = await this.prepareDocuments(notesToProcess);
+			const textSplitter = new RecursiveCharacterTextSplitter({
+				chunkSize: DEFAULT_CHUNK_SIZE,
+				chunkOverlap: DEFAULT_CHUNK_OVERLAP,
+			});
 
-			// FIXME: 노트 청크 분할 로직 최적화 필요 - 현재 중복된 내용이 발생할 수 있음
-			const chunks = await this.splitContent(documents);
-			const ids = await this.generateChunkIds(chunks);
+			const ids: string[] = [];
+			const chunks: Document[] = [];
+			for (const document of documents) {
+				const splitDocuments = await textSplitter.splitDocuments(
+					[document],
+					{ appendChunkOverlapHeader: true }
+				);
+				for (let idx = 0; idx < splitDocuments.length; idx++) {
+					const splitDocument = splitDocuments[idx];
+					const hash = await createHash(
+						splitDocument.metadata.filePath
+					);
+					ids.push(`${hash}-${idx}`);
+					chunks.push(splitDocument);
+				}
+			}
 
 			// Pinecone에 저장
 			await this.saveToPinecone(chunks, ids);
@@ -359,6 +366,8 @@ export default class SmartSeekerPlugin extends Plugin {
 			if (!this.validateApiKeys()) return;
 
 			this.logger.info(`Deleting note: ${file.path}`);
+
+			await this.hashStorage.deleteHash(file.path);
 
 			const pc = createPineconeClient(this.settings.pineconeApiKey);
 			const pineconeIndex = pc.index(this.settings.selectedIndex);

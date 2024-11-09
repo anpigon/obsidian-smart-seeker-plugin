@@ -130,4 +130,26 @@ export default class NoteHashStorage {
 			throw error;
 		}
 	}
+
+	async deleteHash(filepath: string): Promise<void> {
+		try {
+			const store = await this.getDBStore("readwrite");
+
+			return new Promise((resolve, reject) => {
+				const request = store.delete(filepath);
+
+				request.onerror = () => {
+					console.error("해시 삭제 실패:", request.error);
+					reject(request.error);
+				};
+
+				request.onsuccess = () => {
+					resolve();
+				};
+			});
+		} catch (error) {
+			console.error("트랜잭션 생성 실패:", error);
+			throw error;
+		}
+	}
 }
