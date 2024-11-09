@@ -30,24 +30,37 @@ export default class SmartSeekerPlugin extends Plugin {
 	settings: PluginSettings;
 
 	private registerVaultEvents(): void {
+		if (!this.app.workspace.layoutReady) {
+			this.logger.warn(
+				"Workspace not ready, skipping event registration"
+			);
+			return;
+		}
+
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
 		this.registerEvent(
-			this.app.vault.on(
-				"create",
-				this.handleNoteCreateOrUpdate.bind(this)
+			this.app.vault.on("create", (file) =>
+				this.handleNoteCreateOrUpdate(file)
 			)
 		);
+
 		this.registerEvent(
-			this.app.vault.on(
-				"modify",
-				this.handleNoteCreateOrUpdate.bind(this)
+			this.app.vault.on("modify", (file) =>
+				this.handleNoteCreateOrUpdate(file)
 			)
 		);
+
 		this.registerEvent(
-			this.app.vault.on("delete", this.handleNoteDelete.bind(this))
+			this.app.vault.on("delete", (file) => this.handleNoteDelete(file))
 		);
+
+		// 주기적인 임베딩 처리
 		this.registerInterval(
-			window.setInterval(() => this.embeddingNotes(), 10 * 1000)
+			window.setInterval(() => {
+				if (this.app.workspace.layoutReady) {
+					this.embeddingNotes();
+				}
+			}, 10 * 1000)
 		);
 	}
 
@@ -59,27 +72,25 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	private validateApiKeys(): boolean {
-		return !!(
+		const isValid = !!(
 			this.settings.pineconeApiKey?.trim() &&
 			this.settings.openAIApiKey?.trim() &&
 			this.settings.selectedIndex?.trim()
 		);
+
+		if (!isValid) {
+			this.logger.warn("API configuration is missing or invalid");
+		}
+
+		return isValid;
 	}
 
-	async onload() {
-		await this.loadSettings();
+	private async initializePlugin() {
+		await this.initializeLocalStore();
+		this.registerVaultEvents();
+	}
 
-		// 설정 탭 추가
-		this.addSettingTab(new SettingTab(this.app, this));
-
-		// 워크스페이스가 준비된 후에 이벤트 리스너 등록
-		this.app.workspace.onLayoutReady(() => {
-			this.initializeLocalStore();
-
-			this.registerVaultEvents();
-		});
-
-		// 명령어 추가
+	private addCommands() {
 		this.addCommand({
 			id: "search-notes",
 			name: "Search notes",
@@ -101,16 +112,32 @@ export default class SmartSeekerPlugin extends Plugin {
 		});
 	}
 
+	async onload() {
+		await this.loadSettings();
+
+		// 설정 탭 추가
+		this.addSettingTab(new SettingTab(this.app, this));
+
+		// 워크스페이스가 준비된 후에 이벤트 리스너 등록
+		this.app.workspace.onLayoutReady(async () => {
+			await this.initializePlugin();
+		});
+
+		// 명령어 추가
+		this.addCommands();
+	}
+
 	async onunload() {
-		// 설정 데이터 최종 저장
 		try {
+			// 남은 데이터 처리
+			if (Object.keys(this.notesToSave).length > 0) {
+				await this.embeddingNotes();
+			}
+
+			// 설정 저장
 			await this.saveData(this.settings);
 		} catch (error) {
-			this.logger.error("Failed to save settings on unload:", error);
-		}
-
-		if (Object.keys(this.notesToSave).length > 0) {
-			await this.embeddingNotes();
+			this.logger?.error("Failed to cleanup on unload:", error);
 		}
 
 		// 로깅
@@ -175,11 +202,22 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	private validateNote(file: TAbstractFile): file is TFile {
-		return (
-			file instanceof TFile &&
-			file.extension === "md" &&
-			this.app.workspace.layoutReady
-		);
+		if (!this.app.workspace.layoutReady) {
+			this.logger.debug("Workspace not ready, skipping note validation");
+			return false;
+		}
+
+		if (!(file instanceof TFile)) {
+			this.logger.debug("Not a file:", file);
+			return false;
+		}
+
+		if (file.extension !== "md") {
+			this.logger.debug("Not a markdown file:", file.path);
+			return false;
+		}
+
+		return true;
 	}
 
 	// 토큰 수 검증 함수
@@ -187,28 +225,65 @@ export default class SmartSeekerPlugin extends Plugin {
 		text: string,
 		minTokenCount: number = DEFAULT_MIN_TOKEN_COUNT
 	): boolean {
-		const tokenCount = calculateTokenCount(text);
-		this.logger.debug("tokenCount", tokenCount);
+		try {
+			const tokenCount = calculateTokenCount(text);
+			this.logger.debug("Token count:", tokenCount);
 
-		// TODO: 노트의 토큰 수 계산하여 200자 미만인 경우는 제외한다.
-		if (tokenCount < minTokenCount) {
-			this.logger.info(
-				`Note skipped due to insufficient tokens: ${tokenCount}`
-			);
+			if (tokenCount < minTokenCount) {
+				this.logger.info(
+					`Note skipped due to insufficient tokens (${tokenCount}/${minTokenCount})`
+				);
+				return false;
+			}
+			return true;
+		} catch (error) {
+			this.logger.error("Error calculating token count:", error);
 			return false;
 		}
-		return true;
 	}
 
 	async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
-		// 노트 생성 또는 업데이트 시 파인콘DB에 저장
-		if (!this.validateNote(file)) return;
-		this.logger.info(`Note created or updated: ${file.path}`);
-		const pageContent = await this.app.vault.read(file);
+		try {
+			if (!this.validateNote(file)) return;
+			if (!this.validateApiKeys()) return;
 
-		if (!this.validateTokenCount(pageContent)) return;
+			this.logger.info(`Processing note: ${file.path}`);
+			const pageContent = await this.app.vault.read(file);
 
-		this.notesToSave[file.path] = pageContent;
+			if (!this.validateTokenCount(pageContent)) return;
+
+			this.notesToSave[file.path] = pageContent;
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
+			this.logger.error(
+				`Failed to process note ${file.path}: ${errorMessage}`
+			);
+			new Notice(`Failed to process note: ${errorMessage}`);
+		}
+	}
+
+	async prepareDocuments(notesToProcess: Record<string, string>) {
+		const documents: Document[] = [];
+		for (const filePath in notesToProcess) {
+			const file = this.app.vault.getFileByPath(filePath);
+			if (file) {
+				const pageContent = notesToProcess[filePath];
+				const metadata = await this.extractMetadata(file, pageContent);
+				documents.push(new Document({ pageContent, metadata }));
+			}
+		}
+		return documents;
+	}
+
+	async generateChunkIds(chunks: Document<Record<string, unknown>>[]) {
+		const ids: string[] = [];
+		for (const chunk of chunks) {
+			const cleaned = removeAllWhitespace(chunk.pageContent);
+			const id = await createHash(cleaned);
+			ids.push(id);
+		}
+		return ids;
 	}
 
 	async embeddingNotes() {
@@ -221,53 +296,33 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		try {
 			// API 키 검증
-			if (
-				!this.settings.pineconeApiKey ||
-				!this.settings.openAIApiKey ||
-				!this.settings.selectedIndex
-			) {
-				throw new Error("Required API keys or settings are missing");
+			if (!this.validateApiKeys()) {
+				throw new Error("API configuration is missing or invalid");
 			}
 
-			const documents: Document[] = [];
-			for (const filePath in notesToProcess) {
-				const file = this.app.vault.getFileByPath(filePath);
-				if (file) {
-					const pageContent = notesToProcess[filePath];
-					const metadata = await this.extractMetadata(
-						file,
-						pageContent
-					);
-					documents.push(new Document({ pageContent, metadata }));
-				}
-			}
+			const documents = await this.prepareDocuments(notesToProcess);
 
 			// FIXME: 노트 청크 분할 로직 최적화 필요 - 현재 중복된 내용이 발생할 수 있음
 			const chunks = await this.splitContent(documents);
+			const ids = await this.generateChunkIds(chunks);
 
 			// Pinecone에 저장
-			const ids: string[] = [];
-			for (const chunk of chunks) {
-				const cleaned = removeAllWhitespace(chunk.pageContent);
-				const id = await createHash(cleaned);
-				ids.push(id);
-			}
-
 			await this.saveToPinecone(chunks, ids);
 			const noteCount = Object.keys(notesToProcess).length;
-			new Notice(
-				`${noteCount}개의 노트가 PineconeDB에 성공적으로 저장되었습니다`
-			);
+			new Notice(`${noteCount} notes successfully saved to PineconeDB`);
 
+			// 처리된 노트 제거
 			Object.keys(notesToProcess).forEach(
 				(key) => delete this.notesToSave[key]
 			);
 		} catch (error) {
-			const failedPaths = Object.keys(this.notesToSave).join(", ");
-			this.logger.error(`노트 처리 실패: ${failedPaths}:`, error);
-			new Notice(
-				`노트 저장 실패: PineconeDB 저장 중 오류가 발생했습니다`
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
+			const failedPaths = Object.keys(notesToProcess).join(", ");
+			this.logger.error(
+				`Failed to process notes (${failedPaths}): ${errorMessage}`
 			);
+			new Notice(`Failed to save notes: ${errorMessage}`);
 		} finally {
 			this.isProcessing = false;
 		}
@@ -278,20 +333,21 @@ export default class SmartSeekerPlugin extends Plugin {
 			if (!this.validateNote(file)) return;
 			if (!this.validateApiKeys()) return;
 
-			// 노트 삭제 시 파인콘DB에서 삭제
-			this.logger.info(`Note deleted: ${file.path}`);
+			this.logger.info(`Deleting note: ${file.path}`);
 
 			const pc = createPineconeClient(this.settings.pineconeApiKey);
 			const pineconeIndex = pc.index(this.settings.selectedIndex);
+
 			const deleteRequest = {
 				filter: {
 					filePath: { $eq: file.path },
 				},
 			};
-			// FIXME: 삭제시 오류 발생
-			await pineconeIndex.deleteMany({ deleteRequest: deleteRequest });
 
-			new Notice("Note successfully deleted from PineconeDB");
+			await pineconeIndex.deleteMany({ deleteRequest });
+			new Notice(
+				`Note successfully deleted from PineconeDB: ${file.path}`
+			);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
