@@ -248,7 +248,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			if (!this.validateApiKeys()) return;
 
 			this.logger.info(`Processing note: ${file.path}`);
-			const pageContent = await this.app.vault.read(file);
+			const pageContent = await this.app.vault.cachedRead(file);
 
 			if (!this.validateTokenCount(pageContent)) return;
 
