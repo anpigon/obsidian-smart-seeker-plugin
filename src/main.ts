@@ -1,14 +1,11 @@
 import { Document } from "@langchain/core/documents";
-import { OpenAIEmbeddings } from "@langchain/openai";
 import { PineconeStore } from "@langchain/pinecone";
 import { TokenTextSplitter } from "@langchain/textsplitters";
 import { Index as PineconeIndex } from "@pinecone-database/pinecone";
-import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
 import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
 import {
 	DEFAULT_CHUNK_OVERLAP,
 	DEFAULT_CHUNK_SIZE,
-	DEFAULT_EMBEDDING_MODEL,
 	DEFAULT_MIN_TOKEN_COUNT,
 	PLUGIN_APP_ID,
 } from "./constants";
@@ -16,6 +13,7 @@ import { InLocalStore } from "./helpers/langchain/store";
 import { Logger, LogLevel } from "./helpers/logger";
 import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
+import getEmbeddingModel from "./helpers/utils/getEmbeddingModel";
 import { createHash } from "./helpers/utils/hash";
 import { removeAllWhitespace } from "./helpers/utils/stringUtils";
 import { createPineconeClient } from "./services/PineconeManager";
@@ -150,7 +148,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		const pineconeIndex: PineconeIndex = pinecone.Index(
 			this.settings.selectedIndex
 		);
-		const embedding = this.getEmbeddings();
+		const embedding = getEmbeddingModel(this.settings);
 		const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
 			pineconeIndex,
 			maxConcurrency: 5,
@@ -164,21 +162,6 @@ export default class SmartSeekerPlugin extends Plugin {
 			file.extension === "md" &&
 			this.app.workspace.layoutReady
 		);
-	}
-
-	private getEmbeddings() {
-		const underlyingEmbeddings = new OpenAIEmbeddings({
-			openAIApiKey: this.settings.openAIApiKey,
-			modelName: DEFAULT_EMBEDDING_MODEL,
-		});
-		const cacheBackedEmbeddings = CacheBackedEmbeddings.fromBytesStore(
-			underlyingEmbeddings,
-			this.localStore,
-			{
-				namespace: underlyingEmbeddings.modelName,
-			}
-		);
-		return cacheBackedEmbeddings;
 	}
 
 	// 토큰 수 검증 함수
