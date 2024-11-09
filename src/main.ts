@@ -27,9 +27,9 @@ import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
 	private localStore: InLocalStore;
-	settings: PluginSettings;
-	private debounceTimer: NodeJS.Timeout | null = null;
 	private notesToSave: Record<string, string> = {};
+	private isProcessing = false;
+	settings: PluginSettings;
 
 	private registerVaultEvents(): void {
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
@@ -49,7 +49,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			this.app.vault.on("delete", this.handleNoteDelete.bind(this))
 		);
 		this.registerInterval(
-			window.setInterval(() => this.embeddingNotes(), 60 * 1000)
+			window.setInterval(() => this.embeddingNotes(), 10 * 1000)
 		);
 	}
 
@@ -211,18 +211,28 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	async embeddingNotes() {
-		if (Object.keys(this.notesToSave).length === 0) {
+		if (this.isProcessing || Object.keys(this.notesToSave).length === 0) {
 			return;
 		}
 
-		this.notesToSave = {};
+		this.isProcessing = true;
+		const notesToProcess = { ...this.notesToSave };
 
 		try {
+			// API 키 검증
+			if (
+				!this.settings.pineconeApiKey ||
+				!this.settings.openAIApiKey ||
+				!this.settings.selectedIndex
+			) {
+				throw new Error("Required API keys or settings are missing");
+			}
+
 			const documents: Document[] = [];
-			for (const filePath in this.notesToSave) {
+			for (const filePath in notesToProcess) {
 				const file = this.app.vault.getFileByPath(filePath);
 				if (file) {
-					const pageContent = this.notesToSave[filePath];
+					const pageContent = notesToProcess[filePath];
 					const metadata = await this.extractMetadata(
 						file,
 						pageContent
@@ -243,9 +253,13 @@ export default class SmartSeekerPlugin extends Plugin {
 			}
 
 			await this.saveToPinecone(chunks, ids);
-			const noteCount = Object.keys(this.notesToSave).length;
+			const noteCount = Object.keys(notesToProcess).length;
 			new Notice(
 				`${noteCount}개의 노트가 PineconeDB에 성공적으로 저장되었습니다`
+			);
+
+			Object.keys(notesToProcess).forEach(
+				(key) => delete this.notesToSave[key]
 			);
 		} catch (error) {
 			const failedPaths = Object.keys(this.notesToSave).join(", ");
@@ -253,6 +267,8 @@ export default class SmartSeekerPlugin extends Plugin {
 			new Notice(
 				`노트 저장 실패: PineconeDB 저장 중 오류가 발생했습니다`
 			);
+		} finally {
+			this.isProcessing = false;
 		}
 	}
 
