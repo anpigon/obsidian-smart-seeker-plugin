@@ -29,8 +29,7 @@ export default class SmartSeekerPlugin extends Plugin {
 	private localStore: InLocalStore;
 	settings: PluginSettings;
 	private debounceTimer: NodeJS.Timeout | null = null;
-	private saveTimer: NodeJS.Timeout | null = null;
-	private notesToSave: Record<string, string> = [];
+	private notesToSave: Record<string, string> = {};
 
 	private registerVaultEvents(): void {
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
@@ -48,6 +47,9 @@ export default class SmartSeekerPlugin extends Plugin {
 		);
 		this.registerEvent(
 			this.app.vault.on("delete", this.handleNoteDelete.bind(this))
+		);
+		this.registerInterval(
+			window.setInterval(() => this.embeddingNotes(), 60 * 1000)
 		);
 	}
 
@@ -198,57 +200,22 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
-		try {
-			if (!this.validateNote(file)) {
-				return;
-			}
+		// 노트 생성 또는 업데이트 시 파인콘DB에 저장
+		if (!this.validateNote(file)) return;
+		this.logger.info(`Note created or updated: ${file.path}`);
+		const pageContent = await this.app.vault.read(file);
 
-			// 노트 생성 또는 업데이트 시 파인콘DB에 저장
-			this.logger.info(`Note created or updated: ${file.path}`);
-			const pageContent = await this.app.vault.read(file);
+		if (!this.validateTokenCount(pageContent)) return;
 
-			if (!this.validateTokenCount(pageContent)) {
-				return;
-			}
-
-			this.notesToSave[file.path] = pageContent;
-
-			// 메타 데이터 파싱하기
-			const metadata = await this.extractMetadata(file, pageContent);
-
-			const documents = [new Document({ pageContent, metadata })];
-
-			// FIXME: 노트 청크 분할 로직 최적화 필요 - 현재 중복된 내용이 발생할 수 있음
-			const chunks = await this.splitContent(documents);
-
-			// Pinecone에 저장
-			const ids: string[] = [];
-			for (const chunk of chunks) {
-				const cleaned = removeAllWhitespace(chunk.pageContent);
-				const id = await createHash(cleaned);
-				ids.push(id);
-			}
-
-			// Debounce 적용
-			if (this.debounceTimer) {
-				clearTimeout(this.debounceTimer);
-			}
-			this.debounceTimer = setTimeout(async () => {
-				await this.saveToPinecone(chunks, ids);
-				new Notice(
-					`Note "${file.path}" successfully saved to PineconeDB`
-				);
-			}, 500);
-		} catch (error) {
-			this.logger.error(`Failed to process note ${file.path}:`, error);
-			new Notice(`Failed to save note "${file.path}" to PineconeDB`);
-		}
+		this.notesToSave[file.path] = pageContent;
 	}
 
 	async embeddingNotes() {
 		if (Object.keys(this.notesToSave).length === 0) {
 			return;
 		}
+
+		this.notesToSave = {};
 
 		try {
 			const documents: Document[] = [];
