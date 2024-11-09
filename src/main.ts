@@ -80,17 +80,24 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	private validateApiKeys(): boolean {
-		const isValid = !!(
-			this.settings.pineconeApiKey?.trim() &&
-			this.settings.openAIApiKey?.trim() &&
-			this.settings.selectedIndex?.trim()
-		);
+		const requiredSettings = {
+			"Pinecone API Key": this.settings.pineconeApiKey?.trim(),
+			"OpenAI API Key": this.settings.openAIApiKey?.trim(),
+			"Selected Index": this.settings.selectedIndex?.trim(),
+		};
 
-		if (!isValid) {
-			this.logger.warn("API configuration is missing or invalid");
+		const missingSettings = Object.entries(requiredSettings)
+			.filter(([_, value]) => !value)
+			.map(([key]) => key);
+
+		if (missingSettings.length > 0) {
+			this.logger.warn(
+				`Missing required settings: ${missingSettings.join(", ")}`
+			);
+			return false;
 		}
 
-		return isValid;
+		return true;
 	}
 
 	private async initializePlugin() {
@@ -241,7 +248,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
+	private async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
 		try {
 			if (!this.validateNote(file)) return;
 			if (!this.validateApiKeys()) return;
@@ -278,7 +285,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	async prepareDocuments(notesToProcess: Record<string, string>) {
+	private async prepareDocuments(notesToProcess: Record<string, string>) {
 		const documents: Document[] = [];
 		for (const filePath in notesToProcess) {
 			const file = this.app.vault.getFileByPath(filePath);
@@ -291,7 +298,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		return documents;
 	}
 
-	async generateChunkIds(chunks: Document<Record<string, unknown>>[]) {
+	private async generateChunkIds(chunks: Document<Record<string, unknown>>[]) {
 		const ids: string[] = [];
 		for (const chunk of chunks) {
 			const cleaned = removeAllWhitespace(chunk.pageContent);
@@ -301,7 +308,30 @@ export default class SmartSeekerPlugin extends Plugin {
 		return ids;
 	}
 
-	async embeddingNotes() {
+	private async processDocuments(documents: Document[]) {
+		const textSplitter = new RecursiveCharacterTextSplitter({
+			chunkSize: DEFAULT_CHUNK_SIZE,
+			chunkOverlap: DEFAULT_CHUNK_OVERLAP,
+		});
+
+		const ids: string[] = [];
+		const chunks: Document[] = [];
+		for (const document of documents) {
+			const splitDocuments = await textSplitter.splitDocuments(
+				[document],
+				{ appendChunkOverlapHeader: true }
+			);
+			for (let idx = 0; idx < splitDocuments.length; idx++) {
+				const splitDocument = splitDocuments[idx];
+				const hash = await createHash(splitDocument.metadata.filePath);
+				ids.push(`${hash}-${idx}`);
+				chunks.push(splitDocument);
+			}
+		}
+		return { ids, chunks };
+	}
+
+	private async embeddingNotes() {
 		if (this.isProcessing || Object.keys(this.notesToSave).length === 0) {
 			return;
 		}
@@ -316,27 +346,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			}
 
 			const documents = await this.prepareDocuments(notesToProcess);
-			const textSplitter = new RecursiveCharacterTextSplitter({
-				chunkSize: DEFAULT_CHUNK_SIZE,
-				chunkOverlap: DEFAULT_CHUNK_OVERLAP,
-			});
-
-			const ids: string[] = [];
-			const chunks: Document[] = [];
-			for (const document of documents) {
-				const splitDocuments = await textSplitter.splitDocuments(
-					[document],
-					{ appendChunkOverlapHeader: true }
-				);
-				for (let idx = 0; idx < splitDocuments.length; idx++) {
-					const splitDocument = splitDocuments[idx];
-					const hash = await createHash(
-						splitDocument.metadata.filePath
-					);
-					ids.push(`${hash}-${idx}`);
-					chunks.push(splitDocument);
-				}
-			}
+			const { ids, chunks } = await this.processDocuments(documents);
 
 			// Pinecone에 저장
 			await this.saveToPinecone(chunks, ids);
@@ -360,7 +370,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	async handleNoteDelete(file: TAbstractFile): Promise<void> {
+	private async handleNoteDelete(file: TAbstractFile): Promise<void> {
 		try {
 			if (!this.validateNote(file)) return;
 			if (!this.validateApiKeys()) return;
