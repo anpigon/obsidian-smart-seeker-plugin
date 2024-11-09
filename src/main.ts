@@ -257,21 +257,23 @@ export default class SmartSeekerPlugin extends Plugin {
 			if (!this.validateApiKeys()) return;
 
 			this.logger.info(`Processing note: ${file.path}`);
-			const pageContent = await this.app.vault.cachedRead(file);
+			const content = await this.app.vault.cachedRead(file);
 
-			if (!this.validateTokenCount(pageContent)) return;
+			if (!this.validateTokenCount(content)) return;
 
 			// 기존 노트의 해시값을 가져옵니다.
 			const existingHash = await this.hashStorage.getHash(file.path);
 
+			const newContent = content.replace(/^---\n.*?\n---\n/s, "");
+
 			// 새로운 컨텐츠의 해시값을 생성합니다.
 			const newContentHash = await createHash(
-				removeAllWhitespace(pageContent)
+				removeAllWhitespace(newContent)
 			);
 
 			// 해시값이 다를 경우에만 업데이트를 진행합니다.
 			if (existingHash !== newContentHash) {
-				this.notesToSave[file.path] = pageContent;
+				this.notesToSave[file.path] = content;
 				await this.hashStorage.saveHash(file.path, newContentHash);
 			} else {
 				this.logger.info(`No changes detected for note: ${file.path}`);
