@@ -121,13 +121,32 @@ export class SearchNotesModal extends SuggestModal<
 		el: HTMLElement
 	) {
 		const title = item.metadata?.title?.toString() || "Untitled";
+		const text = item.metadata?.text?.toString() || "";
 		const score = item.score !== undefined ? item.score.toFixed(2) : "N/A";
 
-		el.createEl("div", { text: title });
-		const scoreEl = el.createEl("span", { text: ` (Score: ${score})` });
+		// 컨테이너 생성
+		const container = el.createDiv({ cls: "search-notes-modal__item" });
 
-		// 스타일 적용
-		scoreEl.className = "search-notes-modal__score";
+		// 제목과 점수를 포함하는 상단 행
+		const headerEl = container.createDiv({
+			cls: "search-notes-modal__header",
+		});
+		headerEl.createEl("span", {
+			text: title,
+			cls: "search-notes-modal__title",
+		});
+		headerEl.createEl("span", {
+			text: `(Score: ${score})`,
+			cls: "search-notes-modal__score",
+		});
+
+		// 내용 미리보기 (최대 100자)
+		if (text) {
+			container.createDiv({
+				text,
+				cls: "search-notes-modal__preview",
+			});
+		}
 	}
 
 	onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {
