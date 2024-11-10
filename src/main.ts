@@ -185,7 +185,10 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		const frontMatterMatch = content.match(/^---\n([\s\S]+?)\n---/);
 		if (frontMatterMatch) {
-			return { ...metadata, ...parseYaml(frontMatterMatch[1]) };
+			return {
+				...parseYaml(frontMatterMatch[1]),
+				...metadata,
+			};
 		}
 
 		return metadata;
@@ -292,6 +295,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			if (file) {
 				const pageContent = notesToProcess[filePath];
 				const metadata = await this.extractMetadata(file, pageContent);
+				this.logger.debug("metadata", metadata);
 				documents.push(new Document({ pageContent, metadata }));
 			}
 		}
