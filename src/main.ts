@@ -295,6 +295,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			if (file) {
 				const pageContent = notesToProcess[filePath];
 				const metadata = await this.extractMetadata(file, pageContent);
+				this.logger.debug("metadata", metadata);
 				documents.push(new Document({ pageContent, metadata }));
 			}
 		}
