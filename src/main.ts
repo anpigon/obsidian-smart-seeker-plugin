@@ -2,7 +2,15 @@ import { Document } from "@langchain/core/documents";
 import { PineconeStore } from "@langchain/pinecone";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Index as PineconeIndex } from "@pinecone-database/pinecone";
-import { MarkdownView, Menu, Notice, parseYaml, Plugin, TAbstractFile, TFile, TFolder } from "obsidian";
+import {
+	Menu,
+	Notice,
+	parseYaml,
+	Plugin,
+	TAbstractFile,
+	TFile,
+	TFolder,
+} from "obsidian";
 import {
 	DEFAULT_CHUNK_OVERLAP,
 	DEFAULT_CHUNK_SIZE,
@@ -64,21 +72,24 @@ export default class SmartSeekerPlugin extends Plugin {
 					// folder가 TFolder 인스턴스인 경우에만 메뉴 추가
 					if (selected instanceof TFolder) {
 						menu.addItem((item) => {
-							item.setTitle("폴더를 벡터DB에 저장")
+							item.setTitle("폴더 내 노트를 RAG 검색용으로 저장")
 								.setIcon("folder")
 								.onClick(async () => {
 									console.log("selected folder:", selected);
 								});
 						});
-					} else if (selected instanceof TFile && selected.extension === 'md') {
+					} else if (
+						selected instanceof TFile &&
+						selected.extension === "md"
+					) {
 						menu.addItem((item) => {
-							item.setTitle("파일을 벡터DB에 저장")
+							item.setTitle("노트를 RAG 검색용으로 저장")
 								.setIcon("file")
 								.onClick(async () => {
 									console.log("selected file:", selected);
 								});
 						});
-					} 
+					}
 				}
 			)
 		);
@@ -329,7 +340,9 @@ export default class SmartSeekerPlugin extends Plugin {
 		return documents;
 	}
 
-	private async generateChunkIds(chunks: Document<Record<string, unknown>>[]) {
+	private async generateChunkIds(
+		chunks: Document<Record<string, unknown>>[]
+	) {
 		const ids: string[] = [];
 		for (const chunk of chunks) {
 			const cleaned = removeAllWhitespace(chunk.pageContent);
