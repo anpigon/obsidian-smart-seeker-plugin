@@ -2,7 +2,7 @@ import { Document } from "@langchain/core/documents";
 import { PineconeStore } from "@langchain/pinecone";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Index as PineconeIndex } from "@pinecone-database/pinecone";
-import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
+import { MarkdownView, Menu, Notice, parseYaml, Plugin, TAbstractFile, TFile, TFolder } from "obsidian";
 import {
 	DEFAULT_CHUNK_OVERLAP,
 	DEFAULT_CHUNK_SIZE,
@@ -54,6 +54,33 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		this.registerEvent(
 			this.app.vault.on("delete", (file) => this.handleNoteDelete(file))
+		);
+
+		// 파일 탐색기의 폴더 컨텍스트 메뉴에 이벤트 리스너 추가
+		this.registerEvent(
+			this.app.workspace.on(
+				"file-menu",
+				(menu: Menu, selected: TFolder | TFile) => {
+					// folder가 TFolder 인스턴스인 경우에만 메뉴 추가
+					if (selected instanceof TFolder) {
+						menu.addItem((item) => {
+							item.setTitle("폴더를 벡터DB에 저장")
+								.setIcon("folder")
+								.onClick(async () => {
+									console.log("selected folder:", selected);
+								});
+						});
+					} else if (selected instanceof TFile && selected.extension === 'md') {
+						menu.addItem((item) => {
+							item.setTitle("파일을 벡터DB에 저장")
+								.setIcon("file")
+								.onClick(async () => {
+									console.log("selected file:", selected);
+								});
+						});
+					} 
+				}
+			)
 		);
 
 		// 주기적인 임베딩 처리
