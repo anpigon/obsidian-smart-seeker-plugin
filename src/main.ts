@@ -16,6 +16,7 @@ import {
 	DEFAULT_CHUNK_SIZE,
 	DEFAULT_MIN_TOKEN_COUNT,
 	PLUGIN_APP_ID,
+	ZERO_VECTOR,
 } from "./constants";
 import { InLocalStore } from "./helpers/langchain/store/InLocalStore";
 import { Logger, LogLevel } from "./helpers/logger";
@@ -23,8 +24,7 @@ import NoteHashStorage from "./helpers/storage/NoteHashStorage";
 import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
 import getEmbeddingModel from "./helpers/utils/getEmbeddingModel";
-import { createHash } from "./helpers/utils/hash";
-import { removeAllWhitespace } from "./helpers/utils/stringUtils";
+import { createContentHash, createHash } from "./helpers/utils/hash";
 import { createPineconeClient } from "./services/PineconeManager";
 import { SettingTab } from "./settings/settingTab";
 import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
@@ -254,7 +254,6 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		try {
 			const pageContent = await this.app.vault.read(file);
-
 			const metadata = await this.extractMetadata(file, pageContent);
 			this.logger.debug("metadata", metadata);
 
@@ -273,9 +272,11 @@ export default class SmartSeekerPlugin extends Plugin {
 		file: TFile,
 		content: string
 	): Promise<NoteMetadata> {
-		const hash = await createHash(removeAllWhitespace(content));
+		const id = await createHash(file.path);
+		const hash = await createContentHash(content);
 
 		const metadata: NoteMetadata = {
+			id,
 			hash,
 			filePath: file.path,
 			ctime: file.stat.ctime,
@@ -366,23 +367,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			if (!this.validateTokenCount(content)) return;
 
-			// 기존 노트의 해시값을 가져옵니다.
-			const existingHash = await this.hashStorage.getHash(file.path);
-
-			const newContent = content.replace(/^---\n.*?\n---\n/s, "");
-
-			// 새로운 컨텐츠의 해시값을 생성합니다.
-			const newContentHash = await createHash(
-				removeAllWhitespace(newContent)
-			);
-
-			// 해시값이 다를 경우에만 업데이트를 진행합니다.
-			if (existingHash !== newContentHash) {
-				await this.addNoteToScheduler(file);
-				await this.hashStorage.saveHash(file.path, newContentHash);
-			} else {
-				this.logger.info(`No changes detected for note: ${file.path}`);
-			}
+			await this.addNoteToScheduler(file);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
@@ -393,7 +378,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	private async processDocuments(documents: Document[]) {
+	private async createDocumentChunksWithIds(documents: Document[]) {
 		const textSplitter = new RecursiveCharacterTextSplitter({
 			chunkSize: DEFAULT_CHUNK_SIZE,
 			chunkOverlap: DEFAULT_CHUNK_OVERLAP,
@@ -416,6 +401,39 @@ export default class SmartSeekerPlugin extends Plugin {
 		return { ids, chunks };
 	}
 
+	private async filterDocuments(
+		pineconeIndex: PineconeIndex,
+		documents: Document[]
+	) {
+		const filterPromises = documents.map(async (doc) => {
+			try {
+				const queryResult = await pineconeIndex.query({
+					vector: ZERO_VECTOR,
+					topK: 100,
+					includeMetadata: true,
+					filter: {
+						filePath: doc.metadata.filePath,
+					},
+				});
+
+				// 매치가 없거나 해시가 다른 경우에만 포함
+				const shouldInclude =
+					!queryResult.matches?.length ||
+					queryResult.matches[0].metadata?.hash !== doc.metadata.hash;
+
+				return shouldInclude ? doc : null;
+			} catch (error) {
+				console.error(
+					`Error querying document ${doc.metadata.filePath}:`,
+					error
+				);
+				return null;
+			}
+		});
+		const results = await Promise.all(filterPromises);
+		return results.filter((doc): doc is Document => doc !== null);
+	}
+
 	private async embeddingNotes() {
 		if (this.isProcessing || Object.keys(this.notesToSave).length === 0) {
 			return;
@@ -430,14 +448,55 @@ export default class SmartSeekerPlugin extends Plugin {
 				throw new Error("API configuration is missing or invalid");
 			}
 
+			const pinecone = createPineconeClient(this.settings.pineconeApiKey);
+			const pineconeIndex = pinecone.Index(this.settings.selectedIndex);
+
+			// documents를 배열로 변환
 			const documents = Object.values(notesToProcess);
 
-			const { ids, chunks } = await this.processDocuments(documents);
+			// ID 생성
+			const documentIds = documents.map((doc) => `${doc.metadata.id}-0`);
 
-			// Pinecone에 저장
-			await this.saveToPinecone(chunks, ids);
-			const noteCount = Object.keys(notesToProcess).length;
-			new Notice(`${noteCount} notes successfully saved to PineconeDB`);
+			// Pinecone에서 기존 문서 조회
+			const fetchResults = await pineconeIndex.fetch(documentIds);
+
+			// 기존 문서의 해시값 추출
+			const existingHashes = Object.values(fetchResults.records).map(
+				(record) => (record.metadata as { hash: string }).hash
+			);
+
+			// 새로운 문서만 필터링
+			const filterDocuments = documents.filter(
+				(doc) => !existingHashes.includes(doc.metadata.hash)
+			);
+
+			console.log("documents", filterDocuments);
+			if (filterDocuments.length) {
+				const { ids, chunks } = await this.createDocumentChunksWithIds(
+					filterDocuments
+				);
+				this.logger.debug(`chunks: ${chunks.length}`);
+
+				// Pinecone에 저장
+				const embedding = getEmbeddingModel(this.settings);
+				const vectorStore = await PineconeStore.fromExistingIndex(
+					embedding,
+					{
+						pineconeIndex,
+						maxConcurrency: 5,
+					}
+				);
+				await vectorStore.addDocuments(chunks, { ids });
+
+				// await this.saveToPinecone(chunks, ids);
+				const noteCount = Object.keys(notesToProcess).length;
+				new Notice(
+					`${noteCount} notes successfully saved to PineconeDB`
+				);
+				this.logger.debug(
+					`${noteCount} notes successfully saved to PineconeDB`
+				);
+			}
 
 			// 처리된 노트 제거
 			Object.keys(notesToProcess).forEach(
@@ -470,7 +529,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			const deleteRequest = {
 				filter: {
-					filePath: { $eq: file.path },
+					filePath: file.path,
 				},
 			};
 
