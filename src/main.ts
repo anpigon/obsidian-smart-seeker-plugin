@@ -543,7 +543,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			this.logger.error(
 				`Failed to delete note ${file.path}: ${errorMessage}`
 			);
-			new Notice(`Failed to delete note: ${errorMessage}`);
+			// new Notice(`Failed to delete note: ${errorMessage}`);
 		}
 	}
 }
