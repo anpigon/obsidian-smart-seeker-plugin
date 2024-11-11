@@ -2,7 +2,15 @@ import { Document } from "@langchain/core/documents";
 import { PineconeStore } from "@langchain/pinecone";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Index as PineconeIndex } from "@pinecone-database/pinecone";
-import { Notice, parseYaml, Plugin, TAbstractFile, TFile } from "obsidian";
+import {
+	Menu,
+	Notice,
+	parseYaml,
+	Plugin,
+	TAbstractFile,
+	TFile,
+	TFolder,
+} from "obsidian";
 import {
 	DEFAULT_CHUNK_OVERLAP,
 	DEFAULT_CHUNK_SIZE,
@@ -54,6 +62,66 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		this.registerEvent(
 			this.app.vault.on("delete", (file) => this.handleNoteDelete(file))
+		);
+
+		// 파일 탐색기의 폴더 컨텍스트 메뉴에 이벤트 리스너 추가
+		this.registerEvent(
+			this.app.workspace.on(
+				"file-menu",
+				(menu: Menu, fileOrFolder: TFile | TFolder) => {
+					// folder가 TFolder 인스턴스인 경우에만 메뉴 추가
+					if (fileOrFolder instanceof TFolder) {
+						menu.addItem((item) => {
+							item.setTitle("폴더 내 노트를 RAG 검색용으로 저장")
+								.setIcon("folder")
+								.onClick(async () => {
+									console.log("selected folder:", fileOrFolder);
+
+									new Notice(
+										"폴더 내 노트들을 처리중입니다..."
+									);
+
+									// 폴더 내 모든 마크다운 파일 가져오기
+									const files = this.app.vault
+										.getMarkdownFiles()
+										.filter((file) =>
+											file.path.startsWith(fileOrFolder.path)
+										);
+
+									new Notice(
+										`폴더 내에서 노트 ${files.length}개를 찾았습니다.`
+									);
+									
+									for (const file of files) {
+										const content =
+											await this.app.vault.read(file);
+										this.notesToSave[file.path] = content;
+									}
+								});
+						});
+					} else if (
+						fileOrFolder instanceof TFile &&
+						fileOrFolder.extension === "md"
+					) {
+						menu.addItem((item) => {
+							item.setTitle("노트를 RAG 검색용으로 저장")
+								.setIcon("file")
+								.onClick(async () => {
+									console.log("selected file:", fileOrFolder);
+
+									new Notice("노트를 처리중입니다...");
+
+									// 파일 내용 읽기
+									const content = await this.app.vault.read(
+										fileOrFolder
+									);
+
+									this.notesToSave[fileOrFolder.path] = content;
+								});
+						});
+					}
+				}
+			)
 		);
 
 		// 주기적인 임베딩 처리
@@ -302,7 +370,9 @@ export default class SmartSeekerPlugin extends Plugin {
 		return documents;
 	}
 
-	private async generateChunkIds(chunks: Document<Record<string, unknown>>[]) {
+	private async generateChunkIds(
+		chunks: Document<Record<string, unknown>>[]
+	) {
 		const ids: string[] = [];
 		for (const chunk of chunks) {
 			const cleaned = removeAllWhitespace(chunk.pageContent);
