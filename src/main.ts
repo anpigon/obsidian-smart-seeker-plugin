@@ -244,7 +244,10 @@ export default class SmartSeekerPlugin extends Plugin {
 		file: TFile,
 		content: string
 	): Promise<NoteMetadata> {
+		const hash = await createHash(removeAllWhitespace(content));
+		
 		const metadata: NoteMetadata = {
+			hash,
 			filePath: file.path,
 			ctime: file.stat.ctime,
 			mtime: file.stat.mtime,

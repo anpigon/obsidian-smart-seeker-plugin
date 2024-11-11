@@ -3,4 +3,5 @@ export interface NoteMetadata {
 	ctime: number;
 	mtime: number;
 	title: string;
+	hash: string;
 }
