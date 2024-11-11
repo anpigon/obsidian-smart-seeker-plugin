@@ -2,7 +2,15 @@ import { Document } from "@langchain/core/documents";
 import { PineconeStore } from "@langchain/pinecone";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Index as PineconeIndex } from "@pinecone-database/pinecone";
-import { Menu, Notice, Plugin, TAbstractFile, TFile, TFolder } from "obsidian";
+import {
+	FrontMatterCache,
+	Menu,
+	Notice,
+	Plugin,
+	TAbstractFile,
+	TFile,
+	TFolder,
+} from "obsidian";
 import {
 	DEFAULT_CHUNK_OVERLAP,
 	DEFAULT_CHUNK_SIZE,
@@ -89,9 +97,7 @@ export default class SmartSeekerPlugin extends Plugin {
 									);
 
 									for (const file of files) {
-										const content =
-											await this.app.vault.read(file);
-										this.notesToSave[file.path] = content;
+										await this.addNoteToScheduler(file);
 									}
 								});
 						});
@@ -107,13 +113,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 									new Notice("노트를 처리중입니다...");
 
-									// 파일 내용 읽기
-									const content = await this.app.vault.read(
-										fileOrFolder
-									);
-
-									this.notesToSave[fileOrFolder.path] =
-										content;
+									await this.addNoteToScheduler(fileOrFolder);
 								});
 						});
 					}
@@ -233,11 +233,34 @@ export default class SmartSeekerPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	// async proccessFrotmatter(file: TFile) {
-	// 	return new Promise<FrontMatterCache>((resolve) =>
-	// 		this.app.fileManager.processFrontMatter(file, resolve)
-	// 	);
-	// }
+	async proccessFrotmatter(file: TFile) {
+		return new Promise<FrontMatterCache>((resolve) =>
+			this.app.fileManager.processFrontMatter(file, resolve)
+		);
+	}
+
+	/**
+	 * 스케쥴러가 처리할 문서를 큐에 추가합니다
+	 * @param filePath 문서의 경로
+	 * @param content 문서의 내용
+	 */
+	private async addNoteToScheduler(file: TFile): Promise<void> {
+		// 이미 존재하는 경로인지 확인
+		if (this.notesToSave.hasOwnProperty(file.path)) {
+			console.debug(`이미 스케쥴러에 등록된 문서입니다: ${file.path}`);
+			return;
+		}
+
+		try {
+			const content = await this.app.vault.read(file);
+			this.notesToSave[file.path] = content;
+			console.debug(`문서가 스케쥴러에 추가되었습니다: ${file.path}`);
+		} catch (error) {
+			console.error(
+				`문서를 스케쥴러에 추가하는 중 오류가 발생했습니다: ${error}`
+			);
+		}
+	}
 
 	private async extractMetadata(
 		file: TFile,
@@ -348,7 +371,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			// 해시값이 다를 경우에만 업데이트를 진행합니다.
 			if (existingHash !== newContentHash) {
-				this.notesToSave[file.path] = content;
+				await this.addNoteToScheduler(file);
 				await this.hashStorage.saveHash(file.path, newContentHash);
 			} else {
 				this.logger.info(`No changes detected for note: ${file.path}`);
