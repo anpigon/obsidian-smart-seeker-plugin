@@ -77,6 +77,10 @@ export default class SmartSeekerPlugin extends Plugin {
 								.onClick(async () => {
 									console.log("selected folder:", fileOrFolder);
 
+									new Notice(
+										"폴더 내 노트들을 처리중입니다..."
+									);
+
 									// 폴더 내 모든 마크다운 파일 가져오기
 									const files = this.app.vault
 										.getMarkdownFiles()
@@ -85,8 +89,9 @@ export default class SmartSeekerPlugin extends Plugin {
 										);
 
 									new Notice(
-										`폴더 내에서 노트 ${files.length})개를 찾았습니다.`
+										`폴더 내에서 노트 ${files.length}개를 찾았습니다.`
 									);
+									
 									for (const file of files) {
 										const content =
 											await this.app.vault.read(file);
@@ -104,11 +109,13 @@ export default class SmartSeekerPlugin extends Plugin {
 								.onClick(async () => {
 									console.log("selected file:", fileOrFolder);
 
+									new Notice("노트를 처리중입니다...");
+
 									// 파일 내용 읽기
 									const content = await this.app.vault.read(
 										fileOrFolder
 									);
-									
+
 									this.notesToSave[fileOrFolder.path] = content;
 								});
 						});
