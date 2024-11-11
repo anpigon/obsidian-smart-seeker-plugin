@@ -68,25 +68,48 @@ export default class SmartSeekerPlugin extends Plugin {
 		this.registerEvent(
 			this.app.workspace.on(
 				"file-menu",
-				(menu: Menu, selected: TFolder | TFile) => {
+				(menu: Menu, fileOrFolder: TFile | TFolder) => {
 					// folder가 TFolder 인스턴스인 경우에만 메뉴 추가
-					if (selected instanceof TFolder) {
+					if (fileOrFolder instanceof TFolder) {
 						menu.addItem((item) => {
 							item.setTitle("폴더 내 노트를 RAG 검색용으로 저장")
 								.setIcon("folder")
 								.onClick(async () => {
-									console.log("selected folder:", selected);
+									console.log("selected folder:", fileOrFolder);
+
+									// 폴더 내 모든 마크다운 파일 가져오기
+									const files = this.app.vault
+										.getMarkdownFiles()
+										.filter((file) =>
+											file.path.startsWith(fileOrFolder.path)
+										);
+
+									new Notice(
+										`폴더 내에서 노트 ${files.length})개를 찾았습니다.`
+									);
+									for (const file of files) {
+										const content =
+											await this.app.vault.read(file);
+										this.notesToSave[file.path] = content;
+									}
 								});
 						});
 					} else if (
-						selected instanceof TFile &&
-						selected.extension === "md"
+						fileOrFolder instanceof TFile &&
+						fileOrFolder.extension === "md"
 					) {
 						menu.addItem((item) => {
 							item.setTitle("노트를 RAG 검색용으로 저장")
 								.setIcon("file")
 								.onClick(async () => {
-									console.log("selected file:", selected);
+									console.log("selected file:", fileOrFolder);
+
+									// 파일 내용 읽기
+									const content = await this.app.vault.read(
+										fileOrFolder
+									);
+									
+									this.notesToSave[fileOrFolder.path] = content;
 								});
 						});
 					}
