@@ -2,15 +2,7 @@ import { Document } from "@langchain/core/documents";
 import { PineconeStore } from "@langchain/pinecone";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Index as PineconeIndex } from "@pinecone-database/pinecone";
-import {
-	Menu,
-	Notice,
-	parseYaml,
-	Plugin,
-	TAbstractFile,
-	TFile,
-	TFolder,
-} from "obsidian";
+import { Menu, Notice, Plugin, TAbstractFile, TFile, TFolder } from "obsidian";
 import {
 	DEFAULT_CHUNK_OVERLAP,
 	DEFAULT_CHUNK_SIZE,
@@ -32,7 +24,7 @@ import { NoteMetadata } from "./types";
 import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
 
 export default class SmartSeekerPlugin extends Plugin {
-	private logger = new Logger("SmartSeekerPlugin", LogLevel.INFO);
+	private logger = new Logger("SmartSeekerPlugin", LogLevel.DEBUG);
 	private localStore: InLocalStore;
 	private notesToSave: Record<string, string> = {};
 	private isProcessing = false;
@@ -75,23 +67,27 @@ export default class SmartSeekerPlugin extends Plugin {
 							item.setTitle("폴더 내 노트를 RAG 검색용으로 저장")
 								.setIcon("folder")
 								.onClick(async () => {
-									console.log("selected folder:", fileOrFolder);
+									console.log(
+										"selected folder:",
+										fileOrFolder
+									);
 
 									new Notice(
 										"폴더 내 노트들을 처리중입니다..."
 									);
 
-									// 폴더 내 모든 마크다운 파일 가져오기
 									const files = this.app.vault
 										.getMarkdownFiles()
 										.filter((file) =>
-											file.path.startsWith(fileOrFolder.path)
+											file.path.startsWith(
+												fileOrFolder.path
+											)
 										);
 
 									new Notice(
 										`폴더 내에서 노트 ${files.length}개를 찾았습니다.`
 									);
-									
+
 									for (const file of files) {
 										const content =
 											await this.app.vault.read(file);
@@ -116,7 +112,8 @@ export default class SmartSeekerPlugin extends Plugin {
 										fileOrFolder
 									);
 
-									this.notesToSave[fileOrFolder.path] = content;
+									this.notesToSave[fileOrFolder.path] =
+										content;
 								});
 						});
 					}
@@ -168,12 +165,6 @@ export default class SmartSeekerPlugin extends Plugin {
 		return true;
 	}
 
-	private async initializePlugin() {
-		await this.initializeLocalStore();
-		await this.initializeNoteHashStorage();
-		this.registerVaultEvents();
-	}
-
 	private addCommands() {
 		this.addCommand({
 			id: "search-notes",
@@ -204,7 +195,9 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		// 워크스페이스가 준비된 후에 이벤트 리스너 등록
 		this.app.workspace.onLayoutReady(async () => {
-			await this.initializePlugin();
+			await this.initializeLocalStore();
+			await this.initializeNoteHashStorage();
+			this.registerVaultEvents();
 		});
 
 		// 명령어 추가
@@ -240,12 +233,18 @@ export default class SmartSeekerPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
+	// async proccessFrotmatter(file: TFile) {
+	// 	return new Promise<FrontMatterCache>((resolve) =>
+	// 		this.app.fileManager.processFrontMatter(file, resolve)
+	// 	);
+	// }
+
 	private async extractMetadata(
 		file: TFile,
 		content: string
 	): Promise<NoteMetadata> {
 		const hash = await createHash(removeAllWhitespace(content));
-		
+
 		const metadata: NoteMetadata = {
 			hash,
 			filePath: file.path,
@@ -254,10 +253,15 @@ export default class SmartSeekerPlugin extends Plugin {
 			title: getFileNameSafe(file.path),
 		};
 
-		const frontMatterMatch = content.match(/^---\n([\s\S]+?)\n---/);
-		if (frontMatterMatch) {
+		// const frontMatterMatch = await this.proccessFrotmatter(file);
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		let frontmatter: any = null;
+		await this.app.fileManager.processFrontMatter(file, (fm) => {
+			frontmatter = fm;
+		});
+		if (frontmatter) {
 			return {
-				...parseYaml(frontMatterMatch[1]),
+				...frontmatter,
 				...metadata,
 			};
 		}
@@ -423,6 +427,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			}
 
 			const documents = await this.prepareDocuments(notesToProcess);
+
 			const { ids, chunks } = await this.processDocuments(documents);
 
 			// Pinecone에 저장
