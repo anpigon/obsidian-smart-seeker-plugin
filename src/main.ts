@@ -34,7 +34,7 @@ import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.DEBUG);
 	private localStore: InLocalStore;
-	private notesToSave: Record<string, string> = {};
+	private notesToSave: Record<string, Document> = {};
 	private isProcessing = false;
 	private hashStorage: NoteHashStorage;
 	settings: PluginSettings;
@@ -240,24 +240,29 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	/**
-	 * 스케쥴러가 처리할 문서를 큐에 추가합니다
-	 * @param filePath 문서의 경로
-	 * @param content 문서의 내용
+	 * 스케쥴러가 처리할 노트를 큐에 추가합니다
+	 * @param file 노트의 파일
 	 */
 	private async addNoteToScheduler(file: TFile): Promise<void> {
 		// 이미 존재하는 경로인지 확인
 		if (this.notesToSave.hasOwnProperty(file.path)) {
-			console.debug(`이미 스케쥴러에 등록된 문서입니다: ${file.path}`);
+			console.debug(`이미 스케쥴러에 등록된 노트입니다: ${file.path}`);
 			return;
 		}
 
 		try {
-			const content = await this.app.vault.read(file);
-			this.notesToSave[file.path] = content;
-			console.debug(`문서가 스케쥴러에 추가되었습니다: ${file.path}`);
+			const pageContent = await this.app.vault.read(file);
+
+			const metadata = await this.extractMetadata(file, pageContent);
+			this.logger.debug("metadata", metadata);
+
+			const document = new Document({ pageContent, metadata });
+			this.notesToSave[file.path] = document;
+
+			console.debug(`노트가 스케쥴러에 추가되었습니다: ${file.path}`);
 		} catch (error) {
 			console.error(
-				`문서를 스케쥴러에 추가하는 중 오류가 발생했습니다: ${error}`
+				`노트를 스케쥴러에 추가하는 중 오류가 발생했습니다: ${error}`
 			);
 		}
 	}
@@ -386,32 +391,6 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	private async prepareDocuments(notesToProcess: Record<string, string>) {
-		const documents: Document[] = [];
-		for (const filePath in notesToProcess) {
-			const file = this.app.vault.getFileByPath(filePath);
-			if (file) {
-				const pageContent = notesToProcess[filePath];
-				const metadata = await this.extractMetadata(file, pageContent);
-				this.logger.debug("metadata", metadata);
-				documents.push(new Document({ pageContent, metadata }));
-			}
-		}
-		return documents;
-	}
-
-	private async generateChunkIds(
-		chunks: Document<Record<string, unknown>>[]
-	) {
-		const ids: string[] = [];
-		for (const chunk of chunks) {
-			const cleaned = removeAllWhitespace(chunk.pageContent);
-			const id = await createHash(cleaned);
-			ids.push(id);
-		}
-		return ids;
-	}
-
 	private async processDocuments(documents: Document[]) {
 		const textSplitter = new RecursiveCharacterTextSplitter({
 			chunkSize: DEFAULT_CHUNK_SIZE,
@@ -449,7 +428,7 @@ export default class SmartSeekerPlugin extends Plugin {
 				throw new Error("API configuration is missing or invalid");
 			}
 
-			const documents = await this.prepareDocuments(notesToProcess);
+			const documents = Object.values(notesToProcess);
 
 			const { ids, chunks } = await this.processDocuments(documents);
 
