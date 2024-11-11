@@ -244,9 +244,11 @@ export default class SmartSeekerPlugin extends Plugin {
 	 * @param file 노트의 파일
 	 */
 	private async addNoteToScheduler(file: TFile): Promise<void> {
+		const filePath = file.path;
+
 		// 이미 존재하는 경로인지 확인
-		if (this.notesToSave.hasOwnProperty(file.path)) {
-			console.debug(`이미 스케쥴러에 등록된 노트입니다: ${file.path}`);
+		if (this.notesToSave.hasOwnProperty(filePath)) {
+			console.debug(`이미 스케쥴러에 등록된 노트입니다: ${filePath}`);
 			return;
 		}
 
@@ -257,9 +259,9 @@ export default class SmartSeekerPlugin extends Plugin {
 			this.logger.debug("metadata", metadata);
 
 			const document = new Document({ pageContent, metadata });
-			this.notesToSave[file.path] = document;
+			this.notesToSave[filePath] = document;
 
-			console.debug(`노트가 스케쥴러에 추가되었습니다: ${file.path}`);
+			console.debug(`노트가 스케쥴러에 추가되었습니다: ${filePath}`);
 		} catch (error) {
 			console.error(
 				`노트를 스케쥴러에 추가하는 중 오류가 발생했습니다: ${error}`
