@@ -1,6 +1,6 @@
 {
 	"name": "smart-seeker",
-	"version": "0.0.8",
+	"version": "0.0.9",
 	"description": "An Obsidian plugin that enables fast and intelligent note search using RAG (Retrieval Augmented Generation) with Pinecone vector database and OpenAI",
 	"main": "main.js",
 	"scripts": {
