@@ -13,7 +13,7 @@ import getEmbeddingModel from "../utils/getEmbeddingModel";
 import { createHash } from "../utils/hash";
 
 interface ProcessingResult {
-	processedCount: number
+	processedCount: number;
 }
 
 export default class DocumentProcessor {
@@ -36,8 +36,42 @@ export default class DocumentProcessor {
 		this.pineconeIndex = pinecone.Index(this.settings.selectedIndex);
 	}
 
+	// 기존 파인콘DB에 있는 문서는 필터링한다.
+	private async filterDocuments(documents: Document[]): Promise<Document[]> {
+		if (!documents?.length) {
+			return [];
+		}
+
+		try {
+			// ID 생성을 map으로 단순화
+			const documentIds = documents.map((doc) => `${doc.metadata.id}-0`);
+
+			// Pinecone 조회 결과
+			const { records } = await this.pineconeIndex.fetch(documentIds);
+
+			// Set을 사용하여 검색 성능 향상
+			const existingHashes = new Set(
+				Object.values(records).map(
+					(record) => (record.metadata as { hash: string }).hash
+				)
+			);
+
+			// Set.has()를 사용한 필터링으로 성능 개선
+			return documents.filter(
+				(doc) => !existingHashes.has(doc.metadata.hash)
+			);
+		} catch (error) {
+			this.logger.error("Error filtering documents:", error);
+		}
+
+		return [];
+	}
+
 	async processDocuments(documents: Document[]): Promise<ProcessingResult> {
-		const { ids, chunks } = await this.createChunks(documents);
+		const filterDocuments = await this.filterDocuments(documents);
+		this.logger.debug("filterDocuments", filterDocuments);
+
+		const { ids, chunks } = await this.createChunks(filterDocuments);
 		await this.saveToVectorStore(chunks, ids);
 		return { processedCount: chunks.length };
 	}

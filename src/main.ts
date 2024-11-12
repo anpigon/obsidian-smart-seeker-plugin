@@ -455,32 +455,12 @@ export default class SmartSeekerPlugin extends Plugin {
 				throw new Error("API configuration is missing or invalid");
 			}
 
-			const pinecone = createPineconeClient(this.settings.pineconeApiKey);
-			const pineconeIndex = pinecone.Index(this.settings.selectedIndex);
-
 			// documents를 배열로 변환
 			const documents = Object.values(notesToProcess);
 
-			// ID 생성
-			const documentIds = documents.map((doc) => `${doc.metadata.id}-0`);
-
-			// Pinecone에서 기존 문서 조회
-			const fetchResults = await pineconeIndex.fetch(documentIds);
-
-			// 기존 문서의 해시값 추출
-			const existingHashes = Object.values(fetchResults.records).map(
-				(record) => (record.metadata as { hash: string }).hash
-			);
-
-			// 새로운 문서만 필터링
-			const filterDocuments = documents.filter(
-				(doc) => !existingHashes.includes(doc.metadata.hash)
-			);
-
-			console.log("documents", filterDocuments);
 			const documentProcessor = new DocumentProcessor(this.settings);
 			const { processedCount } = await documentProcessor.processDocuments(
-				filterDocuments
+				documents
 			);
 			if (processedCount > 0) {
 				this.logger.debug(
