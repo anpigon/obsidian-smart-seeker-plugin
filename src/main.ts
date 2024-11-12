@@ -125,7 +125,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		this.registerInterval(
 			window.setInterval(() => {
 				if (this.app.workspace.layoutReady) {
-					this.embeddingNotes();
+					this.processNoteQueue();
 				}
 			}, 10 * 1000)
 		);
@@ -208,7 +208,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		try {
 			// 남은 데이터 처리
 			if (Object.keys(this.notesToSave).length > 0) {
-				await this.embeddingNotes();
+				await this.processNoteQueue();
 			}
 
 			// 설정 저장
@@ -434,8 +434,14 @@ export default class SmartSeekerPlugin extends Plugin {
 		return results.filter((doc): doc is Document => doc !== null);
 	}
 
-	private async embeddingNotes() {
-		if (this.isProcessing || Object.keys(this.notesToSave).length === 0) {
+	private async processNoteQueue() {
+		if (this.isProcessing) {
+			this.logger.debug("Already processing notes, skipping...");
+			return;
+		}
+
+		if (Object.keys(this.notesToSave).length === 0) {
+			this.logger.debug("not ...");
 			return;
 		}
 
