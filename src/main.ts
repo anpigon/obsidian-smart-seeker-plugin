@@ -1,7 +1,4 @@
 import { Document } from "@langchain/core/documents";
-import { PineconeStore } from "@langchain/pinecone";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { Index as PineconeIndex } from "@pinecone-database/pinecone";
 import {
 	FrontMatterCache,
 	Menu,
@@ -11,19 +8,13 @@ import {
 	TFile,
 	TFolder,
 } from "obsidian";
-import {
-	DEFAULT_CHUNK_OVERLAP,
-	DEFAULT_CHUNK_SIZE,
-	DEFAULT_MIN_TOKEN_COUNT,
-	PLUGIN_APP_ID,
-	ZERO_VECTOR,
-} from "./constants";
+import { DEFAULT_MIN_TOKEN_COUNT, PLUGIN_APP_ID } from "./constants";
+import DocumentProcessor from "./helpers/document/DocumentProcessor";
 import { InLocalStore } from "./helpers/langchain/store/InLocalStore";
 import { Logger, LogLevel } from "./helpers/logger";
 import NoteHashStorage from "./helpers/storage/NoteHashStorage";
 import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
-import getEmbeddingModel from "./helpers/utils/getEmbeddingModel";
 import { createContentHash, createHash } from "./helpers/utils/hash";
 import { createPineconeClient } from "./services/PineconeManager";
 import { SettingTab } from "./settings/settingTab";
@@ -125,7 +116,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		this.registerInterval(
 			window.setInterval(() => {
 				if (this.app.workspace.layoutReady) {
-					this.embeddingNotes();
+					this.processNoteQueue();
 				}
 			}, 10 * 1000)
 		);
@@ -208,7 +199,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		try {
 			// 남은 데이터 처리
 			if (Object.keys(this.notesToSave).length > 0) {
-				await this.embeddingNotes();
+				await this.processNoteQueue();
 			}
 
 			// 설정 저장
@@ -300,22 +291,6 @@ export default class SmartSeekerPlugin extends Plugin {
 		return metadata;
 	}
 
-	private async saveToPinecone(
-		documents: Array<Document>,
-		ids: Array<string>
-	) {
-		const pinecone = createPineconeClient(this.settings.pineconeApiKey);
-		const pineconeIndex: PineconeIndex = pinecone.Index(
-			this.settings.selectedIndex
-		);
-		const embedding = getEmbeddingModel(this.settings);
-		const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
-			pineconeIndex,
-			maxConcurrency: 5,
-		});
-		await vectorStore.addDocuments(documents, { ids });
-	}
-
 	private validateNote(file: TAbstractFile): file is TFile {
 		if (!this.app.workspace.layoutReady) {
 			this.logger.debug("Workspace not ready, skipping note validation");
@@ -378,64 +353,34 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	private async createDocumentChunksWithIds(documents: Document[]) {
-		const textSplitter = new RecursiveCharacterTextSplitter({
-			chunkSize: DEFAULT_CHUNK_SIZE,
-			chunkOverlap: DEFAULT_CHUNK_OVERLAP,
-		});
+	private createResultMessage(
+		total: number,
+		processed: number,
+		skipped: number
+	): string {
+		const parts = [];
 
-		const ids: string[] = [];
-		const chunks: Document[] = [];
-		for (const document of documents) {
-			const splitDocuments = await textSplitter.splitDocuments(
-				[document],
-				{ appendChunkOverlapHeader: true }
-			);
-			for (let idx = 0; idx < splitDocuments.length; idx++) {
-				const splitDocument = splitDocuments[idx];
-				const hash = await createHash(splitDocument.metadata.filePath);
-				ids.push(`${hash}-${idx}`);
-				chunks.push(splitDocument);
-			}
+		if (processed > 0) {
+			parts.push(`✅ ${processed}개 저장 완료`);
 		}
-		return { ids, chunks };
+
+		if (skipped > 0) {
+			parts.push(`⏭️ ${skipped}개 건너뜀`);
+		}
+
+		const summary = parts.join(" | ");
+		return `📊 총 ${total}개 노트 처리\n${summary}`;
 	}
 
-	private async filterDocuments(
-		pineconeIndex: PineconeIndex,
-		documents: Document[]
-	) {
-		const filterPromises = documents.map(async (doc) => {
-			try {
-				const queryResult = await pineconeIndex.query({
-					vector: ZERO_VECTOR,
-					topK: 100,
-					includeMetadata: true,
-					filter: {
-						filePath: doc.metadata.filePath,
-					},
-				});
+	private async processNoteQueue() {
+		if (this.isProcessing) {
+			this.logger.debug("🔄 Already processing notes, skipping...");
+			return;
+		}
 
-				// 매치가 없거나 해시가 다른 경우에만 포함
-				const shouldInclude =
-					!queryResult.matches?.length ||
-					queryResult.matches[0].metadata?.hash !== doc.metadata.hash;
-
-				return shouldInclude ? doc : null;
-			} catch (error) {
-				console.error(
-					`Error querying document ${doc.metadata.filePath}:`,
-					error
-				);
-				return null;
-			}
-		});
-		const results = await Promise.all(filterPromises);
-		return results.filter((doc): doc is Document => doc !== null);
-	}
-
-	private async embeddingNotes() {
-		if (this.isProcessing || Object.keys(this.notesToSave).length === 0) {
+		const noteCount = Object.keys(this.notesToSave).length;
+		if (noteCount === 0) {
+			// this.logger.debug("📭 처리할 노트가 없습니다.");
 			return;
 		}
 
@@ -443,60 +388,29 @@ export default class SmartSeekerPlugin extends Plugin {
 		const notesToProcess = { ...this.notesToSave };
 
 		try {
-			// API 키 검증
 			if (!this.validateApiKeys()) {
 				throw new Error("API configuration is missing or invalid");
 			}
 
-			const pinecone = createPineconeClient(this.settings.pineconeApiKey);
-			const pineconeIndex = pinecone.Index(this.settings.selectedIndex);
-
 			// documents를 배열로 변환
 			const documents = Object.values(notesToProcess);
-
-			// ID 생성
-			const documentIds = documents.map((doc) => `${doc.metadata.id}-0`);
-
-			// Pinecone에서 기존 문서 조회
-			const fetchResults = await pineconeIndex.fetch(documentIds);
-
-			// 기존 문서의 해시값 추출
-			const existingHashes = Object.values(fetchResults.records).map(
-				(record) => (record.metadata as { hash: string }).hash
+			const documentProcessor = new DocumentProcessor(this.settings);
+			const { totalDocuments, skippedDocuments, processedDocuments } =
+				await documentProcessor.processDocuments(documents);
+			this.logger.debug(
+				`${processedDocuments} notes successfully saved to PineconeDB`
 			);
 
-			// 새로운 문서만 필터링
-			const filterDocuments = documents.filter(
-				(doc) => !existingHashes.includes(doc.metadata.hash)
+			// 상세한 결과 메시지 생성
+			const resultMessage = this.createResultMessage(
+				totalDocuments,
+				processedDocuments,
+				skippedDocuments
 			);
 
-			console.log("documents", filterDocuments);
-			if (filterDocuments.length) {
-				const { ids, chunks } = await this.createDocumentChunksWithIds(
-					filterDocuments
-				);
-				this.logger.debug(`chunks: ${chunks.length}`);
-
-				// Pinecone에 저장
-				const embedding = getEmbeddingModel(this.settings);
-				const vectorStore = await PineconeStore.fromExistingIndex(
-					embedding,
-					{
-						pineconeIndex,
-						maxConcurrency: 5,
-					}
-				);
-				await vectorStore.addDocuments(chunks, { ids });
-
-				// await this.saveToPinecone(chunks, ids);
-				const noteCount = Object.keys(notesToProcess).length;
-				new Notice(
-					`${noteCount} notes successfully saved to PineconeDB`
-				);
-				this.logger.debug(
-					`${noteCount} notes successfully saved to PineconeDB`
-				);
-			}
+			// 로그와 알림 표시
+			this.logger.debug(resultMessage);
+			new Notice(resultMessage, 5000); // 5초간 표시
 
 			// 처리된 노트 제거
 			Object.keys(notesToProcess).forEach(
