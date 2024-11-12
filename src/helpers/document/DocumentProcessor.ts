@@ -5,7 +5,7 @@ import {
 	TextSplitter,
 } from "@langchain/textsplitters";
 import { Index, RecordMetadata } from "@pinecone-database/pinecone";
-import { DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE } from "src/constants";
+import { DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, ZERO_VECTOR } from "src/constants";
 import { createPineconeClient } from "src/services/PineconeManager";
 import { PluginSettings } from "src/settings/settings";
 import { Logger } from "../logger";
@@ -149,5 +149,35 @@ export default class DocumentProcessor {
 			maxConcurrency: this.maxConcurrency,
 		});
 		return await vectorStore.addDocuments(chunks, { ids });
+	}
+
+	private async filterDocumentsByQuery(documents: Document[]) {
+		const filterPromises = documents.map(async (doc) => {
+			try {
+				const queryResult = await this.pineconeIndex.query({
+					vector: ZERO_VECTOR,
+					topK: 100,
+					includeMetadata: true,
+					filter: {
+						filePath: doc.metadata.filePath,
+					},
+				});
+
+				// 매치가 없거나 해시가 다른 경우에만 포함
+				const shouldInclude =
+					!queryResult.matches?.length ||
+					queryResult.matches[0].metadata?.hash !== doc.metadata.hash;
+
+				return shouldInclude ? doc : null;
+			} catch (error) {
+				console.error(
+					`Error querying document ${doc.metadata.filePath}:`,
+					error
+				);
+				return null;
+			}
+		});
+		const results = await Promise.all(filterPromises);
+		return results.filter((doc): doc is Document => doc !== null);
 	}
 }
