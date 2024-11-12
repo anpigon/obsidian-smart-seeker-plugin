@@ -18,6 +18,7 @@ import {
 	PLUGIN_APP_ID,
 	ZERO_VECTOR,
 } from "./constants";
+import DocumentProcessor from "./helpers/document/DocumentProcessor";
 import { InLocalStore } from "./helpers/langchain/store/InLocalStore";
 import { Logger, LogLevel } from "./helpers/logger";
 import NoteHashStorage from "./helpers/storage/NoteHashStorage";
@@ -477,30 +478,16 @@ export default class SmartSeekerPlugin extends Plugin {
 			);
 
 			console.log("documents", filterDocuments);
-			if (filterDocuments.length) {
-				const { ids, chunks } = await this.createDocumentChunksWithIds(
-					filterDocuments
-				);
-				this.logger.debug(`chunks: ${chunks.length}`);
-
-				// Pinecone에 저장
-				const embedding = getEmbeddingModel(this.settings);
-				const vectorStore = await PineconeStore.fromExistingIndex(
-					embedding,
-					{
-						pineconeIndex,
-						maxConcurrency: 5,
-					}
-				);
-				await vectorStore.addDocuments(chunks, { ids });
-
-				// await this.saveToPinecone(chunks, ids);
-				const noteCount = Object.keys(notesToProcess).length;
-				new Notice(
-					`${noteCount} notes successfully saved to PineconeDB`
-				);
+			const documentProcessor = new DocumentProcessor(this.settings);
+			const { processedCount } = await documentProcessor.processDocuments(
+				filterDocuments
+			);
+			if (processedCount > 0) {
 				this.logger.debug(
-					`${noteCount} notes successfully saved to PineconeDB`
+					`${notesToProcess.length} notes successfully saved to PineconeDB`
+				);
+				new Notice(
+					`${notesToProcess.length} notes successfully saved to PineconeDB`
 				);
 			}
 
