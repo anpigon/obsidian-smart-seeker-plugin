@@ -1,3 +1,5 @@
+import { TAbstractFile, TFile } from "obsidian";
+
 export const getFileName = (filePath: string): string => {
 	// 마지막 '/' 이후의 문자열 가져오기
 	const fullFileName = filePath.split("/").pop() || "";
@@ -5,10 +7,13 @@ export const getFileName = (filePath: string): string => {
 	return fullFileName.split(".")[0];
 };
 
-
 export const getFileNameSafe = (filePath: string): string => {
 	// Windows의 '\' 경로도 처리
 	const normalizedPath = filePath.replace(/\\/g, "/");
 	const fullFileName = normalizedPath.split("/").pop() || "";
 	return fullFileName.split(".")[0];
+};
+
+export const isMarkdownFile = (file: TAbstractFile): file is TFile => {
+	return file instanceof TFile && file.extension === "md";
 };
