@@ -448,6 +448,11 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		this.isProcessing = true;
 		const notesToProcess = { ...this.notesToSave };
+		this.logger.debug(
+			"notesToProcess:",
+			notesToProcess.length,
+			notesToProcess
+		);
 
 		try {
 			// API 키 검증
@@ -457,17 +462,17 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			// documents를 배열로 변환
 			const documents = Object.values(notesToProcess);
-
 			const documentProcessor = new DocumentProcessor(this.settings);
 			const { processedCount } = await documentProcessor.processDocuments(
 				documents
 			);
 			if (processedCount > 0) {
+				const noteCount = Object.keys(notesToProcess).length;
 				this.logger.debug(
-					`${notesToProcess.length} notes successfully saved to PineconeDB`
+					`${noteCount} notes successfully saved to PineconeDB`
 				);
 				new Notice(
-					`${notesToProcess.length} notes successfully saved to PineconeDB`
+					`${noteCount} notes successfully saved to PineconeDB`
 				);
 			}
 
