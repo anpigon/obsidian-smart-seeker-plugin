@@ -380,7 +380,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		const noteCount = Object.keys(this.notesToSave).length;
 		if (noteCount === 0) {
-			this.logger.debug("📭 처리할 노트가 없습니다.");
+			// this.logger.debug("📭 처리할 노트가 없습니다.");
 			return;
 		}
 
