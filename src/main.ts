@@ -30,6 +30,9 @@ export default class SmartSeekerPlugin extends Plugin {
 	private hashStorage: NoteHashStorage;
 	settings: PluginSettings;
 
+	private lastEditTime: number = Date.now();
+	private saveInterval: NodeJS.Timeout | null = null;
+
 	private registerVaultEvents(): void {
 		if (!this.app.workspace.layoutReady) {
 			this.logger.warn(
@@ -46,9 +49,10 @@ export default class SmartSeekerPlugin extends Plugin {
 		);
 
 		this.registerEvent(
-			this.app.vault.on("modify", (file) =>
-				this.handleNoteCreateOrUpdate(file)
-			)
+			this.app.vault.on("modify", (file) => {
+				this.handleNoteCreateOrUpdate(file);
+				this.updateLastEditTime(); // 수정 시 마지막 편집 시간 업데이트
+			})
 		);
 
 		this.registerEvent(
@@ -116,10 +120,27 @@ export default class SmartSeekerPlugin extends Plugin {
 		this.registerInterval(
 			window.setInterval(() => {
 				if (this.app.workspace.layoutReady) {
-					this.processNoteQueue();
+					this.checkForIdleTime(); // 유휴 시간 체크
 				}
 			}, 10 * 1000)
 		);
+	}
+
+	private updateLastEditTime() {
+		this.lastEditTime = Date.now();
+	}
+
+	private async saveNotesToDB() {
+		if (Object.keys(this.notesToSave).length > 0) {
+			await this.processNoteQueue();
+		}
+	}
+
+	private checkForIdleTime() {
+		const currentTime = Date.now();
+		if (currentTime - this.lastEditTime >= 60 * 1000) {
+			this.saveNotesToDB();
+		}
 	}
 
 	private async initializeNoteHashStorage() {
@@ -372,6 +393,16 @@ export default class SmartSeekerPlugin extends Plugin {
 		return `📊 총 ${total}개 노트 처리\n${summary}`;
 	}
 
+	private async processNote(documents: Document<Record<string, any>>[]) {
+		const documentProcessor = new DocumentProcessor(this.settings);
+		const { totalDocuments, skippedDocuments, processedDocuments } =
+			await documentProcessor.processDocuments(documents);
+		this.logger.debug(
+			`${processedDocuments} notes successfully saved to PineconeDB`
+		);
+		return { totalDocuments, skippedDocuments, processedDocuments };
+	}
+
 	private async processNoteQueue() {
 		if (this.isProcessing) {
 			this.logger.debug("🔄 Already processing notes, skipping...");
@@ -394,9 +425,8 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			// documents를 배열로 변환
 			const documents = Object.values(notesToProcess);
-			const documentProcessor = new DocumentProcessor(this.settings);
 			const { totalDocuments, skippedDocuments, processedDocuments } =
-				await documentProcessor.processDocuments(documents);
+				await this.processNote(documents);
 			this.logger.debug(
 				`${processedDocuments} notes successfully saved to PineconeDB`
 			);
