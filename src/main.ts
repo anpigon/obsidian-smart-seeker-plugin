@@ -265,11 +265,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 
 		try {
-			const pageContent = await this.app.vault.read(file);
-			const metadata = await this.extractMetadata(file, pageContent);
-			this.logger.debug("metadata", metadata);
-
-			const document = new Document({ pageContent, metadata });
+			const document = await this.createDocument(file);
 			this.notesToSave[filePath] = document;
 
 			console.debug(`노트가 스케쥴러에 추가되었습니다: ${filePath}`);
@@ -280,14 +276,23 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	private async extractMetadata(
-		file: TFile,
-		content: string
-	): Promise<NoteMetadata> {
-		const id = await createHash(file.path);
+	private async createDocument(file: TFile) {
+		const content = await this.app.vault.read(file);
 		const hash = await createContentHash(content);
+		const id = await createHash(file.path);
+		let pageContent = content;
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		let frontmatter: any = null;
+		await this.app.fileManager.processFrontMatter(file, (fm) => {
+			frontmatter = fm;
+			pageContent = pageContent
+				.substring(pageContent.indexOf("---", 3) + 3)
+				.trim();
+		});
 
 		const metadata: NoteMetadata = {
+			...frontmatter,
 			id,
 			hash,
 			filePath: file.path,
@@ -296,20 +301,8 @@ export default class SmartSeekerPlugin extends Plugin {
 			title: getFileNameSafe(file.path),
 		};
 
-		// const frontMatterMatch = await this.proccessFrotmatter(file);
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		let frontmatter: any = null;
-		await this.app.fileManager.processFrontMatter(file, (fm) => {
-			frontmatter = fm;
-		});
-		if (frontmatter) {
-			return {
-				...frontmatter,
-				...metadata,
-			};
-		}
-
-		return metadata;
+		const document = new Document({ pageContent, metadata });
+		return document;
 	}
 
 	private validateNote(file: TAbstractFile): file is TFile {

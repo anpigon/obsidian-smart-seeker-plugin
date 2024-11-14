@@ -104,8 +104,10 @@ export default class DocumentProcessor {
 				};
 			}
 
+			console.log("filteredDocs", filteredDocs);
 			const { ids, chunks } = await this.createChunks(filteredDocs);
-			await this.saveToVectorStore(chunks, ids);
+			console.log("chunks", chunks);
+			// await this.saveToVectorStore(chunks, ids);
 
 			return {
 				totalDocuments: totalDocuments,
