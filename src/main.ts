@@ -353,7 +353,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	private async  handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
+	private async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
 		try {
 			if (!this.validateNote(file)) return;
 			if (!this.validateApiKeys()) return;
@@ -393,6 +393,16 @@ export default class SmartSeekerPlugin extends Plugin {
 		return `📊 총 ${total}개 노트 처리\n${summary}`;
 	}
 
+	private async processNote(documents: Document<Record<string, any>>[]) {
+		const documentProcessor = new DocumentProcessor(this.settings);
+		const { totalDocuments, skippedDocuments, processedDocuments } =
+			await documentProcessor.processDocuments(documents);
+		this.logger.debug(
+			`${processedDocuments} notes successfully saved to PineconeDB`
+		);
+		return { totalDocuments, skippedDocuments, processedDocuments };
+	}
+
 	private async processNoteQueue() {
 		if (this.isProcessing) {
 			this.logger.debug("🔄 Already processing notes, skipping...");
@@ -415,9 +425,8 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			// documents를 배열로 변환
 			const documents = Object.values(notesToProcess);
-			const documentProcessor = new DocumentProcessor(this.settings);
 			const { totalDocuments, skippedDocuments, processedDocuments } =
-				await documentProcessor.processDocuments(documents);
+				await this.processNote(documents);
 			this.logger.debug(
 				`${processedDocuments} notes successfully saved to PineconeDB`
 			);

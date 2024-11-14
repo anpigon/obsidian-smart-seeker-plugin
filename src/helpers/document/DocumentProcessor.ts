@@ -57,7 +57,7 @@ export default class DocumentProcessor {
 	}
 
 	// 기존 파인콘DB에 있는 문서는 필터링한다.
-	private async filterDocuments(documents: Document[]): Promise<Document[]> {
+	async filterDocuments(documents: Document[]): Promise<Document[]> {
 		if (!documents?.length) return [];
 
 		try {
