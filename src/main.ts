@@ -386,6 +386,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		return `📊 총 ${total}개 노트 처리\n${summary}`;
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private async processNote(documents: Document<Record<string, any>>[]) {
 		const documentProcessor = new DocumentProcessor(this.settings);
 		const { totalDocuments, skippedDocuments, processedDocuments } =
