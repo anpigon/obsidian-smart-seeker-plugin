@@ -1,11 +1,15 @@
 import { Document } from "@langchain/core/documents";
 import { PineconeStore } from "@langchain/pinecone";
 import {
-	RecursiveCharacterTextSplitter,
-	TextSplitter,
+	MarkdownTextSplitter,
+	TextSplitter
 } from "@langchain/textsplitters";
 import { Index, RecordMetadata } from "@pinecone-database/pinecone";
-import { DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, ZERO_VECTOR } from "src/constants";
+import {
+	DEFAULT_CHUNK_OVERLAP,
+	DEFAULT_CHUNK_SIZE,
+	ZERO_VECTOR,
+} from "src/constants";
 import { createPineconeClient } from "src/services/PineconeManager";
 import { PluginSettings } from "src/settings/settings";
 import { Logger } from "../logger";
@@ -43,9 +47,10 @@ export default class DocumentProcessor {
 	}
 
 	private initializeTextSplitter(): TextSplitter {
-		return new RecursiveCharacterTextSplitter({
+		return new MarkdownTextSplitter({
 			chunkSize: DEFAULT_CHUNK_SIZE,
 			chunkOverlap: DEFAULT_CHUNK_OVERLAP,
+			keepSeparator: true,
 		});
 	}
 
@@ -105,6 +110,7 @@ export default class DocumentProcessor {
 			}
 
 			const { ids, chunks } = await this.createChunks(filteredDocs);
+			console.log("chunks", chunks);
 			await this.saveToVectorStore(chunks, ids);
 
 			return {
