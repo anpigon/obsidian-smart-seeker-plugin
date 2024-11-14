@@ -121,8 +121,13 @@ export class SearchNotesModal extends SuggestModal<
 		el: HTMLElement
 	) {
 		const title = item.metadata?.title?.toString() || "Untitled";
-		const text = item.metadata?.text?.toString() || "";
 		const score = item.score !== undefined ? item.score.toFixed(2) : "N/A";
+		let text = item.metadata?.text?.toString() || "";
+
+		// "(cont'd)" 로 시작하는 경우 제거
+		if (text.startsWith("(cont'd)")) {
+			text = text.substring("(cont'd)".length).trim();
+		}
 
 		// 컨테이너 생성
 		const container = el.createDiv({ cls: "search-notes-modal__item" });
