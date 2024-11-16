@@ -102,30 +102,30 @@ export default class SmartSeekerPlugin extends Plugin {
 	private async processFolderFiles(folder: TFolder): Promise<void> {
 		this.logger.debug("selected folder:", folder);
 
-		new Notice("폴더 내 노트들을 처리중입니다...");
+		new Notice("🔍 폴더 내 노트를 검색 데이터베이스에 추가하는 중...");
 
 		const files = this.app.vault
 			.getMarkdownFiles()
 			.filter((file) => file.path.startsWith(folder.path));
 
-		new Notice(`폴더 내에서 노트 ${files.length}개를 찾았습니다.`);
+		new Notice(`📚 ${folder.name} 폴더에서 ${files.length}개의 노트를 찾았습니다.`);
 
 		const result = await this.documentProcessor.processMultiFiles(files);
 		this.logger.debug(`[Process] Completed: ${result}`);
-		new Notice("노트 처리가 완료되었습니다.");
+		new Notice("✅ 모든 노트가 검색 데이터베이스에 추가되었습니다.");
 	}
 
 	private async processFile(file: TFile): Promise<void> {
 		this.logger.debug("selected file:", file);
-		new Notice("노트를 처리중입니다...");
+		new Notice("🔍 노트를 검색 데이터베이스에 추가하는 중...");
 
 		try {
 			const result = await this.documentProcessor.processSingleFile(file);
 			this.logger.debug(`[Process] Completed: ${result}`);
-			new Notice("노트 처리가 완료되었습니다.");
+			new Notice("✅ 노트가 검색 데이터베이스에 추가되었습니다.");
 		} catch (error) {
 			this.logger.error("Error processing note:", error);
-			new Notice(`Error processing note: ${error}`);
+			new Notice(`❌ 노트 처리 중 오류가 발생했습니다: ${error}`);
 		}
 	}
 
