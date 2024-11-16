@@ -38,6 +38,7 @@ export class SearchNotesModal extends SuggestModal<
 	private isSearching = false;
 	private currentSearchController: AbortController | null = null;
 	private previousQuery = "";
+	private previousResults: ScoredPineconeRecord<RecordMetadata>[] = [];
 
 	constructor(
 		app: App,
@@ -156,14 +157,15 @@ export class SearchNotesModal extends SuggestModal<
 			return [];
 		}
 
-		// 이전 검색어와 동일한 경우 검색하지 않음
+		// 이전 검색어와 동일한 경우 이전 결과를 반환
 		if (trimmedQuery === this.previousQuery) {
-			return [];
+			return this.previousResults;
 		}
 
 		this.isSearching = true;
 		this.previousQuery = trimmedQuery;
 		const results = await this.debouncedGetSuggestions(trimmedQuery);
+		this.previousResults = results; // 검색 결과를 캐시에 저장
 		this.isSearching = false;
 		return results;
 	}
