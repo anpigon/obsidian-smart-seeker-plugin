@@ -19,13 +19,6 @@ import obsidianFetchApi from "../../helpers/utils/obsidianFetchApi";
 import { createOpenAIClient } from "../../services/OpenAIManager";
 import { createPineconeClient } from "../../services/PineconeManager";
 
-interface Location {
-	lines: {
-		from: number;
-		to?: number;
-	};
-}
-
 export class SearchNotesModal extends SuggestModal<
 	ScoredPineconeRecord<RecordMetadata>
 > {
@@ -217,34 +210,58 @@ export class SearchNotesModal extends SuggestModal<
 	}
 
 	async onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {
+		this.logger.debug("onChooseSuggestion", item);
 		const filePath = item.metadata?.filePath;
-		const lineNumber =
-			(item.metadata?.loc as unknown as Location)?.lines?.from ?? 0;
+		const searchText = item.metadata?.text
+			?.toString()
+			.substring("(cont'd)".length)
+			.split("\n")[0]
+			.trim() as string;
+		const from = Number(item.metadata?.["loc.lines.from"] ?? 0);
+		const to = Number(item.metadata?.["loc.lines.to"] ?? 0);
 
-		if (filePath) {
+		if (filePath && searchText) {
 			const file = this.app.vault.getAbstractFileByPath(filePath.toString());
 
+			// 파일을 열고 특정 라인으로 이동
 			if (file instanceof TFile) {
-				// 파일을 열고 특정 라인으로 이동
 				const leaf = this.app.workspace.getLeaf();
+				// 파일 열기를 await로 기다림
 				await leaf.openFile(file);
 
-				// 에디터가 준비되면 해당 라인으로 스크롤
-				if (lineNumber !== undefined) {
-					const view = leaf.view;
-					if (view.getViewType() === "markdown") {
-						const editor = (view as MarkdownView).editor;
-						if (editor) {
-							// 해당 라인으로 스크롤
-							editor.setCursor(lineNumber - 1);
-							// 에디터 뷰 중앙으로 스크롤
-							editor.scrollIntoView(
-								{
-									from: { line: lineNumber - 1, ch: 0 },
-									to: { line: lineNumber - 1, ch: 0 },
-								},
-								true,
-							);
+				const view = leaf.view;
+				if (view.getViewType() === "markdown") {
+					const editor = (view as MarkdownView).editor;
+					if (editor) {
+						// 파일의 전체 텍스트를 가져옵니다.
+						const fileContent = editor.getValue();
+						const lines = fileContent.split("\n");
+
+						// 실제 텍스트가 있는 라인을 찾습니다.
+						const foundLine =
+							lines.slice(from).findIndex((line) => line.includes(searchText)) +
+							from;
+						this.logger.debug("foundLine", foundLine);
+
+						if (foundLine > -1) {
+							const line = lines[foundLine];
+							const startIndex = line.indexOf(searchText);
+							if (startIndex !== -1) {
+								// 찾은 텍스트의 시작과 끝 위치를 계산
+								const from = {
+									line: foundLine,
+									ch: startIndex,
+								};
+								const to = {
+									line: foundLine,
+									ch: startIndex + searchText.length,
+								};
+
+								// 해당 위치로 스크롤하고 텍스트를 선택
+								editor.setCursor(from);
+								editor.setSelection(from, to);
+								editor.scrollIntoView({ from, to }, true);
+							}
 						}
 					}
 				}
