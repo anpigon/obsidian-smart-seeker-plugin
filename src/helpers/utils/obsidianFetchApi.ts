@@ -2,7 +2,7 @@ import { requestUrl } from "obsidian";
 
 const obsidianFetchApi = async (
 	input: RequestInfo | URL,
-	init?: RequestInit
+	init?: RequestInit,
 ) => {
 	try {
 		const response = await requestUrl({

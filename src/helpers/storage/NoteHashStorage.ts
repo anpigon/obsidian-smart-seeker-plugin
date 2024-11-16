@@ -1,9 +1,9 @@
 import { PLUGIN_APP_ID } from "src/constants";
 
 export interface NoteHash {
-    filepath: string;
-    hash: string;
-    timestamp: number;
+	filepath: string;
+	hash: string;
+	timestamp: number;
 }
 
 export default class NoteHashStorage {
@@ -43,9 +43,7 @@ export default class NoteHashStorage {
 		});
 	}
 
-	private async getDBStore(
-		mode: IDBTransactionMode
-	): Promise<IDBObjectStore> {
+	private async getDBStore(mode: IDBTransactionMode): Promise<IDBObjectStore> {
 		if (!this.db) {
 			await this.initDB();
 		}

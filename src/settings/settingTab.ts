@@ -1,14 +1,14 @@
 import {
-	App,
+	type App,
 	Modal,
 	Notice,
 	PluginSettingTab,
 	Setting,
-	TextComponent,
+	type TextComponent,
 } from "obsidian";
-import SmartSeekerPlugin from "../main";
 import { DEFAULT_EMBEDDING_DIMENSION, PINECONE_CONFIG } from "src/constants";
 import { createPineconeClient } from "src/services/PineconeManager";
+import type SmartSeekerPlugin from "../main";
 
 export class SettingTab extends PluginSettingTab {
 	plugin: SmartSeekerPlugin;
@@ -34,7 +34,8 @@ export class SettingTab extends PluginSettingTab {
 			.setDesc("AI 기능 사용을 위한 OpenAI API 키를 입력하세요")
 			.addText((text) => {
 				text.inputEl.type = "password";
-				text.setPlaceholder("sk-...")
+				text
+					.setPlaceholder("sk-...")
 					.setValue(this.plugin.settings.openAIApiKey)
 					.onChange(async (value) => {
 						this.plugin.settings.openAIApiKey = value;
@@ -45,12 +46,11 @@ export class SettingTab extends PluginSettingTab {
 		// Pinecone API 설정
 		new Setting(containerEl)
 			.setName("Pinecone API 키")
-			.setDesc(
-				"벡터 데이터베이스 연동을 위한 Pinecone API 키를 입력하세요"
-			)
+			.setDesc("벡터 데이터베이스 연동을 위한 Pinecone API 키를 입력하세요")
 			.addText((text) => {
 				text.inputEl.type = "password";
-				text.setPlaceholder("pc-...")
+				text
+					.setPlaceholder("pc-...")
 					.setValue(this.plugin.settings.pineconeApiKey)
 					.onChange(async (value) => {
 						this.plugin.settings.pineconeApiKey = value;
@@ -83,12 +83,10 @@ export class SettingTab extends PluginSettingTab {
 						await this.fetchPineconeIndexes();
 						new Notice("인덱스 목록을 새로고침했습니다");
 					} catch (error) {
-						new Notice(
-							"인덱스 목록 조회 실패. API 키를 확인해주세요"
-						);
+						new Notice("인덱스 목록 조회 실패. API 키를 확인해주세요");
 						console.error("Failed to fetch indexes:", error);
 					}
-				})
+				}),
 		);
 
 		// Pinecone DB 인덱스 생성 버튼
@@ -98,7 +96,7 @@ export class SettingTab extends PluginSettingTab {
 			.addButton((button) =>
 				button.setButtonText("생성").onClick(() => {
 					new CreatePineconeIndexModal(this.app, this.plugin).open();
-				})
+				}),
 			);
 
 		this.initialize();
@@ -119,7 +117,7 @@ export class SettingTab extends PluginSettingTab {
 		try {
 			const { indexes = [] } = await pc.listIndexes();
 			const filteredIndexes = indexes.filter(
-				(e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION
+				(e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION,
 			);
 
 			if (this.indexSelectEl) {
@@ -134,14 +132,11 @@ export class SettingTab extends PluginSettingTab {
 					optionEl.disabled = true;
 				} else {
 					filteredIndexes.forEach(({ name }) => {
-						const optionEl = this.indexSelectEl?.createEl(
-							"option",
-							{ text: name, value: name }
-						);
-						if (
-							optionEl &&
-							name === this.plugin.settings.selectedIndex
-						) {
+						const optionEl = this.indexSelectEl?.createEl("option", {
+							text: name,
+							value: name,
+						});
+						if (optionEl && name === this.plugin.settings.selectedIndex) {
 							optionEl.selected = true;
 						}
 					});
@@ -202,9 +197,7 @@ class CreatePineconeIndexModal extends Modal {
 
 	async createPineconeIndex(indexName: string) {
 		try {
-			const pc = createPineconeClient(
-				this.plugin.settings.pineconeApiKey
-			);
+			const pc = createPineconeClient(this.plugin.settings.pineconeApiKey);
 			await pc.createIndex({
 				name: indexName,
 				dimension: DEFAULT_EMBEDDING_DIMENSION,

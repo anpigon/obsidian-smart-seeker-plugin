@@ -1,5 +1,5 @@
 import { BaseStore } from "@langchain/core/stores";
-import { Logger, LogLevel } from "src/helpers/logger";
+import { LogLevel, Logger } from "src/helpers/logger";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class IndexedDBStore<T = any> extends BaseStore<string, T> {
@@ -87,7 +87,7 @@ export class IndexedDBStore<T = any> extends BaseStore<string, T> {
 						const request = store.get(key);
 						request.onsuccess = () => resolve(request.result);
 						request.onerror = () => resolve(undefined);
-					})
+					}),
 			);
 			return Promise.all(promises);
 		} catch (error) {
@@ -105,7 +105,7 @@ export class IndexedDBStore<T = any> extends BaseStore<string, T> {
 						const request = store.put(value, key);
 						request.onsuccess = () => resolve();
 						request.onerror = () => reject(request.error);
-					})
+					}),
 			);
 			await Promise.all(promises);
 			this.logger.debug("Data stored successfully");
@@ -124,7 +124,7 @@ export class IndexedDBStore<T = any> extends BaseStore<string, T> {
 						const request = store.delete(key);
 						request.onsuccess = () => resolve();
 						request.onerror = () => reject(request.error);
-					})
+					}),
 			);
 			await Promise.all(promises);
 			this.logger.debug("Keys deleted successfully");
@@ -144,7 +144,7 @@ export class IndexedDBStore<T = any> extends BaseStore<string, T> {
 					(resolve, reject) => {
 						request.onsuccess = () => resolve(request.result);
 						request.onerror = () => reject(request.error);
-					}
+					},
 				);
 
 				if (!cursor) {

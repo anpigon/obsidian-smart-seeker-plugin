@@ -11,5 +11,5 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	openAIApiKey: "",
 	pineconeApiKey: "", // 기본값 설정
 	selectedIndex: "", // 기본값 설정
-	logLevel: LogLevel.DEBUG
+	logLevel: LogLevel.DEBUG,
 };

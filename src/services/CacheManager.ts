@@ -1,6 +1,6 @@
-import { TFile, Vault } from "obsidian";
+import type { TFile, Vault } from "obsidian";
+import { LogLevel, Logger } from "../helpers/logger";
 import { createHash } from "../helpers/utils/hash";
-import { Logger, LogLevel } from "../helpers/logger";
 
 interface CacheData {
 	[key: string]: number[]; // 파일 경로+내용 해시: 임베딩 벡터
@@ -11,7 +11,10 @@ export class CacheManager {
 	private logger: Logger;
 	private cache: CacheData = {};
 
-	constructor(private vault: Vault, private pluginId: string) {
+	constructor(
+		private vault: Vault,
+		private pluginId: string,
+	) {
 		this.logger = new Logger("CacheManager", LogLevel.DEBUG);
 		this.cacheFilePath = `${this.vault.configDir}/plugins/${this.pluginId}/cache.json`;
 		this.initializeCache();
@@ -71,7 +74,7 @@ export class CacheManager {
 	public async updateCache(
 		file: TFile,
 		content: string,
-		embeddings: number[]
+		embeddings: number[],
 	): Promise<void> {
 		try {
 			const cacheKey = await createHash(file.path + content);
@@ -89,7 +92,7 @@ export class CacheManager {
 	public async removeFromCache(file: TFile): Promise<void> {
 		try {
 			const keysToDelete = Object.keys(this.cache).filter((key) =>
-				key.includes(file.path)
+				key.includes(file.path),
 			);
 
 			keysToDelete.forEach((key) => delete this.cache[key]);
@@ -108,7 +111,7 @@ export class CacheManager {
 			const adapter = this.vault.adapter;
 			await adapter.write(
 				this.cacheFilePath,
-				JSON.stringify(this.cache, null, 2)
+				JSON.stringify(this.cache, null, 2),
 			);
 		} catch (error) {
 			this.logger.error("Error saving cache:", error);

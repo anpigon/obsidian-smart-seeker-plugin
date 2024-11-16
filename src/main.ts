@@ -1,25 +1,25 @@
 import { Document } from "@langchain/core/documents";
 import {
-	FrontMatterCache,
-	Menu,
+	type FrontMatterCache,
+	type Menu,
 	Notice,
 	Plugin,
-	TAbstractFile,
+	type TAbstractFile,
 	TFile,
 	TFolder,
 } from "obsidian";
 import { DEFAULT_MIN_TOKEN_COUNT, PLUGIN_APP_ID } from "./constants";
 import DocumentProcessor from "./helpers/document/DocumentProcessor";
 import { InLocalStore } from "./helpers/langchain/store/InLocalStore";
-import { Logger, LogLevel } from "./helpers/logger";
+import { LogLevel, Logger } from "./helpers/logger";
 import NoteHashStorage from "./helpers/storage/NoteHashStorage";
 import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { getFileNameSafe } from "./helpers/utils/fileUtils";
 import { createContentHash, createHash } from "./helpers/utils/hash";
 import { createPineconeClient } from "./services/PineconeManager";
 import { SettingTab } from "./settings/settingTab";
-import { DEFAULT_SETTINGS, PluginSettings } from "./settings/settings";
-import { NoteMetadata } from "./types";
+import { DEFAULT_SETTINGS, type PluginSettings } from "./settings/settings";
+import type { NoteMetadata } from "./types";
 import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
 
 export default class SmartSeekerPlugin extends Plugin {
@@ -35,28 +35,26 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	private registerVaultEvents(): void {
 		if (!this.app.workspace.layoutReady) {
-			this.logger.warn(
-				"Workspace not ready, skipping event registration"
-			);
+			this.logger.warn("Workspace not ready, skipping event registration");
 			return;
 		}
 
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
 		this.registerEvent(
 			this.app.vault.on("create", (file) =>
-				this.handleNoteCreateOrUpdate(file)
-			)
+				this.handleNoteCreateOrUpdate(file),
+			),
 		);
 
 		this.registerEvent(
 			this.app.vault.on("modify", (file) => {
 				this.handleNoteCreateOrUpdate(file);
 				this.updateLastEditTime(); // 수정 시 마지막 편집 시간 업데이트
-			})
+			}),
 		);
 
 		this.registerEvent(
-			this.app.vault.on("delete", (file) => this.handleNoteDelete(file))
+			this.app.vault.on("delete", (file) => this.handleNoteDelete(file)),
 		);
 
 		// 파일 탐색기의 폴더 컨텍스트 메뉴에 이벤트 리스너 추가
@@ -67,7 +65,8 @@ export default class SmartSeekerPlugin extends Plugin {
 					// folder가 TFolder 인스턴스인 경우에만 메뉴 추가
 					if (fileOrFolder instanceof TFolder) {
 						menu.addItem((item) => {
-							item.setTitle("폴더 내 노트를 RAG 검색용으로 저장")
+							item
+								.setTitle("폴더 내 노트를 RAG 검색용으로 저장")
 								.setIcon("folder")
 								.onClick(() => this.processFolderNotes(fileOrFolder));
 						});
@@ -76,13 +75,14 @@ export default class SmartSeekerPlugin extends Plugin {
 						fileOrFolder.extension === "md"
 					) {
 						menu.addItem((item) => {
-							item.setTitle("노트를 RAG 검색용으로 저장")
+							item
+								.setTitle("노트를 RAG 검색용으로 저장")
 								.setIcon("file")
 								.onClick(() => this.processFile(fileOrFolder));
 						});
 					}
-				}
-			)
+				},
+			),
 		);
 
 		// 주기적인 임베딩 처리
@@ -91,7 +91,7 @@ export default class SmartSeekerPlugin extends Plugin {
 				if (this.app.workspace.layoutReady) {
 					this.checkForIdleTime(); // 유휴 시간 체크
 				}
-			}, 10 * 1000)
+			}, 10 * 1000),
 		);
 	}
 
@@ -170,7 +170,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		if (missingSettings.length > 0) {
 			this.logger.warn(
-				`Missing required settings: ${missingSettings.join(", ")}`
+				`Missing required settings: ${missingSettings.join(", ")}`,
 			);
 			return false;
 		}
@@ -183,10 +183,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			id: "search-notes",
 			name: "Search notes",
 			callback: () => {
-				if (
-					!this.settings.pineconeApiKey ||
-					!this.settings.selectedIndex
-				) {
+				if (!this.settings.pineconeApiKey || !this.settings.selectedIndex) {
 					new Notice("Please configure PineconeDB settings first");
 					return;
 				}
@@ -194,7 +191,7 @@ export default class SmartSeekerPlugin extends Plugin {
 					this.app,
 					this.settings.openAIApiKey,
 					this.settings.pineconeApiKey,
-					this.settings.selectedIndex
+					this.settings.selectedIndex,
 				).open();
 			},
 		});
@@ -238,11 +235,7 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			await this.loadData()
-		);
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
 
 	async saveSettings() {
@@ -255,7 +248,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	async proccessFrotmatter(file: TFile) {
 		return new Promise<FrontMatterCache>((resolve) =>
-			this.app.fileManager.processFrontMatter(file, resolve)
+			this.app.fileManager.processFrontMatter(file, resolve),
 		);
 	}
 
@@ -279,7 +272,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			console.debug(`노트가 스케쥴러에 추가되었습니다: ${filePath}`);
 		} catch (error) {
 			console.error(
-				`노트를 스케쥴러에 추가하는 중 오류가 발생했습니다: ${error}`
+				`노트를 스케쥴러에 추가하는 중 오류가 발생했습니다: ${error}`,
 			);
 		}
 	}
@@ -335,7 +328,7 @@ export default class SmartSeekerPlugin extends Plugin {
 	// 토큰 수 검증 함수
 	private validateTokenCount(
 		text: string,
-		minTokenCount: number = DEFAULT_MIN_TOKEN_COUNT
+		minTokenCount: number = DEFAULT_MIN_TOKEN_COUNT,
 	): boolean {
 		try {
 			const tokenCount = calculateTokenCount(text);
@@ -343,7 +336,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			if (tokenCount < minTokenCount) {
 				this.logger.info(
-					`Note skipped due to insufficient tokens (${tokenCount}/${minTokenCount})`
+					`Note skipped due to insufficient tokens (${tokenCount}/${minTokenCount})`,
 				);
 				return false;
 			}
@@ -368,9 +361,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
-			this.logger.error(
-				`Failed to process note ${file.path}: ${errorMessage}`
-			);
+			this.logger.error(`Failed to process note ${file.path}: ${errorMessage}`);
 			new Notice(`Failed to process note: ${errorMessage}`);
 		}
 	}
@@ -378,7 +369,7 @@ export default class SmartSeekerPlugin extends Plugin {
 	private createResultMessage(
 		total: number,
 		processed: number,
-		skipped: number
+		skipped: number,
 	): string {
 		const parts = [];
 
@@ -400,7 +391,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		const { totalDocuments, skippedDocuments, processedDocuments } =
 			await documentProcessor.processDocuments(documents);
 		this.logger.debug(
-			`${processedDocuments} notes successfully saved to PineconeDB`
+			`${processedDocuments} notes successfully saved to PineconeDB`,
 		);
 		return { totalDocuments, skippedDocuments, processedDocuments };
 	}
@@ -430,14 +421,14 @@ export default class SmartSeekerPlugin extends Plugin {
 			const { totalDocuments, skippedDocuments, processedDocuments } =
 				await this.processNote(documents);
 			this.logger.debug(
-				`${processedDocuments} notes successfully saved to PineconeDB`
+				`${processedDocuments} notes successfully saved to PineconeDB`,
 			);
 
 			// 상세한 결과 메시지 생성
 			const resultMessage = this.createResultMessage(
 				totalDocuments,
 				processedDocuments,
-				skippedDocuments
+				skippedDocuments,
 			);
 
 			// 로그와 알림 표시
@@ -445,15 +436,15 @@ export default class SmartSeekerPlugin extends Plugin {
 			new Notice(resultMessage, 5000); // 5초간 표시
 
 			// 처리된 노트 제거
-			Object.keys(notesToProcess).forEach(
-				(key) => delete this.notesToSave[key]
-			);
+			for (const key of Object.keys(notesToProcess)) {
+				delete this.notesToSave[key];
+			}
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
 			const failedPaths = Object.keys(notesToProcess).join(", ");
 			this.logger.error(
-				`Failed to process notes (${failedPaths}): ${errorMessage}`
+				`Failed to process notes (${failedPaths}): ${errorMessage}`,
 			);
 			new Notice(`Failed to save notes: ${errorMessage}`);
 		} finally {
@@ -480,15 +471,11 @@ export default class SmartSeekerPlugin extends Plugin {
 			};
 
 			await pineconeIndex.deleteMany({ deleteRequest });
-			new Notice(
-				`Note successfully deleted from PineconeDB: ${file.path}`
-			);
+			new Notice(`Note successfully deleted from PineconeDB: ${file.path}`);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
-			this.logger.error(
-				`Failed to delete note ${file.path}: ${errorMessage}`
-			);
+			this.logger.error(`Failed to delete note ${file.path}: ${errorMessage}`);
 			// new Notice(`Failed to delete note: ${errorMessage}`);
 		}
 	}

@@ -1,4 +1,4 @@
-import { FrontMatterCache } from "obsidian";
+import type { FrontMatterCache } from "obsidian";
 
 export interface NoteMetadata extends FrontMatterCache {
 	id: string;

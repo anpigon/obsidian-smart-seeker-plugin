@@ -1,4 +1,4 @@
-import { TAbstractFile, TFile } from "obsidian";
+import { type TAbstractFile, TFile } from "obsidian";
 
 export const getFileName = (filePath: string): string => {
 	// 마지막 '/' 이후의 문자열 가져오기

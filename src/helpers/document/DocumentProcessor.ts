@@ -1,16 +1,16 @@
-import { Document } from "@langchain/core/documents";
+import type { Document } from "@langchain/core/documents";
 import {
 	MarkdownTextSplitter,
-	TextSplitter
+	type TextSplitter,
 } from "@langchain/textsplitters";
-import { Index, RecordMetadata } from "@pinecone-database/pinecone";
+import type { Index, RecordMetadata } from "@pinecone-database/pinecone";
 import {
 	DEFAULT_CHUNK_OVERLAP,
 	DEFAULT_CHUNK_SIZE,
 	ZERO_VECTOR,
 } from "src/constants";
 import { createPineconeClient } from "src/services/PineconeManager";
-import { PluginSettings } from "src/settings/settings";
+import type { PluginSettings } from "src/settings/settings";
 import { PineconeStore } from "../langchain/vectorstores";
 import { Logger } from "../logger";
 import getEmbeddingModel from "../utils/getEmbeddingModel";
@@ -33,7 +33,10 @@ export default class DocumentProcessor {
 	private textSplitter: TextSplitter;
 	private pineconeIndex: Index<RecordMetadata>;
 
-	constructor(private settings: PluginSettings, private maxConcurrency = 5) {
+	constructor(
+		private settings: PluginSettings,
+		private maxConcurrency = 5,
+	) {
 		this.logger = this.initializeLogger(settings);
 		this.textSplitter = this.initializeTextSplitter();
 		this.pineconeIndex = this.initializePineconeIndex(settings);
@@ -42,7 +45,7 @@ export default class DocumentProcessor {
 	private initializeLogger(settings: PluginSettings): Logger {
 		return new Logger(
 			"SmartSeekerPlugin::DocumentProcessor",
-			settings.logLevel
+			settings.logLevel,
 		);
 	}
 
@@ -55,7 +58,7 @@ export default class DocumentProcessor {
 	}
 
 	private initializePineconeIndex(
-		settings: PluginSettings
+		settings: PluginSettings,
 	): Index<RecordMetadata> {
 		const pinecone = createPineconeClient(settings.pineconeApiKey);
 		return pinecone.Index(settings.selectedIndex);
@@ -69,9 +72,7 @@ export default class DocumentProcessor {
 			const documentIds = this.generateDocumentIds(documents);
 			const existingHashes = await this.fetchExistingHashes(documentIds);
 
-			return documents.filter(
-				(doc) => !existingHashes.has(doc.metadata.hash)
-			);
+			return documents.filter((doc) => !existingHashes.has(doc.metadata.hash));
 		} catch (error) {
 			this.logger.error("Error filtering documents:", error);
 		}
@@ -80,13 +81,13 @@ export default class DocumentProcessor {
 	}
 
 	private async fetchExistingHashes(
-		documentIds: string[]
+		documentIds: string[],
 	): Promise<Set<string>> {
 		const { records } = await this.pineconeIndex.fetch(documentIds);
 		return new Set(
 			Object.values(records).map(
-				(record) => (record.metadata as { hash: string }).hash
-			)
+				(record) => (record.metadata as { hash: string }).hash,
+			),
 		);
 	}
 
@@ -137,7 +138,7 @@ export default class DocumentProcessor {
 		for (const document of documents) {
 			const splitDocuments = await this.textSplitter.splitDocuments(
 				[document],
-				{ appendChunkOverlapHeader: true }
+				{ appendChunkOverlapHeader: true },
 			);
 
 			for (const [idx, splitDocument] of splitDocuments.entries()) {
@@ -153,7 +154,7 @@ export default class DocumentProcessor {
 
 	private async saveToVectorStore(
 		chunks: Document[],
-		ids: string[]
+		ids: string[],
 	): Promise<string[]> {
 		const embedding = getEmbeddingModel(this.settings);
 		const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
@@ -184,7 +185,7 @@ export default class DocumentProcessor {
 			} catch (error) {
 				console.error(
 					`Error querying document ${doc.metadata.filePath}:`,
-					error
+					error,
 				);
 				return null;
 			}
