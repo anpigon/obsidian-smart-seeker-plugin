@@ -1,5 +1,5 @@
-import { flatten } from "flat";
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { flatten } from "flat";
 import * as uuid from "uuid";
 
 import {
@@ -553,7 +553,7 @@ export class PineconeStore extends VectorStore {
 		const args = dbConfig;
 		args.textKey = dbConfig.textKey ?? "text";
 
-		const instance = new this(embeddings, args);
+		const instance = new PineconeStore(embeddings, args);
 		await instance.addDocuments(docs);
 		return instance;
 	}
@@ -569,7 +569,7 @@ export class PineconeStore extends VectorStore {
 		embeddings: EmbeddingsInterface,
 		dbConfig: PineconeStoreParams,
 	): Promise<PineconeStore> {
-		const instance = new this(embeddings, dbConfig);
+		const instance = new PineconeStore(embeddings, dbConfig);
 		return instance;
 	}
 }
