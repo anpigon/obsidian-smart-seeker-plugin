@@ -116,6 +116,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		try {
 			const document = await this.createDocument(fileOrFolder);
+			this.logger.debug("--→ document:", document);
 			const documentProcessor = new DocumentProcessor(this.settings);
 			const result = await documentProcessor.processSingleDocument(document);
 			this.logger.debug(`[Process] Completed: ${result}`);
@@ -289,6 +290,7 @@ export default class SmartSeekerPlugin extends Plugin {
 				.substring(pageContent.indexOf("---", 3) + 3)
 				.trim();
 		});
+		console.log("--→ frontmatter", frontmatter);
 
 		const metadata: NoteMetadata = {
 			...(frontmatter as unknown as NoteMetadata),
@@ -299,8 +301,11 @@ export default class SmartSeekerPlugin extends Plugin {
 			mtime: file.stat.mtime,
 			title: getFileNameSafe(file.path),
 		};
+		console.log("--→ metadata", frontmatter);
 
 		const document = new Document({ pageContent, metadata });
+
+		console.log("--→ document", document);
 		return document;
 	}
 
