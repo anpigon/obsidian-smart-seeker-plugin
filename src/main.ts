@@ -69,32 +69,7 @@ export default class SmartSeekerPlugin extends Plugin {
 						menu.addItem((item) => {
 							item.setTitle("폴더 내 노트를 RAG 검색용으로 저장")
 								.setIcon("folder")
-								.onClick(async () => {
-									console.log(
-										"selected folder:",
-										fileOrFolder
-									);
-
-									new Notice(
-										"폴더 내 노트들을 처리중입니다..."
-									);
-
-									const files = this.app.vault
-										.getMarkdownFiles()
-										.filter((file) =>
-											file.path.startsWith(
-												fileOrFolder.path
-											)
-										);
-
-									new Notice(
-										`폴더 내에서 노트 ${files.length}개를 찾았습니다.`
-									);
-
-									for (const file of files) {
-										await this.addNoteToScheduler(file);
-									}
-								});
+								.onClick(() => this.processFolderNotes(fileOrFolder));
 						});
 					} else if (
 						fileOrFolder instanceof TFile &&
@@ -103,13 +78,7 @@ export default class SmartSeekerPlugin extends Plugin {
 						menu.addItem((item) => {
 							item.setTitle("노트를 RAG 검색용으로 저장")
 								.setIcon("file")
-								.onClick(async () => {
-									console.log("selected file:", fileOrFolder);
-
-									new Notice("노트를 처리중입니다...");
-
-									await this.addNoteToScheduler(fileOrFolder);
-								});
+								.onClick(() => this.processFile(fileOrFolder));
 						});
 					}
 				}
@@ -126,7 +95,21 @@ export default class SmartSeekerPlugin extends Plugin {
 		);
 	}
 
+	private async processFolderNotes(folder: TFolder): Promise<void> {
+		this.logger.debug("selected folder:", folder);
 
+		new Notice("폴더 내 노트들을 처리중입니다...");
+
+		const files = this.app.vault
+			.getMarkdownFiles()
+			.filter((file) => file.path.startsWith(folder.path));
+
+		new Notice(`폴더 내에서 노트 ${files.length}개를 찾았습니다.`);
+
+		for (const file of files) {
+			await this.addNoteToScheduler(file);
+		}
+	}
 
 	private async processFile(fileOrFolder: TFile): Promise<void> {
 		this.logger.debug("selected file:", fileOrFolder);
