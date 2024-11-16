@@ -95,7 +95,9 @@ export class CacheManager {
 				key.includes(file.path),
 			);
 
-			keysToDelete.forEach((key) => delete this.cache[key]);
+			for (const key of keysToDelete) {
+				delete this.cache[key];
+			}
 			await this.saveCache();
 			this.logger.debug("Cache entries removed successfully");
 		} catch (error) {
