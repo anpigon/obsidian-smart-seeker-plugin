@@ -41,13 +41,27 @@ export class SearchNotesModal extends SuggestModal<
 	) {
 		super(app);
 		this.logger = new Logger("SearchNotesModal", LogLevel.DEBUG);
-
 		this.logger.debug("모달 초기화", {
 			selectedIndex: this.selectedIndex,
 		});
 
 		this.openai = createOpenAIClient(this.openAIApiKey);
-		const pinecone = createPineconeClient(this.pineconeApiKey);
+
+		// Pinecone 클라이언트 초기화 with custom fetch
+		const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
+			if (this.currentSearchController) {
+				return obsidianFetchApi(input, {
+					...init,
+					signal: this.currentSearchController.signal,
+				});
+			}
+			return obsidianFetchApi(input, init);
+		};
+
+		const pinecone = new Pinecone({
+			apiKey: this.pineconeApiKey,
+			fetchApi: customFetch,
+		});
 		this.pineconeIndex = pinecone.Index(this.selectedIndex);
 
 		// debounce 함수 생성 (300ms 딜레이)
@@ -64,41 +78,12 @@ export class SearchNotesModal extends SuggestModal<
 		}
 	}
 
-	private initializePineconeClient() {
-		const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
-			if (this.currentSearchController) {
-				const modifiedInit = {
-					...init,
-					signal: this.currentSearchController.signal,
-				};
-				return obsidianFetchApi(input, modifiedInit);
-			}
-			return obsidianFetchApi(input, init);
-		};
-
-		const config: PineconeConfiguration = {
-			apiKey: this.pineconeApiKey,
-			fetchApi: customFetch,
-		};
-
-		const pinecone = new Pinecone(config);
-		this.pineconeIndex = pinecone.Index(this.selectedIndex);
-	}
-
-	/**
-	 * 주어진 쿼리로 노트를 검색합니다.
-	 * @param query - 검색할 텍스트
-	 * @param topK - 반환할 최대 결과 수 (기본값: 10)
-	 * @returns 검색된 노트 목록과 유사도 점수
-	 */
 	private async searchNotes(query: string, topK = 10) {
 		try {
-			// 이전 검색 요청이 있다면 취소
 			if (this.currentSearchController) {
 				this.currentSearchController.abort();
 			}
 
-			// 새로운 AbortController 생성
 			this.currentSearchController = new AbortController();
 
 			this.logger.debug("검색 시작:", query);
@@ -111,33 +96,14 @@ export class SearchNotesModal extends SuggestModal<
 			});
 
 			this.logger.debug("검색 결과:", results);
-			return results.matches;
+			return results.matches || [];
 		} catch (error) {
-			console.error("Search error:", error);
-			new Notice("Failed to search notes");
+			this.logger.error("검색 중 오류 발생:", error);
+			new Notice("검색 중 오류가 발생했습니다.");
 			return [];
 		} finally {
-			// 검색이 완료되면 현재 controller 초기화
 			this.currentSearchController = null;
 		}
-	}
-
-	// debounce 유틸리티 함수
-	private debounce<T extends (...args: unknown[]) => Promise<unknown>>(
-		func: T,
-		wait: number,
-	): (...args: Parameters<T>) => ReturnType<T> {
-		let timeout: NodeJS.Timeout;
-
-		return (...args: Parameters<T>): ReturnType<T> => {
-			return new Promise((resolve) => {
-				clearTimeout(timeout);
-				timeout = setTimeout(async () => {
-					const result = await func.apply(this, args);
-					resolve(result);
-				}, wait);
-			}) as ReturnType<T>;
-		};
 	}
 
 	async getSuggestions(
@@ -211,62 +177,71 @@ export class SearchNotesModal extends SuggestModal<
 
 	async onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {
 		this.logger.debug("onChooseSuggestion", item);
-		const filePath = item.metadata?.filePath;
+		const filePath = item.metadata?.filePath?.toString();
 		const searchText = item.metadata?.text
 			?.toString()
-			.substring("(cont'd)".length)
+			.replace(/^(?:\(cont'd\)\s*)?/, "") // Remove (cont'd) prefix if exists
 			.split("\n")[0]
-			.trim() as string;
+			.trim();
 		const fromLine = Number(item.metadata?.["loc.lines.from"] ?? 0);
 		const toLine = Number(item.metadata?.["loc.lines.to"] ?? 0);
 
-		if (filePath && searchText) {
-			const file = this.app.vault.getAbstractFileByPath(filePath.toString());
-
-			// 파일을 열고 특정 라인으로 이동
-			if (file instanceof TFile) {
-				const leaf = this.app.workspace.getLeaf();
-				// 파일 열기를 await로 기다림
-				await leaf.openFile(file);
-
-				const view = leaf.view;
-				if (view.getViewType() === "markdown") {
-					const editor = (view as MarkdownView).editor;
-					if (editor) {
-						// 파일의 전체 텍스트를 가져옵니다.
-						const fileContent = editor.getValue();
-						const lines = fileContent.split("\n");
-
-						// 실제 텍스트가 있는 라인을 찾습니다.
-						const foundLine =
-							lines
-								.slice(fromLine)
-								.findIndex((line) => line.includes(searchText)) + fromLine;
-						this.logger.debug("foundLine", foundLine);
-
-						if (foundLine > -1) {
-							const offset = foundLine - fromLine;
-							const from = {
-								line: foundLine,
-								ch: 0,
-							};
-							const to = {
-								line: toLine + offset,
-								ch: lines[toLine + offset].length,
-							};
-							console.log("from", from);
-							console.log("to", to);
-							console.log("offset", offset);
-							console.log("searchText", item.metadata?.text);
-
-							// 해당 위치로 스크롤하고 텍스트를 선택
-							editor.setCursor(from);
-							editor.setSelection(from, to);
-							editor.scrollIntoView({ from, to }, true);
-						}
-					}
-				}
-			}
+		if (!filePath || !searchText) {
+			new Notice("필요한 메타데이터가 없습니다.");
+			return;
 		}
+
+		const file = this.app.vault.getAbstractFileByPath(filePath);
+		if (!(file instanceof TFile)) {
+			new Notice("파일을 찾을 수 없습니다.");
+			return;
+		}
+
+		const leaf = this.app.workspace.getLeaf();
+		await leaf.openFile(file);
+
+		const view = leaf.view;
+		if (view.getViewType() !== "markdown") return;
+
+		const editor = (view as MarkdownView).editor;
+		if (!editor) return;
+
+		const fileContent = editor.getValue();
+		const lines = fileContent.split("\n");
+
+		// DB에 저장된 라인 수와 실제 텍스트의 라인 수가 달라질 수 있으므로,
+		// 실제 텍스트가 있는 라인을 찾습니다.
+		const foundLine =
+			lines.slice(fromLine).findIndex((line) => line.includes(searchText)) +
+			fromLine;
+
+		if (foundLine > -1) {
+			const offset = foundLine - fromLine;
+			const from = { line: foundLine, ch: 0 };
+			const to = { line: toLine + offset, ch: lines[toLine + offset].length };
+
+			// 해당 위치로 스크롤하고 텍스트를 선택
+			editor.setCursor(from);
+			editor.setSelection(from, to);
+			editor.scrollIntoView({ from, to: from }, true);
+		}
+	}
+
+	// debounce 유틸리티 함수
+	private debounce<T extends (...args: unknown[]) => Promise<unknown>>(
+		func: T,
+		wait: number,
+	): (...args: Parameters<T>) => ReturnType<T> {
+		let timeout: NodeJS.Timeout;
+
+		return (...args: Parameters<T>): ReturnType<T> => {
+			return new Promise((resolve) => {
+				clearTimeout(timeout);
+				timeout = setTimeout(async () => {
+					const result = await func.apply(this, args);
+					resolve(result);
+				}, wait);
+			}) as ReturnType<T>;
+		};
 	}
 }
