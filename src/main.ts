@@ -28,6 +28,7 @@ export default class SmartSeekerPlugin extends Plugin {
 	private notesToSave: Record<string, Document> = {};
 	private isProcessing = false;
 	private hashStorage: NoteHashStorage;
+	private documentProcessor: DocumentProcessor;
 	settings: PluginSettings;
 
 	private lastEditTime: number = Date.now();
@@ -116,9 +117,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		try {
 			const document = await this.createDocument(fileOrFolder);
-			this.logger.debug("--→ document:", document);
-			const documentProcessor = new DocumentProcessor(this.settings);
-			const result = await documentProcessor.processSingleDocument(document);
+			const result = await this.documentProcessor.processSingleDocument(document);
 			this.logger.debug(`[Process] Completed: ${result}`);
 			new Notice("노트 처리가 완료되었습니다.");
 		} catch (error) {
@@ -208,6 +207,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		// 워크스페이스가 준비된 후에 이벤트 리스너 등록
 		this.app.workspace.onLayoutReady(async () => {
+			this.documentProcessor = new DocumentProcessor(this.settings, 5);
 			await this.initializeLocalStore();
 			await this.initializeNoteHashStorage();
 			this.registerVaultEvents();
@@ -389,9 +389,8 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	private async processNote(documents: Document<NoteMetadata>[]) {
-		const documentProcessor = new DocumentProcessor(this.settings);
 		const { totalDocuments, skippedDocuments, processedDocuments } =
-			await documentProcessor.processDocuments(documents);
+			await this.documentProcessor.processDocuments(documents);
 		this.logger.debug(
 			`${processedDocuments} notes successfully saved to PineconeDB`,
 		);
