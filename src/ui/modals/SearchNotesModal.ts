@@ -216,7 +216,8 @@ export class SearchNotesModal extends SuggestModal<
 
 	async onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {
 		const filePath = item.metadata?.filePath;
-		const lineNumber = (item.metadata?.loc as unknown as Location)?.lines?.from ?? 0;
+		const lineNumber =
+			(item.metadata?.loc as unknown as Location)?.lines?.from ?? 0;
 
 		if (filePath) {
 			const file = this.app.vault.getAbstractFileByPath(filePath.toString());
