@@ -217,8 +217,8 @@ export class SearchNotesModal extends SuggestModal<
 			.substring("(cont'd)".length)
 			.split("\n")[0]
 			.trim() as string;
-		const from = Number(item.metadata?.["loc.lines.from"] ?? 0);
-		const to = Number(item.metadata?.["loc.lines.to"] ?? 0);
+		const fromLine = Number(item.metadata?.["loc.lines.from"] ?? 0);
+		const toLine = Number(item.metadata?.["loc.lines.to"] ?? 0);
 
 		if (filePath && searchText) {
 			const file = this.app.vault.getAbstractFileByPath(filePath.toString());
@@ -239,29 +239,30 @@ export class SearchNotesModal extends SuggestModal<
 
 						// 실제 텍스트가 있는 라인을 찾습니다.
 						const foundLine =
-							lines.slice(from).findIndex((line) => line.includes(searchText)) +
-							from;
+							lines
+								.slice(fromLine)
+								.findIndex((line) => line.includes(searchText)) + fromLine;
 						this.logger.debug("foundLine", foundLine);
 
 						if (foundLine > -1) {
-							const line = lines[foundLine];
-							const startIndex = line.indexOf(searchText);
-							if (startIndex !== -1) {
-								// 찾은 텍스트의 시작과 끝 위치를 계산
-								const from = {
-									line: foundLine,
-									ch: startIndex,
-								};
-								const to = {
-									line: foundLine,
-									ch: startIndex + searchText.length,
-								};
+							const offset = foundLine - fromLine;
+							const from = {
+								line: foundLine,
+								ch: 0,
+							};
+							const to = {
+								line: toLine + offset,
+								ch: lines[toLine + offset].length,
+							};
+							console.log("from", from);
+							console.log("to", to);
+							console.log("offset", offset);
+							console.log("searchText", item.metadata?.text);
 
-								// 해당 위치로 스크롤하고 텍스트를 선택
-								editor.setCursor(from);
-								editor.setSelection(from, to);
-								editor.scrollIntoView({ from, to }, true);
-							}
+							// 해당 위치로 스크롤하고 텍스트를 선택
+							editor.setCursor(from);
+							editor.setSelection(from, to);
+							editor.scrollIntoView({ from, to }, true);
 						}
 					}
 				}
