@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BaseStore } from "@langchain/core/stores";
 import type { Vault } from "obsidian";
 import { LogLevel, Logger } from "src/helpers/logger";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class InLocalStore<T = any> extends BaseStore<string, T> {
 	private logger: Logger;
 	private cacheFilePath: string;
