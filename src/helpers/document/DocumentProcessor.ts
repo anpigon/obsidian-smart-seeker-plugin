@@ -1,5 +1,4 @@
 import { Document } from "@langchain/core/documents";
-import { PineconeStore } from "@langchain/pinecone";
 import {
 	MarkdownTextSplitter,
 	TextSplitter
@@ -12,6 +11,7 @@ import {
 } from "src/constants";
 import { createPineconeClient } from "src/services/PineconeManager";
 import { PluginSettings } from "src/settings/settings";
+import { PineconeStore } from "../langchain/vectorstores";
 import { Logger } from "../logger";
 import getEmbeddingModel from "../utils/getEmbeddingModel";
 import { createHash } from "../utils/hash";

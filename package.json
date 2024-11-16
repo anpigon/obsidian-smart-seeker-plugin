@@ -39,8 +39,10 @@
 		"@langchain/pinecone": "^0.1.1",
 		"@langchain/textsplitters": "^0.1.0",
 		"@pinecone-database/pinecone": "^4.0.0",
+		"flat": "^6.0.1",
 		"js-tiktoken": "^1.0.15",
 		"langchain": "^0.3.5",
-		"openai": "^4.70.2"
+		"openai": "^4.70.2",
+		"uuid": "^11.0.3"
 	}
 }

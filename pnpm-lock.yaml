@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@langchain/community':
         specifier: ^0.3.11
-        version: 0.3.11(@ibm-cloud/watsonx-ai@1.1.2)(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))(@pinecone-database/pinecone@3.0.3)(axios@1.7.4)(encoding@0.1.13)(ibm-cloud-sdk-core@5.1.0)(ignore@5.3.2)(jsonwebtoken@9.0.2)(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))
+        version: 0.3.11(@ibm-cloud/watsonx-ai@1.1.2)(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))(@pinecone-database/pinecone@4.0.0)(axios@1.7.4)(encoding@0.1.13)(ibm-cloud-sdk-core@5.1.0)(ignore@5.3.2)(jsonwebtoken@9.0.2)(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))
       '@langchain/core':
         specifier: ^0.3.17
         version: 0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))
@@ -24,8 +24,11 @@ importers:
         specifier: ^0.1.0
         version: 0.1.0(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))
       '@pinecone-database/pinecone':
-        specifier: ^3.0.0
-        version: 3.0.3
+        specifier: ^4.0.0
+        version: 4.0.0
+      flat:
+        specifier: ^6.0.1
+        version: 6.0.1
       js-tiktoken:
         specifier: ^1.0.15
         version: 1.0.15
@@ -35,6 +38,9 @@ importers:
       openai:
         specifier: ^4.70.2
         version: 4.70.2(encoding@0.1.13)(zod@3.23.8)
+      uuid:
+        specifier: ^11.0.3
+        version: 11.0.3
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.4
@@ -699,6 +705,10 @@ packages:
     resolution: {integrity: sha512-0cAG0d/6knVZgVyXM1II4qG3dyOepLuAQsCXTOJomdA7iQxf+/Om9mq9Cw4QObr56oZ+lqtptlw5qz0BQaBX2Q==}
     engines: {node: '>=18.0.0'}
 
+  '@pinecone-database/pinecone@4.0.0':
+    resolution: {integrity: sha512-INYS+GBys9v5BRTyn0tv8srVsPTlSRvE3BPE4Wkc/lOEyAIyB9F7DEMXbeF19FOLEgRwCuHTLjzm1niENl+4FA==}
+    engines: {node: '>=18.0.0'}
+
   '@tokenizer/token@0.3.0':
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
 
@@ -1056,6 +1066,11 @@ packages:
 
   flat@5.0.2:
     resolution: {integrity: sha512-b6suED+5/3rTpUBdG1gupIl8MPFCAMA0QXwmljLhvCUKcUvdE4gWky9zpuGCcXHOsz4J9wPGNWq6OKpmIzz3hQ==}
+    hasBin: true
+
+  flat@6.0.1:
+    resolution: {integrity: sha512-/3FfIa8mbrg3xE7+wAhWeV+bd7L2Mof+xtZb5dRDKZ+wDvYJK4WDYeIOuOhre5Yv5aQObZrlbRmk3RTSiuQBtw==}
+    engines: {node: '>=18'}
     hasBin: true
 
   flatted@3.3.1:
@@ -1583,6 +1598,10 @@ packages:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
     hasBin: true
 
+  uuid@11.0.3:
+    resolution: {integrity: sha512-d0z310fCWv5dJwnX1Y/MncBAqGMKEzlBb1AOf7z9K8ALnd0utBX/msg/fA0+sbyN1ihbMsLhrBlnl1ak7Wa0rg==}
+    hasBin: true
+
   w3c-keyname@2.2.8:
     resolution: {integrity: sha512-dpojBhNsCNN7T82Tm7k26A6G9ML3NkhDsnw9n/eoxSRlVBB4CEtIQ/KTCLI2Fwf3ataSXRhYFkQi3SlnFwPvPQ==}
 
@@ -1779,7 +1798,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@langchain/community@0.3.11(@ibm-cloud/watsonx-ai@1.1.2)(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))(@pinecone-database/pinecone@3.0.3)(axios@1.7.4)(encoding@0.1.13)(ibm-cloud-sdk-core@5.1.0)(ignore@5.3.2)(jsonwebtoken@9.0.2)(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))':
+  '@langchain/community@0.3.11(@ibm-cloud/watsonx-ai@1.1.2)(@langchain/core@0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8)))(@pinecone-database/pinecone@4.0.0)(axios@1.7.4)(encoding@0.1.13)(ibm-cloud-sdk-core@5.1.0)(ignore@5.3.2)(jsonwebtoken@9.0.2)(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))':
     dependencies:
       '@ibm-cloud/watsonx-ai': 1.1.2
       '@langchain/core': 0.3.17(openai@4.70.2(encoding@0.1.13)(zod@3.23.8))
@@ -1795,7 +1814,7 @@ snapshots:
       zod: 3.23.8
       zod-to-json-schema: 3.23.5(zod@3.23.8)
     optionalDependencies:
-      '@pinecone-database/pinecone': 3.0.3
+      '@pinecone-database/pinecone': 4.0.0
       ignore: 5.3.2
       jsonwebtoken: 9.0.2
     transitivePeerDependencies:
@@ -1864,6 +1883,10 @@ snapshots:
       fastq: 1.17.1
 
   '@pinecone-database/pinecone@3.0.3':
+    dependencies:
+      encoding: 0.1.13
+
+  '@pinecone-database/pinecone@4.0.0':
     dependencies:
       encoding: 0.1.13
 
@@ -2269,6 +2292,8 @@ snapshots:
 
   flat@5.0.2: {}
 
+  flat@6.0.1: {}
+
   flatted@3.3.1: {}
 
   follow-redirects@1.15.9(debug@4.3.7):
@@ -2351,7 +2376,7 @@ snapshots:
       isstream: 0.1.2
       jsonwebtoken: 9.0.2
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.7.4(debug@4.3.7))
+      retry-axios: 2.6.0(axios@1.7.4)
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -2630,7 +2655,7 @@ snapshots:
 
   resolve-from@4.0.0: {}
 
-  retry-axios@2.6.0(axios@1.7.4(debug@4.3.7)):
+  retry-axios@2.6.0(axios@1.7.4):
     dependencies:
       axios: 1.7.4(debug@4.3.7)
 
@@ -2734,6 +2759,8 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   uuid@10.0.0: {}
+
+  uuid@11.0.3: {}
 
   w3c-keyname@2.2.8: {}
 
