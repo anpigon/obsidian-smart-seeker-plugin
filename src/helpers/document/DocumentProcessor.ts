@@ -145,7 +145,7 @@ export default class DocumentProcessor {
 	}
 
 	async processMultiFiles(files: TFile[]) {
-		const documents = []
+		const documents = [];
 		for (const file of files) {
 			const document = await this.createDocument(file);
 			documents.push(document);

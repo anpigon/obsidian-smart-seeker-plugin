@@ -108,7 +108,9 @@ export default class SmartSeekerPlugin extends Plugin {
 			.getMarkdownFiles()
 			.filter((file) => file.path.startsWith(folder.path));
 
-		new Notice(`📚 ${folder.name} 폴더에서 ${files.length}개의 노트를 찾았습니다.`);
+		new Notice(
+			`📚 ${folder.name} 폴더에서 ${files.length}개의 노트를 찾았습니다.`,
+		);
 
 		const result = await this.documentProcessor.processMultiFiles(files);
 		this.logger.debug(`[Process] Completed: ${result}`);
