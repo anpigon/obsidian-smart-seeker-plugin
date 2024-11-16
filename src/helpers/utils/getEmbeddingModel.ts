@@ -14,8 +14,8 @@ export default function getEmbeddingModel(settings: PluginSettings) {
 		underlyingEmbeddings,
 		// FIXME: localStore에 임베딩을 저장할 때 직렬화/역직렬화 과정에서 불일치 오류가 자주 발생하며, 원인은 JSON.stringify 과정에서 부동 소수점 숫자에서 정밀도 손실이 발생함.
 		// this.localStore,
-		// new InMemoryStore(),
-		new IndexedDBStore(PLUGIN_APP_ID),
+		new InMemoryStore(),
+		// new IndexedDBStore(PLUGIN_APP_ID),
 		{
 			namespace: underlyingEmbeddings.modelName,
 		},
