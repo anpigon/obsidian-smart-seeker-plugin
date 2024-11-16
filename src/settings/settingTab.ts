@@ -131,15 +131,16 @@ export class SettingTab extends PluginSettingTab {
 					});
 					optionEl.disabled = true;
 				} else {
-					filteredIndexes.forEach(({ name }) => {
+					for (const { name } of filteredIndexes) {
 						const optionEl = this.indexSelectEl?.createEl("option", {
 							text: name,
 							value: name,
 						});
-						if (optionEl && name === this.plugin.settings.selectedIndex) {
-							optionEl.selected = true;
+
+						if (name === this.plugin.settings.selectedIndex) {
+							(optionEl as HTMLOptionElement).selected = true;
 						}
-					});
+					}
 				}
 			}
 		} catch (error) {
