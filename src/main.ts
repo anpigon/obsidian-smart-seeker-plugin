@@ -283,8 +283,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		const id = await createHash(file.path);
 		let pageContent = content;
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		let frontmatter: any = null;
+		let frontmatter: FrontMatterCache | null = null;
 		await this.app.fileManager.processFrontMatter(file, (fm) => {
 			frontmatter = fm;
 			pageContent = pageContent
@@ -293,7 +292,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		});
 
 		const metadata: NoteMetadata = {
-			...frontmatter,
+			...frontmatter as unknown as NoteMetadata,
 			id,
 			hash,
 			filePath: file.path,
