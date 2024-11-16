@@ -22,7 +22,9 @@ export class SearchNotesModal extends SuggestModal<
 	) => Promise<ScoredPineconeRecord<RecordMetadata>[]>;
 	private openai: OpenAI;
 	private pineconeIndex: Index<RecordMetadata>;
+	private isSearching = false;
 	private currentSearchController: AbortController | null = null;
+	private previousQuery = '';
 
 	constructor(
 		app: App,
@@ -137,14 +139,19 @@ export class SearchNotesModal extends SuggestModal<
 
 		// 쿼리가 비어있거나 2글자 미만인 경우 빈 배열 반환
 		if (!trimmedQuery || trimmedQuery.length < 2) {
-			this.logger.debug("검색어가 너무 짧음", {
-				query: trimmedQuery,
-				length: trimmedQuery.length,
-			});
 			return [];
 		}
 
-		return this.debouncedGetSuggestions(query);
+		// 이전 검색어와 동일한 경우 검색하지 않음
+		if (trimmedQuery === this.previousQuery) {
+			return [];
+		}
+
+		this.isSearching = true;
+		this.previousQuery = trimmedQuery;
+		const results = await this.debouncedGetSuggestions(trimmedQuery);
+		this.isSearching = false;
+		return results;
 	}
 
 	private async getQueryVector(query: string): Promise<number[]> {
