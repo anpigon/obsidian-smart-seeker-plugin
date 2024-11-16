@@ -23,7 +23,7 @@ import {
 } from "@langchain/core/vectorstores";
 
 // eslint-disable-next-line @typescript-eslint/ban-types, @typescript-eslint/no-explicit-any
-type PineconeMetadata = Record<string, any>;
+type PineconeMetadata = Record<string, unknown>;
 
 type HTTPHeaders = {
 	[key: string]: string;
@@ -299,8 +299,7 @@ export class PineconeStore extends VectorStore {
 			for (const key of Object.keys(documentMetadata)) {
 				if (
 					Array.isArray(documentMetadata[key]) &&
-					// eslint-disable-next-line @typescript-eslint/ban-types, @typescript-eslint/no-explicit-any
-					documentMetadata[key].every((el: any) => typeof el === "string")
+					documentMetadata[key].every((el: unknown) => typeof el === "string")
 				) {
 					stringArrays[key] = documentMetadata[key];
 					delete documentMetadata[key];
