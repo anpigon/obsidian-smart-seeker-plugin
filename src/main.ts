@@ -260,7 +260,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		const filePath = file.path;
 
 		// 이미 존재하는 경로인지 확인
-		if (this.notesToSave.hasOwnProperty(filePath)) {
+		if (filePath in this.notesToSave) {
 			console.debug(`이미 스케쥴러에 등록된 노트입니다: ${filePath}`);
 			return;
 		}
@@ -292,7 +292,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		});
 
 		const metadata: NoteMetadata = {
-			...frontmatter as unknown as NoteMetadata,
+			...(frontmatter as unknown as NoteMetadata),
 			id,
 			hash,
 			filePath: file.path,
