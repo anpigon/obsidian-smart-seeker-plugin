@@ -60,10 +60,11 @@ export class SearchNotesModal extends SuggestModal<
 	private initializePineconeClient() {
 		const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
 			if (this.currentSearchController) {
-				init = {
+				const modifiedInit = {
 					...init,
 					signal: this.currentSearchController.signal,
 				};
+				return obsidianFetchApi(input, modifiedInit);
 			}
 			return obsidianFetchApi(input, init);
 		};
