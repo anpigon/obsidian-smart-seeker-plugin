@@ -111,13 +111,12 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	private async processFile(fileOrFolder: TFile): Promise<void> {
-		this.logger.debug("selected file:", fileOrFolder);
+	private async processFile(file: TFile): Promise<void> {
+		this.logger.debug("selected file:", file);
 		new Notice("노트를 처리중입니다...");
 
 		try {
-			const document = await this.createDocument(fileOrFolder);
-			const result = await this.documentProcessor.processSingleDocument(document);
+			const result = await this.documentProcessor.processSingleFile(file);
 			this.logger.debug(`[Process] Completed: ${result}`);
 			new Notice("노트 처리가 완료되었습니다.");
 		} catch (error) {
@@ -207,7 +206,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		// 워크스페이스가 준비된 후에 이벤트 리스너 등록
 		this.app.workspace.onLayoutReady(async () => {
-			this.documentProcessor = new DocumentProcessor(this.settings, 5);
+			this.documentProcessor = new DocumentProcessor(this);
 			await this.initializeLocalStore();
 			await this.initializeNoteHashStorage();
 			this.registerVaultEvents();

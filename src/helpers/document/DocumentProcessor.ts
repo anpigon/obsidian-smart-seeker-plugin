@@ -1,9 +1,12 @@
-import type { Document } from "@langchain/core/documents";
+import SmartSeekerPlugin from "@/main";
+import { NoteMetadata } from "@/types";
+import { Document } from "@langchain/core/documents";
 import {
 	MarkdownTextSplitter,
 	type TextSplitter,
 } from "@langchain/textsplitters";
 import type { Index, RecordMetadata } from "@pinecone-database/pinecone";
+import { FrontMatterCache, TFile } from "obsidian";
 import {
 	DEFAULT_CHUNK_OVERLAP,
 	DEFAULT_CHUNK_SIZE,
@@ -13,8 +16,9 @@ import { createPineconeClient } from "src/services/PineconeManager";
 import type { PluginSettings } from "src/settings/settings";
 import { PineconeStore } from "../langchain/vectorstores";
 import { Logger } from "../logger";
+import { getFileNameSafe } from "../utils/fileUtils";
 import getEmbeddingModel from "../utils/getEmbeddingModel";
-import { createHash } from "../utils/hash";
+import { createContentHash, createHash } from "../utils/hash";
 
 interface ProcessingResult {
 	totalDocuments: number; // 입력된 전체 문서 수
@@ -30,16 +34,18 @@ interface DocumentChunk {
 
 export default class DocumentProcessor {
 	private logger: Logger;
+	private settings: PluginSettings;
 	private textSplitter: TextSplitter;
 	private pineconeIndex: Index<RecordMetadata>;
 
 	constructor(
-		private settings: PluginSettings,
+		private plugin: SmartSeekerPlugin,
 		private maxConcurrency = 5,
 	) {
-		this.logger = this.initializeLogger(settings);
+		this.settings = this.plugin.settings;
+		this.logger = this.initializeLogger(plugin.settings);
+		this.pineconeIndex = this.initializePineconeIndex(plugin.settings);
 		this.textSplitter = this.initializeTextSplitter();
-		this.pineconeIndex = this.initializePineconeIndex(settings);
 	}
 
 	private initializeLogger(settings: PluginSettings): Logger {
@@ -98,6 +104,12 @@ export default class DocumentProcessor {
 	async processSingleDocument(document: Document) {
 		const { ids, chunks } = await this.createChunks([document]);
 		this.logger.debug("chunks", chunks);
+		return await this.saveToVectorStore(chunks, ids);
+	}
+
+	async processSingleFile(file: TFile) {
+		const document = await this.createDocument(file);
+		const { ids, chunks } = await this.createChunks([document]);
 		return await this.saveToVectorStore(chunks, ids);
 	}
 
@@ -192,5 +204,37 @@ export default class DocumentProcessor {
 		});
 		const results = await Promise.all(filterPromises);
 		return results.filter((doc): doc is Document => doc !== null);
+	}
+
+	private async createDocument(file: TFile) {
+		const content = await this.plugin.app.vault.read(file);
+		const hash = await createContentHash(content);
+		const id = await createHash(file.path);
+		let pageContent = content;
+
+		let frontmatter: FrontMatterCache | null = null;
+		await this.plugin.app.fileManager.processFrontMatter(file, (fm) => {
+			frontmatter = fm;
+			pageContent = pageContent
+				.substring(pageContent.indexOf("---", 3) + 3)
+				.trim();
+		});
+		console.log("--→ frontmatter", frontmatter);
+
+		const metadata: NoteMetadata = {
+			...(frontmatter as unknown as NoteMetadata),
+			id,
+			hash,
+			filePath: file.path,
+			ctime: file.stat.ctime,
+			mtime: file.stat.mtime,
+			title: getFileNameSafe(file.path),
+		};
+		console.log("--→ metadata", frontmatter);
+
+		const document = new Document({ pageContent, metadata });
+
+		console.log("--→ document", document);
+		return document;
 	}
 }
