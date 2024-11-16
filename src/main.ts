@@ -202,6 +202,9 @@ export default class SmartSeekerPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
+		// 로그 수정
+		this.logger = new Logger("SmartSeekerPlugin", this.settings.logLevel);
+
 		// 설정 탭 추가
 		this.addSettingTab(new SettingTab(this.app, this));
 
@@ -243,6 +246,10 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	changeLogLevel(logLevel: LogLevel) {
+		this.logger.setLevel(logLevel);
 	}
 
 	async proccessFrotmatter(file: TFile) {
