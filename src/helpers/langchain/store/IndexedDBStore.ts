@@ -21,28 +21,50 @@ export class IndexedDBStore<T = any> extends BaseStore<string, T> {
 	private async initialize(): Promise<void> {
 		try {
 			this.db = await this.openDB();
+			// Verify the store exists
+			const storeNames = Array.from(this.db.objectStoreNames);
+			if (!storeNames.includes(this.storeName)) {
+				// Version vor dem Schließen speichern
+				const currentVersion = this.db ? this.db.version : 1;
+				this.db.close();
+				this.db = null;
+				// Neue DB mit erhöhter Version öffnen
+				this.db = await this.openDB(currentVersion + 1);
+			}
 			this.logger.debug("IndexedDB initialized successfully");
 		} catch (error) {
 			this.logger.error("Failed to initialize IndexedDB:", error);
+			throw error; // Propagate the error
 		}
 	}
 
-	private openDB(): Promise<IDBDatabase> {
+	private openDB(version?: number): Promise<IDBDatabase> {
 		return new Promise((resolve, reject) => {
-			const request = indexedDB.open(this.dbName, 1);
+			const request = indexedDB.open(this.dbName, version);
 
 			request.onerror = () => {
+				this.logger.error("Error opening database:", request.error);
 				reject(request.error);
 			};
 
 			request.onsuccess = () => {
-				resolve(request.result);
+				const db = request.result;
+				if (!db.objectStoreNames.contains(this.storeName)) {
+					db.close();
+					// Recursively try to open with a new version if store doesn't exist
+					this.openDB((db.version || 1) + 1)
+						.then(resolve)
+						.catch(reject);
+					return;
+				}
+				resolve(db);
 			};
 
 			request.onupgradeneeded = (event) => {
 				const db = (event.target as IDBOpenDBRequest).result;
 				if (!db.objectStoreNames.contains(this.storeName)) {
 					db.createObjectStore(this.storeName);
+					this.logger.debug(`Created object store: ${this.storeName}`);
 				}
 			};
 		});
