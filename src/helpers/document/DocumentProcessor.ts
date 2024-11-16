@@ -144,6 +144,16 @@ export default class DocumentProcessor {
 		}
 	}
 
+	async processMultiFiles(files: TFile[]) {
+		const documents = []
+		for (const file of files) {
+			const document = await this.createDocument(file);
+			documents.push(document);
+		}
+		const { ids, chunks } = await this.createChunks(documents);
+		await this.saveToVectorStore(chunks, ids);
+	}
+
 	private async createChunks(documents: Document[]): Promise<DocumentChunk> {
 		const result: DocumentChunk = { ids: [], chunks: [] };
 

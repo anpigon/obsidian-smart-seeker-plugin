@@ -71,7 +71,7 @@ export default class SmartSeekerPlugin extends Plugin {
 								.setTitle("폴더 내 노트를 RAG 검색용으로 저장")
 								.setSection("RAG 검색용")
 								.setIcon("folder")
-								.onClick(() => this.processFolderNotes(fileOrFolder));
+								.onClick(() => this.processFolderFiles(fileOrFolder));
 						});
 					} else if (
 						fileOrFolder instanceof TFile &&
@@ -99,7 +99,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		);
 	}
 
-	private async processFolderNotes(folder: TFolder): Promise<void> {
+	private async processFolderFiles(folder: TFolder): Promise<void> {
 		this.logger.debug("selected folder:", folder);
 
 		new Notice("폴더 내 노트들을 처리중입니다...");
@@ -110,9 +110,9 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		new Notice(`폴더 내에서 노트 ${files.length}개를 찾았습니다.`);
 
-		for (const file of files) {
-			await this.addNoteToScheduler(file);
-		}
+		const result = await this.documentProcessor.processMultiFiles(files);
+		this.logger.debug(`[Process] Completed: ${result}`);
+		new Notice("노트 처리가 완료되었습니다.");
 	}
 
 	private async processFile(file: TFile): Promise<void> {
