@@ -2,7 +2,7 @@ import { BaseStore } from "@langchain/core/stores";
 import { LogLevel, Logger } from "src/helpers/logger";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class IndexedDBStore<T = any> extends BaseStore<string, T> {
+export class IndexedDBStore<T = unknown> extends BaseStore<string, T> {
 	private logger: Logger;
 	private dbName: string;
 	private storeName: string;
