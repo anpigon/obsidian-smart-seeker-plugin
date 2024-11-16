@@ -94,6 +94,12 @@ export default class DocumentProcessor {
 		return documents.map((doc) => `${doc.metadata.id}-0`);
 	}
 
+	async processSingleDocument(document: Document) {
+		const { ids, chunks } = await this.createChunks([document]);
+		this.logger.debug("chunks", chunks);
+		return await this.saveToVectorStore(chunks, ids);
+	}
+
 	async processDocuments(documents: Document[]): Promise<ProcessingResult> {
 		try {
 			const totalDocuments = documents.length;

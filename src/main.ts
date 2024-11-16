@@ -126,6 +126,24 @@ export default class SmartSeekerPlugin extends Plugin {
 		);
 	}
 
+
+
+	private async processFile(fileOrFolder: TFile): Promise<void> {
+		this.logger.debug("selected file:", fileOrFolder);
+		new Notice("노트를 처리중입니다...");
+
+		try {
+			const document = await this.createDocument(fileOrFolder);
+			const documentProcessor = new DocumentProcessor(this.settings);
+			const result = await documentProcessor.processSingleDocument(document);
+			this.logger.debug(`[Process] Completed: ${result}`);
+			new Notice("노트 처리가 완료되었습니다.");
+		} catch (error) {
+			this.logger.error("Error processing note:", error);
+			new Notice(`Error processing note: ${error}`);
+		}
+	}
+
 	private updateLastEditTime() {
 		this.lastEditTime = Date.now();
 	}
