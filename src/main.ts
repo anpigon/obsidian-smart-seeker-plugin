@@ -415,7 +415,9 @@ export default class SmartSeekerPlugin extends Plugin {
 			}
 
 			// documents를 배열로 변환
-			const documents = Object.values(notesToProcess) as Document<NoteMetadata>[];
+			const documents = Object.values(
+				notesToProcess,
+			) as Document<NoteMetadata>[];
 			const { totalDocuments, skippedDocuments, processedDocuments } =
 				await this.processNote(documents);
 			this.logger.debug(
