@@ -386,7 +386,7 @@ export class PineconeStore extends VectorStore {
 
 		let optionsNamespace = this.namespace ?? "";
 		if (_filter && "namespace" in _filter) {
-			optionsNamespace = _filter.namespace;
+			optionsNamespace = _filter.namespace as string;
 			_filter.namespace = undefined;
 		}
 
