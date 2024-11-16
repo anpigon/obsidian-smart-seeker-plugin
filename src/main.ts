@@ -62,11 +62,14 @@ export default class SmartSeekerPlugin extends Plugin {
 			this.app.workspace.on(
 				"file-menu",
 				(menu: Menu, fileOrFolder: TFile | TFolder) => {
+					this.logger.debug("file or folder:", fileOrFolder);
+
 					// folder가 TFolder 인스턴스인 경우에만 메뉴 추가
 					if (fileOrFolder instanceof TFolder) {
 						menu.addItem((item) => {
 							item
 								.setTitle("폴더 내 노트를 RAG 검색용으로 저장")
+								.setSection("RAG 검색용")
 								.setIcon("folder")
 								.onClick(() => this.processFolderNotes(fileOrFolder));
 						});
@@ -77,6 +80,7 @@ export default class SmartSeekerPlugin extends Plugin {
 						menu.addItem((item) => {
 							item
 								.setTitle("노트를 RAG 검색용으로 저장")
+								.setSection("RAG 검색용")
 								.setIcon("file")
 								.onClick(() => this.processFile(fileOrFolder));
 						});
