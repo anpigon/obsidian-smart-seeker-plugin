@@ -31,7 +31,6 @@ export default class SmartSeekerPlugin extends Plugin {
 	settings: PluginSettings;
 
 	private lastEditTime: number = Date.now();
-	private saveInterval: NodeJS.Timeout | null = null;
 
 	private registerVaultEvents(): void {
 		if (!this.app.workspace.layoutReady) {
