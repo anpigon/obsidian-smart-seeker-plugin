@@ -5,7 +5,13 @@ import {
 	type RecordMetadata,
 	type ScoredPineconeRecord,
 } from "@pinecone-database/pinecone";
-import { type App, Notice, SuggestModal, TFile, MarkdownView } from "obsidian";
+import {
+	type App,
+	type MarkdownView,
+	Notice,
+	SuggestModal,
+	TFile,
+} from "obsidian";
 import type OpenAI from "openai";
 import { DEFAULT_EMBEDDING_MODEL } from "../../constants";
 import { LogLevel, Logger } from "../../helpers/logger";
