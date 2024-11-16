@@ -5,13 +5,20 @@ import {
 	type RecordMetadata,
 	type ScoredPineconeRecord,
 } from "@pinecone-database/pinecone";
-import { type App, Notice, SuggestModal, TFile } from "obsidian";
+import { type App, Notice, SuggestModal, TFile, MarkdownView } from "obsidian";
 import type OpenAI from "openai";
 import { DEFAULT_EMBEDDING_MODEL } from "../../constants";
 import { LogLevel, Logger } from "../../helpers/logger";
 import obsidianFetchApi from "../../helpers/utils/obsidianFetchApi";
 import { createOpenAIClient } from "../../services/OpenAIManager";
 import { createPineconeClient } from "../../services/PineconeManager";
+
+interface Location {
+	lines: {
+		from: number;
+		to?: number;
+	};
+}
 
 export class SearchNotesModal extends SuggestModal<
 	ScoredPineconeRecord<RecordMetadata>
@@ -203,8 +210,7 @@ export class SearchNotesModal extends SuggestModal<
 
 	async onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {
 		const filePath = item.metadata?.filePath;
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const lineNumber = (item.metadata?.loc as any)?.lines?.from ?? 0;
+		const lineNumber = (item.metadata?.loc as Location)?.lines?.from ?? 0;
 
 		if (filePath) {
 			const file = this.app.vault.getAbstractFileByPath(filePath.toString());
@@ -218,8 +224,7 @@ export class SearchNotesModal extends SuggestModal<
 				if (lineNumber !== undefined) {
 					const view = leaf.view;
 					if (view.getViewType() === "markdown") {
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						const editor = (view as any).editor;
+						const editor = (view as MarkdownView).editor;
 						if (editor) {
 							// 해당 라인으로 스크롤
 							editor.setCursor(lineNumber - 1);
