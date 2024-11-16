@@ -1,14 +1,17 @@
 import {
+	Pinecone,
+	type PineconeConfiguration,
 	Index,
 	RecordMetadata,
 	ScoredPineconeRecord,
 } from "@pinecone-database/pinecone";
 import { App, Notice, SuggestModal, TFile } from "obsidian";
 import OpenAI from "openai";
-import { DEFAULT_EMBEDDING_MODEL } from "src/constants";
-import { Logger, LogLevel } from "src/helpers/logger";
-import { createOpenAIClient } from "src/services/OpenAIManager";
-import { createPineconeClient } from "src/services/PineconeManager";
+import { DEFAULT_EMBEDDING_MODEL } from "../../constants";
+import { Logger, LogLevel } from "../../helpers/logger";
+import obsidianFetchApi from "../../helpers/utils/obsidianFetchApi";
+import { createOpenAIClient } from "../../services/OpenAIManager";
+import { createPineconeClient } from "../../services/PineconeManager";
 
 export class SearchNotesModal extends SuggestModal<
 	ScoredPineconeRecord<RecordMetadata>
@@ -19,6 +22,7 @@ export class SearchNotesModal extends SuggestModal<
 	) => Promise<ScoredPineconeRecord<RecordMetadata>[]>;
 	private openai: OpenAI;
 	private pineconeIndex: Index<RecordMetadata>;
+	private currentSearchController: AbortController | null = null;
 
 	constructor(
 		app: App,
@@ -51,6 +55,26 @@ export class SearchNotesModal extends SuggestModal<
 		}
 	}
 
+	private initializePineconeClient() {
+		const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
+			if (this.currentSearchController) {
+				init = {
+					...init,
+					signal: this.currentSearchController.signal,
+				};
+			}
+			return obsidianFetchApi(input, init);
+		};
+
+		const config: PineconeConfiguration = {
+			apiKey: this.pineconeApiKey,
+			fetchApi: customFetch,
+		};
+
+		const pinecone = new Pinecone(config);
+		this.pineconeIndex = pinecone.Index(this.selectedIndex);
+	}
+
 	/**
 	 * 주어진 쿼리로 노트를 검색합니다.
 	 * @param query - 검색할 텍스트
@@ -59,17 +83,32 @@ export class SearchNotesModal extends SuggestModal<
 	 */
 	private async searchNotes(query: string, topK = 10) {
 		try {
+			// 이전 검색 요청이 있다면 취소
+			if (this.currentSearchController) {
+				this.currentSearchController.abort();
+			}
+
+			// 새로운 AbortController 생성
+			this.currentSearchController = new AbortController();
+
+			this.logger.debug("검색 시작:", query);
+			const vector = await this.getQueryVector(query);
+
 			const results = await this.pineconeIndex.query({
-				vector: await this.getQueryVector(query),
+				vector,
 				includeMetadata: true,
 				topK,
 			});
+
 			this.logger.debug("검색 결과:", results);
 			return results.matches;
 		} catch (error) {
 			console.error("Search error:", error);
 			new Notice("Failed to search notes");
 			return [];
+		} finally {
+			// 검색이 완료되면 현재 controller 초기화
+			this.currentSearchController = null;
 		}
 	}
 
