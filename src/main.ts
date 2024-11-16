@@ -67,7 +67,7 @@ export default class SmartSeekerPlugin extends Plugin {
 							item
 								.setTitle("폴더 내 노트를 RAG 검색용으로 저장")
 								.setIcon("folder")
-								.onClick(() => this.processFolderNotes(fileOrFolder));
+								.onClick(async () => await this.processFolderNotes(fileOrFolder));
 						});
 					} else if (
 						fileOrFolder instanceof TFile &&
@@ -77,7 +77,7 @@ export default class SmartSeekerPlugin extends Plugin {
 							item
 								.setTitle("노트를 RAG 검색용으로 저장")
 								.setIcon("file")
-								.onClick(() => this.processFile(fileOrFolder));
+								.onClick(async () => await this.processFile(fileOrFolder));
 						});
 					}
 				},
