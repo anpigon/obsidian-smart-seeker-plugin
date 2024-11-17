@@ -1,16 +1,19 @@
-import { ItemView, WorkspaceLeaf, TFile, Notice } from "obsidian";
+import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
+import { createPineconeClient } from "@/services/PineconeManager";
+import { PluginSettings } from "@/settings/settings";
+import { ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import { PLUGIN_APP_ID } from "../constants";
-import { Pinecone } from "@pinecone-database/pinecone";
 
 export const VIEW_TYPE_RELATED_NOTES = `${PLUGIN_APP_ID}-related-notes-view`;
 
 export class RelatedNotesView extends ItemView {
 	private currentFile: TFile | null = null;
-	private pineconeClient: Pinecone;
 
-	constructor(leaf: WorkspaceLeaf, pineconeClient: Pinecone) {
+	constructor(
+		leaf: WorkspaceLeaf,
+		private settings: PluginSettings,
+	) {
 		super(leaf);
-		this.pineconeClient = pineconeClient;
 	}
 
 	getViewType(): string {
@@ -53,11 +56,13 @@ export class RelatedNotesView extends ItemView {
 			console.log("content", content);
 
 			// Query Pinecone for related documents
-			const index = this.pineconeClient.Index(this.selectedIndex);
-			const index = this.pineconeClient.Index("obsidian-notes"); // Replace with your index name
+			const pc = createPineconeClient(this.settings.pineconeApiKey);
+			const index = pc.Index(this.settings.pineconeIndexName);
+			const embeddings = await getEmbeddingModel(this.settings);
+			const vector = await embeddings.embedQuery(content);
 			const queryResponse = await index.query({
-				vector: await this.getEmbedding(content),
-				topK: 10,
+				vector,
+				topK: 100,
 				includeMetadata: true,
 			});
 

@@ -179,12 +179,7 @@ export default class SmartSeekerPlugin extends Plugin {
 					new Notice("Please configure PineconeDB settings first");
 					return;
 				}
-				new SearchNotesModal(
-					this.app,
-					this.settings.openAIApiKey,
-					this.settings.pineconeApiKey,
-					this.settings.pineconeIndexName,
-				).open();
+				new SearchNotesModal(this.app, this.settings).open();
 			},
 		});
 	}
@@ -201,7 +196,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		// Register view
 		this.registerView(
 			VIEW_TYPE_RELATED_NOTES,
-			(leaf: WorkspaceLeaf) => new RelatedNotesView(leaf, this.pineconeClient),
+			(leaf: WorkspaceLeaf) => new RelatedNotesView(leaf, this.settings),
 		);
 
 		// Add icon to ribbon
