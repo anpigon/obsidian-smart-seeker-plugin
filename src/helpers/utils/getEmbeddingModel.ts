@@ -1,9 +1,8 @@
 import { InMemoryStore } from "@langchain/core/stores";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
-import { DEFAULT_EMBEDDING_MODEL, PLUGIN_APP_ID } from "src/constants";
+import { DEFAULT_EMBEDDING_MODEL } from "src/constants";
 import type { PluginSettings } from "src/settings/settings";
-import { IndexedDBStore } from "../langchain/store/IndexedDBStore";
 
 export default function getEmbeddingModel(settings: PluginSettings) {
 	const underlyingEmbeddings = new OpenAIEmbeddings({

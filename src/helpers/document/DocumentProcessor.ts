@@ -144,17 +144,24 @@ export default class DocumentProcessor {
 		}
 	}
 
-	async processMultiFiles(files: TFile[]) {
-		const documents = [];
+	async createDocumentsFromFiles(
+		files: TFile[],
+	): Promise<Document<NoteMetadata>[]> {
+		const documents: Document<NoteMetadata>[] = [];
 		for (const file of files) {
 			const document = await this.createDocument(file);
 			documents.push(document);
 		}
+		return documents;
+	}
+
+	async processMultiFiles(files: TFile[]) {
+		const documents = await this.createDocumentsFromFiles(files);
 		const { ids, chunks } = await this.createChunks(documents);
 		await this.saveToVectorStore(chunks, ids);
 	}
 
-	private async createChunks(documents: Document[]): Promise<DocumentChunk> {
+	async createChunks(documents: Document[]): Promise<DocumentChunk> {
 		const result: DocumentChunk = { ids: [], chunks: [] };
 
 		for (const document of documents) {
@@ -174,7 +181,7 @@ export default class DocumentProcessor {
 		return result;
 	}
 
-	private async saveToVectorStore(
+	async saveToVectorStore(
 		chunks: Document[],
 		ids: string[],
 	): Promise<string[]> {
@@ -217,7 +224,7 @@ export default class DocumentProcessor {
 	}
 
 	public async createDocument(file: TFile) {
-		const content = await this.plugin.app.vault.read(file);
+		const content = await this.plugin.app.vault.cachedRead(file);
 		const hash = await createContentHash(content);
 		const id = await createHash(file.path);
 		let pageContent = content;
