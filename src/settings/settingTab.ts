@@ -67,7 +67,7 @@ export class SettingTab extends PluginSettingTab {
 			.setDesc("사용할 Pinecone 인덱스를 선택하세요")
 			.addDropdown((dropdown) => {
 				dropdown.onChange(async (value) => {
-					this.plugin.settings.selectedIndex = value;
+					this.plugin.settings.pineconeIndexName = value;
 					await this.plugin.saveSettings();
 				});
 				this.indexSelectEl = dropdown.selectEl;
@@ -137,7 +137,7 @@ export class SettingTab extends PluginSettingTab {
 							value: name,
 						});
 
-						if (name === this.plugin.settings.selectedIndex) {
+						if (name === this.plugin.settings.pineconeIndexName) {
 							(optionEl as HTMLOptionElement).selected = true;
 						}
 					}
