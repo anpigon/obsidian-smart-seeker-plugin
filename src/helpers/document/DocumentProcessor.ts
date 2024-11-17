@@ -216,7 +216,7 @@ export default class DocumentProcessor {
 		return results.filter((doc): doc is Document => doc !== null);
 	}
 
-	private async createDocument(file: TFile) {
+	public async createDocument(file: TFile) {
 		const content = await this.plugin.app.vault.read(file);
 		const hash = await createContentHash(content);
 		const id = await createHash(file.path);
@@ -240,7 +240,7 @@ export default class DocumentProcessor {
 			mtime: file.stat.mtime,
 			title: getFileNameSafe(file.path),
 		};
-		console.log("--→ metadata", frontmatter);
+		console.log("--→ metadata", metadata);
 
 		const document = new Document({ pageContent, metadata });
 

@@ -14,8 +14,6 @@ import { InLocalStore } from "./helpers/langchain/store/InLocalStore";
 import { LogLevel, Logger } from "./helpers/logger";
 import NoteHashStorage from "./helpers/storage/NoteHashStorage";
 import calculateTokenCount from "./helpers/utils/calculateTokenCount";
-import { getFileNameSafe } from "./helpers/utils/fileUtils";
-import { createContentHash, createHash } from "./helpers/utils/hash";
 import { createPineconeClient } from "./services/PineconeManager";
 import { SettingTab } from "./settings/settingTab";
 import { DEFAULT_SETTINGS, type PluginSettings } from "./settings/settings";
@@ -41,20 +39,15 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
 		this.registerEvent(
-			this.app.vault.on("create", (file) =>
-				this.handleNoteCreateOrUpdate(file),
-			),
+			this.app.vault.on("create", (file) => this.onCreateOrModify(file)),
 		);
 
 		this.registerEvent(
-			this.app.vault.on("modify", (file) => {
-				this.handleNoteCreateOrUpdate(file);
-				this.updateLastEditTime(); // 수정 시 마지막 편집 시간 업데이트
-			}),
+			this.app.vault.on("modify", (file) => this.onCreateOrModify(file)),
 		);
 
 		this.registerEvent(
-			this.app.vault.on("delete", (file) => this.handleNoteDelete(file)),
+			this.app.vault.on("delete", (file) => this.onDelete(file)),
 		);
 
 		// 파일 탐색기의 폴더 컨텍스트 메뉴에 이벤트 리스너 추가
@@ -257,55 +250,20 @@ export default class SmartSeekerPlugin extends Plugin {
 	 */
 	private async addNoteToScheduler(file: TFile): Promise<void> {
 		const filePath = file.path;
-
-		// 이미 존재하는 경로인지 확인
-		if (filePath in this.notesToSave) {
-			console.debug(`이미 스케쥴러에 등록된 노트입니다: ${filePath}`);
-			return;
-		}
+		this.logger.debug(
+			`노트를 생성 또는 수정하여 스케쥴러에 추가합니다: ${filePath}`,
+		);
 
 		try {
-			const document = await this.createDocument(file);
+			const document = await this.documentProcessor.createDocument(file);
 			this.notesToSave[filePath] = document;
 
-			console.debug(`노트가 스케쥴러에 추가되었습니다: ${filePath}`);
+			this.logger.debug(`노트가 스케쥴러에 추가되었습니다: ${filePath}`);
 		} catch (error) {
-			console.error(
+			this.logger.error(
 				`노트를 스케쥴러에 추가하는 중 오류가 발생했습니다: ${error}`,
 			);
 		}
-	}
-
-	private async createDocument(file: TFile) {
-		const content = await this.app.vault.read(file);
-		const hash = await createContentHash(content);
-		const id = await createHash(file.path);
-		let pageContent = content;
-
-		let frontmatter: FrontMatterCache | null = null;
-		await this.app.fileManager.processFrontMatter(file, (fm) => {
-			frontmatter = fm;
-			pageContent = pageContent
-				.substring(pageContent.indexOf("---", 3) + 3)
-				.trim();
-		});
-		console.log("--→ frontmatter", frontmatter);
-
-		const metadata: NoteMetadata = {
-			...(frontmatter as unknown as NoteMetadata),
-			id,
-			hash,
-			filePath: file.path,
-			ctime: file.stat.ctime,
-			mtime: file.stat.mtime,
-			title: getFileNameSafe(file.path),
-		};
-		console.log("--→ metadata", frontmatter);
-
-		const document = new Document({ pageContent, metadata });
-
-		console.log("--→ document", document);
-		return document;
 	}
 
 	private validateNote(file: TAbstractFile): file is TFile {
@@ -349,7 +307,10 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	private async handleNoteCreateOrUpdate(file: TAbstractFile): Promise<void> {
+	private async onCreateOrModify(file: TAbstractFile): Promise<void> {
+		const currentTime = Date.now();
+		if (currentTime - this.lastEditTime < 60 * 1000) return;
+
 		try {
 			if (!this.validateNote(file)) return;
 			if (!this.validateApiKeys()) return;
@@ -360,6 +321,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			if (!this.validateTokenCount(content)) return;
 
 			await this.addNoteToScheduler(file);
+			this.updateLastEditTime(); // 마지막 편집 시간 업데이트
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
@@ -454,7 +416,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	private async handleNoteDelete(file: TAbstractFile): Promise<void> {
+	private async onDelete(file: TAbstractFile): Promise<void> {
 		try {
 			if (!this.validateNote(file)) return;
 			if (!this.validateApiKeys()) return;
