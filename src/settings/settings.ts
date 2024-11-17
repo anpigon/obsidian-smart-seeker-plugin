@@ -6,6 +6,7 @@ export interface PluginSettings {
 	pineconeIndexName: string; // 선택된 인덱스 추가
 	pineconeEnvironment: string;
 	logLevel: LogLevel;
+	embeddingModel: string;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -14,4 +15,5 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	pineconeIndexName: "", // 기본값 설정
 	pineconeEnvironment: "aws/us-east-1",
 	logLevel: LogLevel.DEBUG,
+	embeddingModel: "openai/text-embedding-3-small",
 };

@@ -1,7 +1,6 @@
 import {
 	type Index,
 	Pinecone,
-	type PineconeConfiguration,
 	type RecordMetadata,
 	type ScoredPineconeRecord,
 } from "@pinecone-database/pinecone";
@@ -17,7 +16,6 @@ import { DEFAULT_EMBEDDING_MODEL } from "../../constants";
 import { LogLevel, Logger } from "../../helpers/logger";
 import obsidianFetchApi from "../../helpers/utils/obsidianFetchApi";
 import { createOpenAIClient } from "../../services/OpenAIManager";
-import { createPineconeClient } from "../../services/PineconeManager";
 
 export class SearchNotesModal extends SuggestModal<
 	ScoredPineconeRecord<RecordMetadata>

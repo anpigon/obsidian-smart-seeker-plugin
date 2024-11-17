@@ -1,15 +1,14 @@
-import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, Notice } from "obsidian";
 import { PLUGIN_APP_ID } from "../constants";
-import { PineconeClient } from "@pinecone-database/pinecone";
+import { Pinecone } from "@pinecone-database/pinecone";
 
 export const VIEW_TYPE_RELATED_NOTES = `${PLUGIN_APP_ID}-related-notes-view`;
 
 export class RelatedNotesView extends ItemView {
 	private currentFile: TFile | null = null;
-	private contentEl: HTMLElement;
-	private pineconeClient: PineconeClient;
+	private pineconeClient: Pinecone;
 
-	constructor(leaf: WorkspaceLeaf, pineconeClient: PineconeClient) {
+	constructor(leaf: WorkspaceLeaf, pineconeClient: Pinecone) {
 		super(leaf);
 		this.pineconeClient = pineconeClient;
 	}
@@ -23,7 +22,6 @@ export class RelatedNotesView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
-		this.contentEl = this.containerEl.children[1];
 		this.contentEl.empty();
 		this.contentEl.createEl("h4", { text: "Related Notes" });
 
@@ -44,11 +42,13 @@ export class RelatedNotesView extends ItemView {
 		this.contentEl.empty();
 		this.contentEl.createEl("h4", { text: "Related Notes" });
 
-		const loadingEl = this.contentEl.createEl("div", { text: "Loading..." });
+		const loadingEl = this.contentEl.createEl("div", {
+			text: "Loading...",
+		});
 
 		try {
 			// Get file content
-			const content = await this.app.vault.read(this.currentFile);
+			const content = await this.app.vault.cachedRead(this.currentFile);
 
 			// Query Pinecone for related documents
 			const index = this.pineconeClient.Index("obsidian-notes"); // Replace with your index name
@@ -67,25 +67,41 @@ export class RelatedNotesView extends ItemView {
 
 			// Display results
 			queryResponse.matches?.forEach((match) => {
-				const noteEl = resultsEl.createEl("div", { cls: "related-note-item" });
+				const noteEl = resultsEl.createEl("div", {
+					cls: "related-note-item",
+				});
 
 				const titleEl = noteEl.createEl("div", {
-					text: match.metadata?.title || "Untitled",
+					text: String(match.metadata?.title || "Untitled"),
 					cls: "related-note-title",
 				});
 
 				noteEl.createEl("div", {
-					text: `Score: ${(match.score * 100).toFixed(2)}%`,
+					text: `Score: ${
+						match.score !== undefined ? (match.score * 100).toFixed(2) : "0.00"
+					}%`,
 					cls: "related-note-score",
 				});
 
 				// Add click handler to open the note
-				titleEl.addEventListener("click", () => {
-					const targetFile = this.app.vault.getAbstractFileByPath(
-						match.metadata?.path,
-					);
-					if (targetFile instanceof TFile) {
-						this.app.workspace.getLeaf().openFile(targetFile);
+				titleEl.addEventListener("click", async () => {
+					try {
+						const filePath = match.metadata?.filePath?.toString();
+						if (!filePath) {
+							new Notice("File path not found");
+							return;
+						}
+
+						const targetFile = this.app.vault.getAbstractFileByPath(filePath);
+						if (!(targetFile instanceof TFile)) {
+							new Notice(`File not found: ${filePath}`);
+							return;
+						}
+
+						await this.app.workspace.getLeaf().openFile(targetFile);
+					} catch (error) {
+						console.error("Error opening file:", error);
+						new Notice("Failed to open file");
 					}
 				});
 			});
