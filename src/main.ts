@@ -135,16 +135,12 @@ export default class SmartSeekerPlugin extends Plugin {
 		this.lastEditTime = Date.now();
 	}
 
-	private async saveNotesToDB() {
-		if (Object.keys(this.notesToSave).length > 0) {
-			await this.processNoteQueue();
-		}
-	}
-
-	private checkForIdleTime() {
+	private async checkForIdleTime() {
 		const currentTime = Date.now();
 		if (currentTime - this.lastEditTime >= 60 * 1000) {
-			this.saveNotesToDB();
+			if (Object.keys(this.notesToSave).length > 0) {
+				await this.processNoteQueue();
+			}
 		}
 	}
 
