@@ -138,9 +138,7 @@ export default class SmartSeekerPlugin extends Plugin {
 	private async checkForIdleTime() {
 		const currentTime = Date.now();
 		if (currentTime - this.lastEditTime >= 60 * 1000) {
-			if (Object.keys(this.notesToSave).length > 0) {
-				await this.processNoteQueue();
-			}
+			await this.processNoteQueue();
 		}
 	}
 
@@ -406,7 +404,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		const noteCount = Object.keys(this.notesToSave).length;
 		if (noteCount === 0) {
-			// this.logger.debug("📭 처리할 노트가 없습니다.");
+			this.logger.debug("📭 처리할 노트가 없습니다.");
 			return;
 		}
 
