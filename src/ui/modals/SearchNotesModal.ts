@@ -35,12 +35,12 @@ export class SearchNotesModal extends SuggestModal<
 		app: App,
 		private openAIApiKey: string,
 		private pineconeApiKey: string,
-		private selectedIndex: string,
+		private pineconeIndexName: string,
 	) {
 		super(app);
 		this.logger = new Logger("SearchNotesModal", LogLevel.DEBUG);
 		this.logger.debug("모달 초기화", {
-			selectedIndex: this.selectedIndex,
+			pineconeIndexName: this.pineconeIndexName,
 		});
 
 		this.openai = createOpenAIClient(this.openAIApiKey);
@@ -60,7 +60,7 @@ export class SearchNotesModal extends SuggestModal<
 			apiKey: this.pineconeApiKey,
 			fetchApi: customFetch,
 		});
-		this.pineconeIndex = pinecone.Index(this.selectedIndex);
+		this.pineconeIndex = pinecone.Index(this.pineconeIndexName);
 
 		// debounce 함수 생성 (300ms 딜레이)
 		this.debouncedGetSuggestions = this.debounce(

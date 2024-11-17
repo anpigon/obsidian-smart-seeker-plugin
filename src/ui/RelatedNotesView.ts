@@ -38,6 +38,7 @@ export class RelatedNotesView extends ItemView {
 
 	async updateRelatedNotes(): Promise<void> {
 		if (!this.currentFile) return;
+		console.log("updateRelatedNotes", this.currentFile);
 
 		this.contentEl.empty();
 		this.contentEl.createEl("h4", { text: "Related Notes" });
@@ -49,8 +50,10 @@ export class RelatedNotesView extends ItemView {
 		try {
 			// Get file content
 			const content = await this.app.vault.cachedRead(this.currentFile);
+			console.log("content", content);
 
 			// Query Pinecone for related documents
+			const index = this.pineconeClient.Index(this.selectedIndex);
 			const index = this.pineconeClient.Index("obsidian-notes"); // Replace with your index name
 			const queryResponse = await index.query({
 				vector: await this.getEmbedding(content),
