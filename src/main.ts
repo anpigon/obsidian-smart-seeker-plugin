@@ -332,10 +332,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			return;
 		}
 
-		if (Object.keys(this.taskQueue).length === 0) {
-			this.logger.debug("📭 처리할 taskQueue가 없습니다.");
-			return;
-		}
+		if (Object.keys(this.taskQueue).length === 0) return;
 
 		this.isProcessing = true;
 
@@ -345,41 +342,21 @@ export default class SmartSeekerPlugin extends Plugin {
 			}
 
 			const files = Object.values(this.taskQueue);
-			const documents =
-				await this.documentProcessor.createDocumentsFromFiles(files);
-			const filteredDocs =
-				await this.documentProcessor.filterDocuments(documents);
-			const totalCount = documents.length;
-			const filterdCount = filteredDocs.length;
-			if (filteredDocs.length === 0) {
-				new Notice(
-					this.createResultMessage(totalCount, filterdCount, totalCount),
-					5000,
-				);
-			}
+			await this.documentProcessor.processMultiFiles(files);
+			const totalCount = files.length;
 
-			const { ids, chunks } =
-				await this.documentProcessor.createChunks(filteredDocs);
-			await this.documentProcessor.saveToVectorStore(chunks, ids);
+			this.logger.debug(`${totalCount} notes successfully saved to PineconeDB`);
 
-			this.logger.debug(
-				`${filterdCount} notes successfully saved to PineconeDB`,
-			);
-
-			new Notice(
-				this.createResultMessage(totalCount, filterdCount, totalCount),
-				5000,
-			);
+			new Notice(`📊 총 ${totalCount}개 노트 처리`, 5000);
 
 			// 처리된 노트 제거
 			for (const file of files) {
 				delete this.taskQueue[file.path];
 			}
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Unknown error";
-			this.logger.error(`Failed to process notes: ${errorMessage}`);
-			new Notice(`Failed to save notes: ${errorMessage}`);
+			this.logger.error(
+				`Failed to process notes: ${error?.message || error.toString()}`,
+			);
 		} finally {
 			this.isProcessing = false;
 		}
