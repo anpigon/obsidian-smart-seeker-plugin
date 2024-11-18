@@ -83,6 +83,9 @@ export class RelatedNotesView extends ItemView {
 				vector,
 				topK: 100,
 				includeMetadata: true,
+				filter: {
+					filePath: { $ne: this.currentFile.path },
+				},
 			});
 
 			loadingEl.remove();
