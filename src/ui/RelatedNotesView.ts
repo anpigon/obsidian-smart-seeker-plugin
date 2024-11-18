@@ -1,7 +1,7 @@
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
 import { createPineconeClient } from "@/services/PineconeManager";
 import { PluginSettings } from "@/settings/settings";
-import { ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
+import { IconName, ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import { PLUGIN_APP_ID } from "../constants";
 
 export const VIEW_TYPE_RELATED_NOTES = `${PLUGIN_APP_ID}-related-notes-view`;
@@ -21,12 +21,21 @@ export class RelatedNotesView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Related Notes";
+		return "Smart Seeker";
+	}
+
+	getIcon(): IconName {
+		return "documents";
+	}
+
+	private renderTitle(): void {
+		this.contentEl.empty();
+		const headerEl = this.contentEl.createDiv({ cls: "tree-item-self" });
+		headerEl.createDiv({ text: "Related Notes", cls: "tree-item-inner" });
 	}
 
 	async onOpen(): Promise<void> {
-		this.contentEl.empty();
-		this.contentEl.createEl("h4", { text: "Related Notes" });
+		this.renderTitle();
 
 		// Register event for file open
 		this.registerEvent(
@@ -43,11 +52,11 @@ export class RelatedNotesView extends ItemView {
 		if (!this.currentFile) return;
 		console.log("updateRelatedNotes", this.currentFile);
 
-		this.contentEl.empty();
-		this.contentEl.createEl("h4", { text: "Related Notes" });
+		this.renderTitle();
 
 		const loadingEl = this.contentEl.createEl("div", {
 			text: "Loading...",
+			cls: "related-notes-loading",
 		});
 
 		try {
@@ -70,21 +79,31 @@ export class RelatedNotesView extends ItemView {
 
 			// Create results container
 			const resultsEl = this.contentEl.createEl("div", {
-				cls: "related-notes-list",
+				cls: "search-result-container related-notes-list",
 			});
 
 			// Display results
 			queryResponse.matches?.forEach((match) => {
 				const noteEl = resultsEl.createEl("div", {
-					cls: "related-note-item",
+					cls: "tree-item-self is-clickable outgoing-link-item",
 				});
 
-				const titleEl = noteEl.createEl("div", {
+				const itemEl = noteEl.createEl("div", { cls: "tree-item-inner" });
+
+				const titleEl = itemEl.createEl("div", {
 					text: String(match.metadata?.title || "Untitled"),
-					cls: "related-note-title",
+					cls: "tree-item-inner-text",
 				});
 
-				noteEl.createEl("div", {
+				itemEl.createEl("div", {
+					text: String(match.metadata?.text || "")?.replace(
+						/^(?:\(cont'd\)\s*)?/,
+						"",
+					),
+					cls: "tree-item-inner-subtext related-note-subtext",
+				});
+
+				itemEl.createEl("div", {
 					text: `Score: ${
 						match.score !== undefined ? (match.score * 100).toFixed(2) : "0.00"
 					}%`,
@@ -92,7 +111,7 @@ export class RelatedNotesView extends ItemView {
 				});
 
 				// Add click handler to open the note
-				titleEl.addEventListener("click", async () => {
+				noteEl.addEventListener("click", async () => {
 					try {
 						const filePath = match.metadata?.filePath?.toString();
 						if (!filePath) {
@@ -120,11 +139,5 @@ export class RelatedNotesView extends ItemView {
 				cls: "related-notes-error",
 			});
 		}
-	}
-
-	private async getEmbedding(text: string): Promise<number[]> {
-		// Implement your embedding logic here
-		// You might want to use OpenAI or another embedding service
-		return [];
 	}
 }

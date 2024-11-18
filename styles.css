@@ -93,6 +93,16 @@ If your plugin does not need CSS, delete this file.
     color: var(--text-accent);
 }
 
+.related-note-subtext {
+	display: -webkit-box;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	/* white-space: nowrap; */
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	word-break: break-word
+}
+
 .related-note-score {
     font-size: 0.8em;
     color: var(--text-muted);
@@ -101,4 +111,10 @@ If your plugin does not need CSS, delete this file.
 .related-notes-error {
     color: var(--text-error);
     padding: 10px;
+}
+
+.related-notes-loading {
+	padding: 10px;
+	font-size: var(--font-smaller);
+	color: var(--text-faint);
 }
