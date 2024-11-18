@@ -90,24 +90,22 @@ export class RelatedNotesView extends ItemView {
 
 				const itemEl = noteEl.createEl("div", { cls: "tree-item-inner" });
 
-				const titleEl = itemEl.createEl("div", {
-					text: String(match.metadata?.title || "Untitled"),
+				const title = String(match.metadata?.title || "Untitled");
+				const subtext = String(match.metadata?.text || "")?.replace(
+					/^(?:\(cont'd\)\s*)?/,
+					"",
+				);
+				const score =
+					match.score !== undefined ? match.score.toFixed(2) : "0.00";
+
+				itemEl.createEl("div", {
+					text: `${score} | ${title}`,
 					cls: "tree-item-inner-text",
 				});
 
 				itemEl.createEl("div", {
-					text: String(match.metadata?.text || "")?.replace(
-						/^(?:\(cont'd\)\s*)?/,
-						"",
-					),
+					text: subtext,
 					cls: "tree-item-inner-subtext related-note-subtext",
-				});
-
-				itemEl.createEl("div", {
-					text: `Score: ${
-						match.score !== undefined ? (match.score * 100).toFixed(2) : "0.00"
-					}%`,
-					cls: "related-note-score",
 				});
 
 				// Add click handler to open the note
