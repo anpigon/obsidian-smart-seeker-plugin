@@ -43,16 +43,21 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
-		this.registerEvent(
-			this.app.vault.on("create", (file) => this.onCreateOrModify(file)),
-		);
+		// this.registerEvent(
+		// 	this.app.vault.on("create", async (file: TFile)) => this.onCreateOrModify(file)),
+		// );
+
+		// this.registerEvent(
+		// 	this.app.vault.on("modify", async (file: TFile) => this.onCreateOrModify(file)),
+		// );
+
+		// this.registerEvent(this.app.metadataCache.on('changed', async (file: TFile) => this.onFileChange(file)));
+		// this.registerEvent(this.app.vault.on('rename', async (file: TFile, oldPath: string) => this.onFileRename(file, oldPath)));
 
 		this.registerEvent(
-			this.app.vault.on("modify", (file) => this.onCreateOrModify(file)),
-		);
-
-		this.registerEvent(
-			this.app.vault.on("delete", (file) => this.onDelete(file)),
+			this.app.vault.on("delete", async (file: TFile) =>
+				this.onFileDelete(file),
+			),
 		);
 
 		// 파일 탐색기의 폴더 컨텍스트 메뉴에 이벤트 리스너 추가
@@ -377,7 +382,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	private async onDelete(file: TAbstractFile): Promise<void> {
+	private async onFileDelete(file: TAbstractFile): Promise<void> {
 		try {
 			if (file.path in this.taskQueue) delete this.taskQueue[file.path];
 
