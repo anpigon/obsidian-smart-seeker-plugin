@@ -1,7 +1,8 @@
+import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
+import { PluginSettings } from "@/settings/settings";
 import {
 	type Index,
 	Pinecone,
-	type PineconeConfiguration,
 	type RecordMetadata,
 	type ScoredPineconeRecord,
 } from "@pinecone-database/pinecone";
@@ -12,12 +13,8 @@ import {
 	SuggestModal,
 	TFile,
 } from "obsidian";
-import type OpenAI from "openai";
-import { DEFAULT_EMBEDDING_MODEL } from "../../constants";
 import { LogLevel, Logger } from "../../helpers/logger";
 import obsidianFetchApi from "../../helpers/utils/obsidianFetchApi";
-import { createOpenAIClient } from "../../services/OpenAIManager";
-import { createPineconeClient } from "../../services/PineconeManager";
 
 export class SearchNotesModal extends SuggestModal<
 	ScoredPineconeRecord<RecordMetadata>
@@ -26,7 +23,6 @@ export class SearchNotesModal extends SuggestModal<
 	private debouncedGetSuggestions: (
 		query: string,
 	) => Promise<ScoredPineconeRecord<RecordMetadata>[]>;
-	private openai: OpenAI;
 	private pineconeIndex: Index<RecordMetadata>;
 	private isSearching = false;
 	private currentSearchController: AbortController | null = null;
@@ -35,17 +31,10 @@ export class SearchNotesModal extends SuggestModal<
 
 	constructor(
 		app: App,
-		private openAIApiKey: string,
-		private pineconeApiKey: string,
-		private selectedIndex: string,
+		private settings: PluginSettings,
 	) {
 		super(app);
 		this.logger = new Logger("SearchNotesModal", LogLevel.DEBUG);
-		this.logger.debug("모달 초기화", {
-			selectedIndex: this.selectedIndex,
-		});
-
-		this.openai = createOpenAIClient(this.openAIApiKey);
 
 		// Pinecone 클라이언트 초기화 with custom fetch
 		const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
@@ -59,10 +48,10 @@ export class SearchNotesModal extends SuggestModal<
 		};
 
 		const pinecone = new Pinecone({
-			apiKey: this.pineconeApiKey,
+			apiKey: this.settings.pineconeApiKey,
 			fetchApi: customFetch,
 		});
-		this.pineconeIndex = pinecone.Index(this.selectedIndex);
+		this.pineconeIndex = pinecone.Index(this.settings.pineconeIndexName);
 
 		// debounce 함수 생성 (300ms 딜레이)
 		this.debouncedGetSuggestions = this.debounce(
@@ -130,11 +119,8 @@ export class SearchNotesModal extends SuggestModal<
 	}
 
 	private async getQueryVector(query: string): Promise<number[]> {
-		const response = await this.openai.embeddings.create({
-			input: query,
-			model: DEFAULT_EMBEDDING_MODEL,
-		});
-		return response.data[0].embedding;
+		const embeddings = await getEmbeddingModel(this.settings);
+		return await embeddings.embedQuery(query);
 	}
 
 	renderSuggestion(

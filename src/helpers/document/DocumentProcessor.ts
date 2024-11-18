@@ -60,7 +60,7 @@ export default class DocumentProcessor {
 		settings: PluginSettings,
 	): Index<RecordMetadata> {
 		const pinecone = createPineconeClient(settings.pineconeApiKey);
-		return pinecone.Index(settings.selectedIndex);
+		return pinecone.Index(settings.pineconeIndexName);
 	}
 
 	private generateDocumentIds(documents: Document[]): string[] {

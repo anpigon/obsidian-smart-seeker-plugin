@@ -71,3 +71,46 @@ If your plugin does not need CSS, delete this file.
 	-webkit-box-orient: vertical;
 	word-break: break-word;
 }
+
+.related-note-item {
+    margin-bottom: 12px;
+    padding: 8px;
+    border-radius: 4px;
+    background-color: var(--background-secondary);
+}
+
+.related-note-title {
+    font-weight: 500;
+    margin-bottom: 4px;
+    cursor: pointer;
+}
+
+.related-note-title:hover {
+    color: var(--text-accent);
+}
+
+.related-note-subtext {
+	display: -webkit-box;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	word-break: break-word;
+	white-space: normal;
+}
+
+.related-note-score {
+    font-size: var(--font-smallest);
+    color: var(--text-muted);
+}
+
+.related-notes-error {
+    color: var(--text-error);
+    padding: 10px;
+}
+
+.related-notes-loading {
+	padding: var(--size-4-3) var(--size-4-3) var(--size-4-4);
+	font-size: var(--font-small);
+	color: var(--text-faint);
+}

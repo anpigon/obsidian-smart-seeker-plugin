@@ -1,3 +1,4 @@
+import { Pinecone } from "@pinecone-database/pinecone";
 import {
 	type FrontMatterCache,
 	type Menu,
@@ -6,6 +7,7 @@ import {
 	type TAbstractFile,
 	TFile,
 	TFolder,
+	WorkspaceLeaf,
 } from "obsidian";
 import { DEFAULT_MIN_TOKEN_COUNT, PLUGIN_APP_ID } from "./constants";
 import DocumentProcessor from "./helpers/document/DocumentProcessor";
@@ -14,18 +16,22 @@ import { LogLevel, Logger } from "./helpers/logger";
 import NoteHashStorage from "./helpers/storage/NoteHashStorage";
 import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { createPineconeClient } from "./services/PineconeManager";
-import { SettingTab } from "./settings/settingTab";
 import { DEFAULT_SETTINGS, type PluginSettings } from "./settings/settings";
+import { SettingTab } from "./settings/settingTab";
 import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
+import {
+	RelatedNotesView,
+	VIEW_TYPE_RELATED_NOTES,
+} from "./ui/RelatedNotesView";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.DEBUG);
 	private localStore: InLocalStore;
-	// private notesToSave: Record<string, string> = {};
 	private taskQueue: Record<string, TFile> = {};
 	private isProcessing = false;
 	private hashStorage: NoteHashStorage;
 	private documentProcessor: DocumentProcessor;
+	private pineconeClient: Pinecone;
 	settings: PluginSettings;
 
 	private lastEditTime: number = Date.now();
@@ -37,16 +43,21 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 
 		// 노트 생성, 업데이트, 삭제 이벤트 감지
-		this.registerEvent(
-			this.app.vault.on("create", (file) => this.onCreateOrModify(file)),
-		);
+		// this.registerEvent(
+		// 	this.app.vault.on("create", async (file: TFile)) => this.onCreateOrModify(file)),
+		// );
+
+		// this.registerEvent(
+		// 	this.app.vault.on("modify", async (file: TFile) => this.onCreateOrModify(file)),
+		// );
+
+		// this.registerEvent(this.app.metadataCache.on('changed', async (file: TFile) => this.onFileChange(file)));
+		// this.registerEvent(this.app.vault.on('rename', async (file: TFile, oldPath: string) => this.onFileRename(file, oldPath)));
 
 		this.registerEvent(
-			this.app.vault.on("modify", (file) => this.onCreateOrModify(file)),
-		);
-
-		this.registerEvent(
-			this.app.vault.on("delete", (file) => this.onDelete(file)),
+			this.app.vault.on("delete", async (file: TFile) =>
+				this.onFileDelete(file),
+			),
 		);
 
 		// 파일 탐색기의 폴더 컨텍스트 메뉴에 이벤트 리스너 추가
@@ -147,7 +158,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		const requiredSettings = {
 			"Pinecone API Key": this.settings.pineconeApiKey?.trim(),
 			"OpenAI API Key": this.settings.openAIApiKey?.trim(),
-			"Selected Index": this.settings.selectedIndex?.trim(),
+			"Selected Index": this.settings.pineconeIndexName?.trim(),
 		};
 
 		const missingSettings = Object.entries(requiredSettings)
@@ -169,16 +180,11 @@ export default class SmartSeekerPlugin extends Plugin {
 			id: "search-notes",
 			name: "Search notes",
 			callback: () => {
-				if (!this.settings.pineconeApiKey || !this.settings.selectedIndex) {
+				if (!this.settings.pineconeApiKey || !this.settings.pineconeIndexName) {
 					new Notice("Please configure PineconeDB settings first");
 					return;
 				}
-				new SearchNotesModal(
-					this.app,
-					this.settings.openAIApiKey,
-					this.settings.pineconeApiKey,
-					this.settings.selectedIndex,
-				).open();
+				new SearchNotesModal(this.app, this.settings).open();
 			},
 		});
 	}
@@ -188,6 +194,20 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		// 로그 수정
 		this.logger = new Logger("SmartSeekerPlugin", this.settings.logLevel);
+
+		// Initialize Pinecone client
+		this.pineconeClient = createPineconeClient(this.settings.pineconeApiKey);
+
+		// Register view
+		this.registerView(
+			VIEW_TYPE_RELATED_NOTES,
+			(leaf: WorkspaceLeaf) => new RelatedNotesView(leaf, this.settings),
+		);
+
+		// Add icon to ribbon
+		this.addRibbonIcon("documents", "Related Notes", () => {
+			this.activateView();
+		});
 
 		// 설정 탭 추가
 		this.addSettingTab(new SettingTab(this.app, this));
@@ -362,7 +382,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	private async onDelete(file: TAbstractFile): Promise<void> {
+	private async onFileDelete(file: TAbstractFile): Promise<void> {
 		try {
 			if (file.path in this.taskQueue) delete this.taskQueue[file.path];
 
@@ -374,7 +394,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			await this.hashStorage.deleteHash(file.path);
 
 			const pc = createPineconeClient(this.settings.pineconeApiKey);
-			const pineconeIndex = pc.index(this.settings.selectedIndex);
+			const pineconeIndex = pc.index(this.settings.pineconeIndexName);
 
 			const deleteRequest = {
 				filter: {
@@ -389,6 +409,27 @@ export default class SmartSeekerPlugin extends Plugin {
 				error instanceof Error ? error.message : "Unknown error";
 			this.logger.error(`Failed to delete note ${file.path}: ${errorMessage}`);
 			// new Notice(`Failed to delete note: ${errorMessage}`);
+		}
+	}
+
+	async activateView() {
+		const { workspace } = this.app;
+
+		let leaf: WorkspaceLeaf | null = null;
+		const leaves = workspace.getLeavesOfType(VIEW_TYPE_RELATED_NOTES);
+
+		if (leaves.length > 0) {
+			// View already exists, show it
+			leaf = leaves[0];
+			workspace.revealLeaf(leaf);
+		} else {
+			// Create new leaf
+			leaf = workspace.getRightLeaf(false);
+			if (leaf)
+				await leaf.setViewState({
+					type: VIEW_TYPE_RELATED_NOTES,
+					active: true,
+				});
 		}
 	}
 }
