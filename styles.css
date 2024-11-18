@@ -72,10 +72,6 @@ If your plugin does not need CSS, delete this file.
 	word-break: break-word;
 }
 
-.related-notes-list {
-    padding: 10px;
-}
-
 .related-note-item {
     margin-bottom: 12px;
     padding: 8px;
@@ -114,7 +110,7 @@ If your plugin does not need CSS, delete this file.
 }
 
 .related-notes-loading {
-	padding: 10px;
-	font-size: var(--font-smaller);
+	padding: var(--size-4-3) var(--size-4-3) var(--size-4-4);
+	font-size: var(--font-small);
 	color: var(--text-faint);
 }

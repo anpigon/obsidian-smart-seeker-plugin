@@ -1,3 +1,4 @@
+import calculateTokenCount from "@/helpers/utils/calculateTokenCount";
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
 import { createPineconeClient } from "@/services/PineconeManager";
 import { PluginSettings } from "@/settings/settings";
@@ -54,21 +55,30 @@ export class RelatedNotesView extends ItemView {
 
 		this.renderTitle();
 
-		const loadingEl = this.contentEl.createEl("div", {
+		const loadingEl = this.contentEl.createDiv({ cls: "tree-item-self" });
+		loadingEl.createDiv({
 			text: "Loading...",
-			cls: "related-notes-loading",
+			cls: "tree-item-inner related-notes-loading",
 		});
 
 		try {
-			// Get file content
+			// Get file content and limit to 4000 characters
 			const content = await this.app.vault.cachedRead(this.currentFile);
-			console.log("content", content);
+			const truncatedContent = content.slice(0, 4000);
+			console.log(
+				"content length",
+				content.length,
+				"truncated length",
+				truncatedContent.length,
+				"calculateTokenCount",
+				calculateTokenCount(truncatedContent),
+			);
 
 			// Query Pinecone for related documents
 			const pc = createPineconeClient(this.settings.pineconeApiKey);
 			const index = pc.Index(this.settings.pineconeIndexName);
 			const embeddings = await getEmbeddingModel(this.settings);
-			const vector = await embeddings.embedQuery(content);
+			const vector = await embeddings.embedQuery(truncatedContent);
 			const queryResponse = await index.query({
 				vector,
 				topK: 100,
@@ -79,7 +89,7 @@ export class RelatedNotesView extends ItemView {
 
 			// Create results container
 			const resultsEl = this.contentEl.createEl("div", {
-				cls: "search-result-container related-notes-list",
+				cls: "search-result-container",
 			});
 
 			// Display results
