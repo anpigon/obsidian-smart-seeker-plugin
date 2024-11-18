@@ -82,13 +82,13 @@ export default class SmartSeekerPlugin extends Plugin {
 		);
 
 		// 주기적인 임베딩 처리
-		this.registerInterval(
-			window.setInterval(() => {
-				if (this.app.workspace.layoutReady) {
-					this.checkForIdleTime(); // 유휴 시간 체크
-				}
-			}, 10 * 1000),
-		);
+		// this.registerInterval(
+		// 	window.setInterval(() => {
+		// 		if (this.app.workspace.layoutReady) {
+		// 			this.checkForIdleTime(); // 유휴 시간 체크
+		// 		}
+		// 	}, 10 * 1000),
+		// );
 	}
 
 	private async processFolderFiles(folder: TFolder): Promise<void> {
