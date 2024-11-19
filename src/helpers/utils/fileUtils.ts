@@ -11,7 +11,10 @@ export const getFileNameSafe = (filePath: string): string => {
 	// Windows의 '\' 경로도 처리
 	const normalizedPath = filePath.replace(/\\/g, "/");
 	const fullFileName = normalizedPath.split("/").pop() || "";
-	return fullFileName.split(".")[0];
+	const lastDotIndex = fullFileName.lastIndexOf(".");
+	return lastDotIndex === -1
+		? fullFileName
+		: fullFileName.substring(0, lastDotIndex);
 };
 
 export const isMarkdownFile = (file: TAbstractFile): file is TFile => {
