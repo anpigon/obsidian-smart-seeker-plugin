@@ -1,11 +1,11 @@
 {
 	"id": "smart-seeker",
 	"name": "Smart Seeker",
-	"version": "0.0.15",
+	"version": "0.0.16",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
+	"description": "A smart search plugin for Obsidian that helps you find document contents quickly and efficiently.",
 	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"authorUrl": "https://github.com/anpigon",
+	"fundingUrl": "https://buymeacoffee.com/anpigon",
 	"isDesktopOnly": false
 }
