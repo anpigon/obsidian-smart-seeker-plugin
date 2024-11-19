@@ -103,26 +103,40 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	private async processFolderFiles(folder: TFolder): Promise<void> {
-		this.logger.debug("selected folder:", folder);
+		try {
+			this.logger.debug("selected folder:", folder);
 
-		new Notice("🔍 폴더 내 노트를 검색 데이터베이스에 추가하는 중...");
+			const files = this.app.vault
+				.getMarkdownFiles()
+				.filter((file) => file.path.startsWith(folder.path));
 
-		const files = this.app.vault
-			.getMarkdownFiles()
-			.filter((file) => file.path.startsWith(folder.path));
+			new Notice(
+				`📚 ${folder.name} 폴더에서 ${files.length}개의 노트를 찾았습니다.`,
+			);
 
-		new Notice(
-			`📚 ${folder.name} 폴더에서 ${files.length}개의 노트를 찾았습니다.`,
-		);
+			new Notice("🔍 폴더 내 노트를 검색 데이터베이스에 추가하는 중...");
 
-		const documents =
-			await this.documentProcessor.createDocumentsFromFiles(files);
-		const filterDocuments =
-			await this.documentProcessor.filterNewOrUpdatedDocuments(documents);
-		const result =
-			await this.documentProcessor.processMultiDocuments(filterDocuments);
-		this.logger.debug(`[Process] Completed: ${result}`);
-		new Notice("✅ 모든 노트가 검색 데이터베이스에 추가되었습니다.");
+			const documents =
+				await this.documentProcessor.createDocumentsFromFiles(files);
+			const filterDocuments =
+				await this.documentProcessor.filterNewOrUpdatedDocuments(documents);
+			const result =
+				await this.documentProcessor.processMultiDocuments(filterDocuments);
+			this.logger.debug(`[Process] Completed: ${result}`);
+
+			const totalCount = files.length;
+			const processedCount = filterDocuments.length;
+			const skippedCount = totalCount - processedCount;
+			const messgae = this.createResultMessage(
+				totalCount,
+				processedCount,
+				skippedCount,
+			);
+			new Notice(messgae);
+			new Notice("✅ 모든 노트가 검색 데이터베이스에 추가되었습니다.");
+		} catch (e) {
+			this.logger.error(e);
+		}
 	}
 
 	private async processFile(file: TFile): Promise<void> {
