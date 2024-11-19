@@ -67,7 +67,7 @@ export default class DocumentProcessor {
 		return documents.map((doc) => `${doc.metadata.id}-0`);
 	}
 
-	private async createDocumentsFromFiles(
+	public async createDocumentsFromFiles(
 		files: TFile[],
 	): Promise<Document<NoteMetadata>[]> {
 		const documents: Document<NoteMetadata>[] = [];
@@ -153,7 +153,7 @@ export default class DocumentProcessor {
 				.substring(pageContent.indexOf("---", 3) + 3)
 				.trim();
 		});
-		console.log("--→ frontmatter", frontmatter);
+		this.logger.debug("--→ frontmatter", frontmatter);
 
 		const metadata: NoteMetadata = {
 			...(frontmatter as unknown as NoteMetadata),
@@ -164,27 +164,32 @@ export default class DocumentProcessor {
 			mtime: file.stat.mtime,
 			title: getFileNameSafe(file.path),
 		};
-		console.log("--→ metadata", metadata);
+		this.logger.debug("--→ metadata", metadata);
 
 		const document = new Document({ pageContent, metadata });
 
-		console.log("--→ document", document);
+		this.logger.debug("--→ document", document);
 		return document;
 	}
 
 	// 기존 파인콘DB에 있는 문서는 필터링한다.
-	public async filterDocuments(documents: Document[]): Promise<Document[]> {
+	public async filterNewOrUpdatedDocuments(
+		documents: Document[],
+	): Promise<Document[]> {
 		if (!documents?.length) return [];
 
 		try {
+			// 각 문서에 대한 고유 ID 생성
 			const documentIds = this.generateDocumentIds(documents);
+			// Pinecone DB에서 해당 ID들의 레코드 조회
 			const { records } = await this.pineconeIndex.fetch(documentIds);
+			// 기존 문서들의 해시값을 Set으로 저장
 			const existingHashes = new Set(
 				Object.values(records).map(
 					(record) => (record.metadata as { hash: string }).hash,
 				),
 			);
-
+			// 새로운 문서나 업데이트된 문서만 필터링(기존 해시값과 일치하지 않는 문서만 반환)
 			return documents.filter((doc) => !existingHashes.has(doc.metadata.hash));
 		} catch (error) {
 			this.logger.error("Error filtering documents:", error);
@@ -201,6 +206,11 @@ export default class DocumentProcessor {
 
 	public async processMultiFiles(files: TFile[]): Promise<string[]> {
 		const documents = await this.createDocumentsFromFiles(files);
+		const { ids, chunks } = await this.createChunks(documents);
+		return await this.saveToVectorStore(chunks, ids);
+	}
+
+	public async processMultiDocuments(documents: Document[]): Promise<string[]> {
 		const { ids, chunks } = await this.createChunks(documents);
 		return await this.saveToVectorStore(chunks, ids);
 	}

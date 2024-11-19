@@ -115,7 +115,12 @@ export default class SmartSeekerPlugin extends Plugin {
 			`📚 ${folder.name} 폴더에서 ${files.length}개의 노트를 찾았습니다.`,
 		);
 
-		const result = await this.documentProcessor.processMultiFiles(files);
+		const documents =
+			await this.documentProcessor.createDocumentsFromFiles(files);
+		const filterDocuments =
+			await this.documentProcessor.filterNewOrUpdatedDocuments(documents);
+		const result =
+			await this.documentProcessor.processMultiDocuments(filterDocuments);
 		this.logger.debug(`[Process] Completed: ${result}`);
 		new Notice("✅ 모든 노트가 검색 데이터베이스에 추가되었습니다.");
 	}
