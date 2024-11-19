@@ -9,7 +9,11 @@ import {
 	TFolder,
 	WorkspaceLeaf,
 } from "obsidian";
-import { DEFAULT_MIN_TOKEN_COUNT, PLUGIN_APP_ID } from "./constants";
+import {
+	DEFAULT_MIN_TOKEN_COUNT,
+	PLUGIN_APP_ID,
+	ZERO_VECTOR,
+} from "./constants";
 import DocumentProcessor from "./helpers/document/DocumentProcessor";
 import { InLocalStore } from "./helpers/langchain/store/InLocalStore";
 import { LogLevel, Logger } from "./helpers/logger";
@@ -411,19 +415,42 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			this.logger.info(`Deleting note: ${file.path}`);
 
+			try {
+				const pc = createPineconeClient(this.settings.pineconeApiKey);
+				const pineconeIndex = pc.index(this.settings.pineconeIndexName);
+
+				// ref: https://docs.pinecone.io/troubleshooting/handle-deletes-by-metadata
+				const results = await pineconeIndex.query({
+					vector: ZERO_VECTOR,
+					topK: 100,
+					includeMetadata: false,
+					includeValues: false,
+					filter: { filePath: file.path },
+				});
+				if (results?.matches.length > 0) {
+					const ids = results.matches.map((e) => e.id);
+					await pineconeIndex.deleteMany(ids);
+					this.logger.info(
+						`Note successfully deleted from PineconeDB: ${file.path}`,
+					);
+				}
+			} catch (pineconeError) {
+				// Pinecone 관련 오류 처리
+				this.logger.error("Pinecone 삭제 오류:", pineconeError);
+				this.logger.error(
+					"⚠️ Pinecone DB에서 노트 삭제 실패. 로컬 참조만 삭제됩니다.",
+				);
+
+				// 네트워크 연결 문제인 경우
+				if (pineconeError.message.includes("failed to reach Pinecone")) {
+					this.logger.error(
+						"🌐 Pinecone 서버 연결 실패. 네트워크 연결을 확인해주세요.",
+					);
+				}
+			}
+
+			// 로컬 해시는 항상 삭제
 			await this.hashStorage.deleteHash(file.path);
-
-			const pc = createPineconeClient(this.settings.pineconeApiKey);
-			const pineconeIndex = pc.index(this.settings.pineconeIndexName);
-
-			const deleteRequest = {
-				filter: {
-					filePath: file.path,
-				},
-			};
-
-			await pineconeIndex.deleteMany({ deleteRequest });
-			new Notice(`Note successfully deleted from PineconeDB: ${file.path}`);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
