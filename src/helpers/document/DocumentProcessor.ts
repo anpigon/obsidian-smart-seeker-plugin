@@ -155,6 +155,7 @@ export default class DocumentProcessor {
 	private async saveToVectorStore(chunks: Document[], ids: string[]) {
 		// 기존 문서들의 고유 ID 조회
 		const { records } = await this.pineconeIndex.fetch(ids);
+		console.log(records);
 
 		// 기존 문서들의 해시값을 Set으로 저장
 		const existingHashes = new Set(
@@ -173,11 +174,24 @@ export default class DocumentProcessor {
 		this.logger.debug("--→ oldChunks", oldChunks);
 
 		// 변경 내용이 없는 노트는 메타정보만 업데이트
-		// const batchRequests = oldChunks.filter((chunk) => chunk.id).map((chunk) => this.pineconeIndex.update({
-		// 	id: String(chunk.id),
-		// 	metadata: chunk.metadata,
-		// }));
-		// await Promise.all(batchRequests);
+		const updateData = oldChunks.map((chunk) => {
+			const { loc, ...newMetadata } = chunk.metadata;
+			return {
+				id: String(chunk.id),
+				metadata: newMetadata,
+			};
+		});
+		this.logger.debug("--→ updateData", updateData);
+		console.log(
+			await this.pineconeIndex.update({
+				id: "18593",
+				metadata: { genre: "romance" },
+			}),
+		);
+		for (const data of updateData) {
+			console.log(data);
+			await this.pineconeIndex.update(data);
+		}
 
 		// 새로운 문서나 업데이트된 문서만 저장
 		const embedding = getEmbeddingModel(this.settings);
