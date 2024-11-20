@@ -238,6 +238,18 @@ export default class DocumentProcessor {
 		return results.filter((doc): doc is Document => doc !== null);
 	}
 
+	private getParentPaths(file: TFile): string[] {
+		const paths: string[] = [];
+		let currentFolder = file.parent;
+
+		while (currentFolder) {
+			paths.unshift(currentFolder.path);
+			currentFolder = currentFolder.parent;
+		}
+
+		return paths;
+	}
+
 	private async createDocument(file: TFile) {
 		const content = await this.plugin.app.vault.cachedRead(file);
 		const hash = await createContentHash(content);
@@ -257,6 +269,7 @@ export default class DocumentProcessor {
 			...(frontmatter as unknown as NoteMetadata),
 			id,
 			hash,
+			folderPath: this.getParentPaths(file),
 			filePath: file.path,
 			ctime: file.stat.ctime,
 			mtime: file.stat.mtime,
