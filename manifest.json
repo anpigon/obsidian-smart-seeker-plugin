@@ -1,7 +1,7 @@
 {
 	"id": "smart-seeker",
 	"name": "Smart Seeker",
-	"version": "0.0.18",
+	"version": "0.0.19",
 	"minAppVersion": "0.15.0",
 	"description": "A smart search plugin for Obsidian that helps you find document contents quickly and efficiently.",
 	"author": "Obsidian",
