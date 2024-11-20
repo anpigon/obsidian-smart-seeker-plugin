@@ -185,8 +185,12 @@ export default class DocumentProcessor {
 				},
 			};
 		});
-		for (const data of updateData) {
-			await this.pineconeIndex.update(data);
+
+		// Process updates in batches of 100
+		const batchSize = 100;
+		for (let i = 0; i < updateData.length; i += batchSize) {
+			const batch = updateData.slice(i, i + batchSize);
+			await Promise.all(batch.map((data) => this.pineconeIndex.update(data)));
 		}
 
 		// 새로운 문서나 업데이트된 문서만 저장
