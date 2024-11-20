@@ -5,7 +5,11 @@ import {
 	MarkdownTextSplitter,
 	type TextSplitter,
 } from "@langchain/textsplitters";
-import type { Index, RecordMetadata } from "@pinecone-database/pinecone";
+import type {
+	Index,
+	QueryResponse,
+	RecordMetadata,
+} from "@pinecone-database/pinecone";
 import { FrontMatterCache, TFile } from "obsidian";
 import {
 	DEFAULT_CHUNK_OVERLAP,
@@ -89,7 +93,9 @@ export default class DocumentProcessor {
 
 			for (const [idx, splitDocument] of splitDocuments.entries()) {
 				const hash = await createHash(splitDocument.metadata.filePath);
-				result.ids.push(`${hash}-${idx}`);
+				const id = `${hash}-${idx}`;
+				result.ids.push(id);
+				splitDocument.id = id;
 				result.chunks.push(splitDocument);
 			}
 		}
@@ -98,16 +104,94 @@ export default class DocumentProcessor {
 		return result;
 	}
 
-	private async saveToVectorStore(
-		chunks: Document[],
-		ids: string[],
-	): Promise<string[]> {
+	public async fetchExistingDocuments(documents: Document[]) {
+		if (!documents?.length) return [];
+
+		try {
+			// 각 문서에 대한 고유 ID 생성
+			const documentIds = this.generateDocumentIds(documents);
+			// Pinecone DB에서 해당 ID들의 레코드 조회
+			const results = await this.pineconeIndex.fetch(documentIds);
+			return results;
+		} catch (error) {
+			this.logger.error("Error filtering documents:", error);
+		}
+
+		return [];
+	}
+
+	public async queryByFileContent(
+		files: TFile[],
+	): Promise<QueryResponse<RecordMetadata> | null> {
+		if (!files?.length) return null;
+
+		try {
+			const hashes: string[] = [];
+			for (const file of files) {
+				const content = await this.plugin.app.vault.cachedRead(file);
+				const hash = await createContentHash(content);
+				hashes.push(hash);
+			}
+
+			const results = await this.pineconeIndex.query({
+				vector: ZERO_VECTOR,
+				topK: 100,
+				includeValues: true,
+				includeMetadata: true,
+				filter: {
+					hash: {
+						$in: hashes,
+					},
+				},
+			});
+			return results;
+		} catch (error) {
+			this.logger.error("Error filtering documents:", error);
+		}
+
+		return null;
+	}
+
+	private async saveToVectorStore(chunks: Document[], ids: string[]) {
+		// 기존 문서들의 고유 ID 조회
+		const { records } = await this.pineconeIndex.fetch(ids);
+
+		// 기존 문서들의 해시값을 Set으로 저장
+		const existingHashes = new Set(
+			Object.values(records).map(
+				(record) => (record.metadata as { hash: string }).hash,
+			),
+		);
+		const newChunks = chunks.filter(
+			(doc) => !existingHashes.has(doc.metadata.hash),
+		);
+		const oldChunks = chunks.filter((doc) =>
+			existingHashes.has(doc.metadata.hash),
+		);
+
+		this.logger.debug("--→ newChunks", newChunks);
+		this.logger.debug("--→ oldChunks", oldChunks);
+
+		// 변경 내용이 없는 노트는 메타정보만 업데이트
+		// const batchRequests = oldChunks.filter((chunk) => chunk.id).map((chunk) => this.pineconeIndex.update({
+		// 	id: String(chunk.id),
+		// 	metadata: chunk.metadata,
+		// }));
+		// await Promise.all(batchRequests);
+
+		// 새로운 문서나 업데이트된 문서만 저장
 		const embedding = getEmbeddingModel(this.settings);
 		const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
 			pineconeIndex: this.pineconeIndex,
 			maxConcurrency: this.maxConcurrency,
 		});
-		return await vectorStore.addDocuments(chunks, { ids });
+		const vectorIds = await vectorStore.addDocuments(newChunks);
+
+		return {
+			newChunks,
+			oldChunks,
+			vectorIds,
+		};
 	}
 
 	async filterDocumentsByQuery(documents: Document[]) {
