@@ -124,21 +124,9 @@ export default class SmartSeekerPlugin extends Plugin {
 				0,
 			);
 
-			// //
-			// const filterDocuments =
-			// 	await this.documentProcessor.filterNewOrUpdatedDocuments(documents);
 			const result = await this.documentProcessor.processMultiFiles(files);
-			this.logger.debug(`[Process] Completed: ${result}`);
+			this.logger.debug(`[Process] Completed:`, result);
 
-			// const totalCount = files.length;
-			// const processedCount = filterDocuments.length;
-			// const skippedCount = totalCount - processedCount;
-			// const messgae = this.createResultMessage(
-			// 	totalCount,
-			// 	processedCount,
-			// 	skippedCount,
-			// );
-			// new Notice(messgae);
 			new Notice("✅ 모든 노트가 검색 데이터베이스에 추가되었습니다.");
 		} catch (error) {
 			this.logger.error("Error processing note:", error);

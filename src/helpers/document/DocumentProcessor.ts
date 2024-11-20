@@ -23,6 +23,7 @@ import { Logger } from "../logger";
 import { getFileNameSafe } from "../utils/fileUtils";
 import getEmbeddingModel from "../utils/getEmbeddingModel";
 import { createContentHash, createHash } from "../utils/hash";
+import { flatten } from "flat";
 
 interface DocumentChunk {
 	ids: string[];
@@ -175,21 +176,16 @@ export default class DocumentProcessor {
 
 		// 변경 내용이 없는 노트는 메타정보만 업데이트
 		const updateData = oldChunks.map((chunk) => {
-			const { loc, ...newMetadata } = chunk.metadata;
 			return {
 				id: String(chunk.id),
-				metadata: newMetadata,
+				metadata: {
+					...flatten<typeof chunk.metadata, typeof chunk.metadata>(
+						chunk.metadata,
+					),
+				},
 			};
 		});
-		this.logger.debug("--→ updateData", updateData);
-		console.log(
-			await this.pineconeIndex.update({
-				id: "18593",
-				metadata: { genre: "romance" },
-			}),
-		);
 		for (const data of updateData) {
-			console.log(data);
 			await this.pineconeIndex.update(data);
 		}
 
