@@ -298,13 +298,13 @@ export default class DocumentProcessor {
 		return await this.saveToVectorStore(chunks, ids);
 	}
 
-	public async processMultiFiles(files: TFile[]): Promise<string[]> {
+	public async processMultiFiles(files: TFile[]) {
 		const documents = await this.createDocumentsFromFiles(files);
 		const { ids, chunks } = await this.createChunks(documents);
 		return await this.saveToVectorStore(chunks, ids);
 	}
 
-	public async processMultiDocuments(documents: Document[]): Promise<string[]> {
+	public async processMultiDocuments(documents: Document[]) {
 		const { ids, chunks } = await this.createChunks(documents);
 		return await this.saveToVectorStore(chunks, ids);
 	}
