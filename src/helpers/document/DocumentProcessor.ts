@@ -7,6 +7,7 @@ import {
 } from "@langchain/textsplitters";
 import type {
 	Index,
+	PineconeRecord,
 	QueryResponse,
 	RecordMetadata,
 } from "@pinecone-database/pinecone";
@@ -154,10 +155,20 @@ export default class DocumentProcessor {
 	}
 
 	private async saveToVectorStore(chunks: Document[], ids: string[]) {
-		console.log({ chunks, ids });
-		// 기존 문서들의 고유 ID 조회
-		const { records } = await this.pineconeIndex.fetch(ids);
-		console.log(records);
+		this.logger.debug("saveToVectorStore", { chunks, ids });
+
+		// 기존 문서들의 고유 ID를 100개씩 나누어 조회
+		const batchSize = 100;
+		const records: Record<string, PineconeRecord<RecordMetadata>> = {};
+
+		for (let i = 0; i < ids.length; i += batchSize) {
+			const batchIds = ids.slice(i, i + batchSize);
+			const { records: batchRecords } =
+				await this.pineconeIndex.fetch(batchIds);
+			Object.assign(records, batchRecords);
+		}
+
+		this.logger.debug("records", records);
 
 		// 기존 문서들의 해시값을 Set으로 저장
 		const existingHashes = new Set(
@@ -188,7 +199,6 @@ export default class DocumentProcessor {
 		});
 
 		// Process updates in batches of 100
-		const batchSize = 100;
 		for (let i = 0; i < updateData.length; i += batchSize) {
 			const batch = updateData.slice(i, i + batchSize);
 			await Promise.all(batch.map((data) => this.pineconeIndex.update(data)));
