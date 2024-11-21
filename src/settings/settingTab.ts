@@ -59,7 +59,7 @@ export class SettingTab extends PluginSettingTab {
 			});
 
 		// 인덱스 관리 섹션
-		containerEl.createEl("h3", { text: "Pinecone 인덱스 선택" });
+		containerEl.createEl("h3", { text: "Pinecone 인덱스" });
 
 		// 인덱스 선택 드롭다운
 		const indexSetting = new Setting(containerEl)
