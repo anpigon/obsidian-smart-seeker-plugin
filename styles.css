@@ -134,10 +134,10 @@ input.index-name-input.invalid {
 .related-note-icon {
 	cursor: pointer;
 }
-.related-note-icon svg {
+/* .related-note-icon svg {
 	transition: transform 200ms ease;
 	transform: translateY(-2px);
 }
 .related-note-icon.is-collapsed svg {
 	transform: rotate(-90deg) translateX(2px);
-}
+} */

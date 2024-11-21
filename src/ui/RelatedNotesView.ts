@@ -102,9 +102,9 @@ export class RelatedNotesView extends ItemView {
 				});
 
 				const itemIconEl = noteEl.createEl("div", {
-					cls: "tree-item-icon related-note-icon is-collapsed",
+					cls: "tree-item-icon related-note-icon collapse-icon is-collapsed",
 				});
-				const chevronIcon = itemIconEl
+				itemIconEl
 					.createSvg("svg", {
 						attr: {
 							xmlns: "http://www.w3.org/2000/svg",
@@ -116,10 +116,10 @@ export class RelatedNotesView extends ItemView {
 							"stroke-width": "2",
 							"stroke-linecap": "round",
 							"stroke-linejoin": "round",
-							class: "lucide lucide-chevron-down",
+							class: "svg-icon right-triangle",
 						},
 					})
-					.createSvg("path", { attr: { d: "m6 9 6 6 6-6" } });
+					.createSvg("path", { attr: { d: "M3 8L12 17L21 8" } });
 
 				const itemInnerEl = noteEl.createEl("div", { cls: "tree-item-inner" });
 
@@ -176,6 +176,14 @@ export class RelatedNotesView extends ItemView {
 					}
 				});
 			});
+			/* <div class="search-results-children" style="">
+				<div style="width: 1px; height: 0.1px; margin-bottom: 0px;"></div>
+				<div class="tree-item search-result" draggable="true">
+					<div class="tree-item-self search-result-file-title is-clickable">
+						<div class="tree-item-icon collapse-icon" style=""><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle"><path d="M3 8L12 17L21 8"></path></svg></div><div class="tree-item-inner">무료 사용 가능한 LLM API 서비스</div><div class="tree-item-flair-outer"><span class="tree-item-flair">1</span></div></div><div class="search-result-file-matches" style=""><div style="width: 1px; height: 0.1px; margin-bottom: 0px;"></div><div class="search-result-file-match tappable"><span class="search-result-file-matched-text">[[21 FREE AI Coding Tools THAT I USE!]]</span><div class="search-result-hover-button mod-top" aria-label="앞뒤로 표시" data-tooltip-position="top" style="display: none;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-chevron-up"><path d="m18 15-6-6-6 6"></path></svg></div><div class="search-result-hover-button mod-bottom" aria-label="앞뒤로 표시" style="display: none;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-chevron-down"><path d="m6 9 6 6 6-6"></path></svg></div></div>
+					</div>
+				</div>
+			</div> */
 		} catch (error) {
 			loadingEl.remove();
 			this.contentEl.createEl("div", {
