@@ -95,7 +95,11 @@ export class SettingTab extends PluginSettingTab {
 			.setDesc("새로운 Pinecone 인덱스를 생성합니다")
 			.addButton((button) =>
 				button.setButtonText("생성").onClick(() => {
-					new CreatePineconeIndexModal(this.app, this.plugin).open();
+					new CreatePineconeIndexModal(
+						this.app,
+						this.plugin,
+						this.fetchPineconeIndexes.bind(this),
+					).open();
 				}),
 			);
 
@@ -193,10 +197,16 @@ export class SettingTab extends PluginSettingTab {
 class CreatePineconeIndexModal extends Modal {
 	private indexNameInput: TextComponent;
 	private readonly plugin: SmartSeekerPlugin;
+	private onIndexCreated: () => Promise<void>;
 
-	constructor(app: App, plugin: SmartSeekerPlugin) {
+	constructor(
+		app: App,
+		plugin: SmartSeekerPlugin,
+		onIndexCreated: () => Promise<void>,
+	) {
 		super(app);
 		this.plugin = plugin;
+		this.onIndexCreated = onIndexCreated;
 	}
 
 	onOpen() {
@@ -240,6 +250,8 @@ class CreatePineconeIndexModal extends Modal {
 				},
 			});
 			new Notice(`인덱스 '${indexName}'가 생성되었습니다.`);
+			// 콜백 함수를 통해 인덱스 목록 새로고침
+			await this.onIndexCreated();
 		} catch (error) {
 			console.error("인덱스 생성 실패:", error);
 			new Notice("인덱스 생성에 실패했습니다. API 키를 확인해주세요.");
