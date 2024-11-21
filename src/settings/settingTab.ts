@@ -31,7 +31,7 @@ export class SettingTab extends PluginSettingTab {
 		// OpenAI API 설정
 		new Setting(containerEl)
 			.setName("OpenAI API 키")
-			.setDesc("AI 기능 사용을 위한 OpenAI API 키를 입력하세요")
+			.setDesc(this.createOpenAIApiKeyDescription())
 			.addText((text) => {
 				text.inputEl.type = "password";
 				text
@@ -46,7 +46,7 @@ export class SettingTab extends PluginSettingTab {
 		// Pinecone API 설정
 		new Setting(containerEl)
 			.setName("Pinecone API 키")
-			.setDesc("벡터 데이터베이스 연동을 위한 Pinecone API 키를 입력하세요")
+			.setDesc(this.createPineconeApiKeyDescription())
 			.addText((text) => {
 				text.inputEl.type = "password";
 				text
@@ -100,6 +100,38 @@ export class SettingTab extends PluginSettingTab {
 			);
 
 		this.initialize();
+	}
+
+	private createApiKeyDescription(
+		description: string,
+		linkUrl: string,
+	): DocumentFragment {
+		const fragment = document.createDocumentFragment();
+		fragment.append(
+			description,
+			document.createElement("br"),
+			"키 발급 바로가기: ",
+		);
+		const a = document.createElement("a", { is: "external-link" });
+		a.href = linkUrl;
+		a.text = linkUrl;
+		a.target = "_blank";
+		fragment.append(a);
+		return fragment;
+	}
+
+	private createPineconeApiKeyDescription(): DocumentFragment {
+		return this.createApiKeyDescription(
+			"벡터 데이터베이스 연동을 위한 Pinecone API 키를 입력하세요.",
+			"https://app.pinecone.io/organizations/-/projects/-/keys",
+		);
+	}
+
+	private createOpenAIApiKeyDescription(): DocumentFragment {
+		return this.createApiKeyDescription(
+			"OpenAI API 키를 입력하세요.",
+			"https://platform.openai.com/api-keys",
+		);
 	}
 
 	// Pinecone API를 호출하여 인덱스 목록을 가져오는 함수

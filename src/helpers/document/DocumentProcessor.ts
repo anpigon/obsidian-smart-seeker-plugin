@@ -199,7 +199,10 @@ export default class DocumentProcessor {
 			pineconeIndex: this.pineconeIndex,
 			maxConcurrency: this.maxConcurrency,
 		});
-		const vectorIds = await vectorStore.addDocuments(newChunks);
+		const newChunkIds: string[] = newChunks
+			.map((e) => e.id)
+			.filter((id) => id !== undefined);
+		const vectorIds = await vectorStore.addDocuments(newChunks, newChunkIds);
 
 		return {
 			newChunks,
@@ -317,11 +320,6 @@ export default class DocumentProcessor {
 
 	public async processMultiFiles(files: TFile[]) {
 		const documents = await this.createDocumentsFromFiles(files);
-		const { ids, chunks } = await this.createChunks(documents);
-		return await this.saveToVectorStore(chunks, ids);
-	}
-
-	public async processMultiDocuments(documents: Document[]) {
 		const { ids, chunks } = await this.createChunks(documents);
 		return await this.saveToVectorStore(chunks, ids);
 	}
