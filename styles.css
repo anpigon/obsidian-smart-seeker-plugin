@@ -115,11 +115,12 @@ If your plugin does not need CSS, delete this file.
 	color: var(--text-faint);
 }
 
-/* 인덱스 생성 모달 스타일 */
-.create-index-modal__error {
+.error {
 	color: var(--text-error);
-	font-size: 12px;
-	margin-top: -15px;
-	margin-bottom: 15px;
-	display: none;
+}
+
+input.invalid[aria-invalid="true"] {
+	color: var(--text-error);
+	border-color: var(--background-modifier-error);
+	box-shadow: 0 0 0 2px var(--background-modifier-error);
 }
