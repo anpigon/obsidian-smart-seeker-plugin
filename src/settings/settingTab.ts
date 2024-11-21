@@ -4,7 +4,7 @@ import {
 	Notice,
 	PluginSettingTab,
 	Setting,
-	type TextComponent,
+	TextComponent,
 } from "obsidian";
 import { DEFAULT_EMBEDDING_DIMENSION, PINECONE_CONFIG } from "src/constants";
 import { createPineconeClient } from "src/services/PineconeManager";
@@ -221,30 +221,53 @@ class CreatePineconeIndexModal extends Modal {
 	onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
+
 		contentEl.createEl("h2", { text: "새로운 Pinecone 인덱스 생성" });
 
-		new Setting(contentEl)
-			.setName("인덱스 이름")
-			.setDesc("생성할 인덱스의 이름을 입력하세요.")
+		const indexNameInput = new Setting(contentEl)
+			.setName("생성할 인덱스의 이름을 입력하세요.")
+			.setDesc("인덱스 이름은 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다.")
 			.addText((text) => {
-				this.indexNameInput = text;
-				text.setPlaceholder("my-index");
+				text.setPlaceholder("인덱스 이름을 입력하세요").onChange((value) => {
+					// 입력값이 유효한지 확인
+					const isValid = /^[a-z0-9-]*$/.test(value);
+					submitButton.disabled = !isValid || !value;
+
+					if (!isValid && value) {
+						indexNameInput.descEl.style.color = "var(--text-error)";
+					} else {
+						indexNameInput.descEl.style.color = "var(--text-muted)";
+					}
+				});
 			});
 
-		new Setting(contentEl).addButton((button) => {
-			button
-				.setButtonText("생성")
-				.setCta()
-				.onClick(async () => {
-					const indexName = this.indexNameInput.getValue();
-					if (!indexName) {
-						new Notice("인덱스 이름을 입력하세요");
-						return;
-					}
-					await this.createPineconeIndex(indexName);
-					this.close();
-				});
+		// buttons
+		const buttonContainer = contentEl.createDiv({
+			cls: "modal-button-container",
 		});
+
+		const submitButton = buttonContainer.createEl("button", {
+			text: "생성",
+			cls: "mod-cta",
+		});
+		submitButton.disabled = true;
+
+		submitButton.addEventListener("click", async () => {
+			const indexName = this.indexNameInput.getValue();
+			if (!indexName) {
+				new Notice("인덱스 이름을 입력하세요");
+				return;
+			}
+
+			await this.createPineconeIndex(indexName);
+			this.close();
+		});
+
+		buttonContainer
+			.createEl("button", { text: "취소" })
+			.addEventListener("click", () => {
+				this.close();
+			});
 	}
 
 	async createPineconeIndex(indexName: string) {
