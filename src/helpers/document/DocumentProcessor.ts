@@ -10,6 +10,7 @@ import type {
 	QueryResponse,
 	RecordMetadata,
 } from "@pinecone-database/pinecone";
+import { flatten } from "flat";
 import { FrontMatterCache, TFile } from "obsidian";
 import {
 	DEFAULT_CHUNK_OVERLAP,
@@ -23,7 +24,6 @@ import { Logger } from "../logger";
 import { getFileNameSafe } from "../utils/fileUtils";
 import getEmbeddingModel from "../utils/getEmbeddingModel";
 import { createContentHash, createHash } from "../utils/hash";
-import { flatten } from "flat";
 
 interface DocumentChunk {
 	ids: string[];
@@ -168,15 +168,15 @@ export default class DocumentProcessor {
 		const newChunks = chunks.filter(
 			(doc) => !existingHashes.has(doc.metadata.hash),
 		);
-		const oldChunks = chunks.filter((doc) =>
+		const skipChunks = chunks.filter((doc) =>
 			existingHashes.has(doc.metadata.hash),
 		);
 
 		this.logger.debug("--→ newChunks", newChunks);
-		this.logger.debug("--→ oldChunks", oldChunks);
+		this.logger.debug("--→ skipChunks", skipChunks);
 
 		// 변경 내용이 없는 노트는 메타정보만 업데이트
-		const updateData = oldChunks.map((chunk) => {
+		const updateData = skipChunks.map((chunk) => {
 			return {
 				id: String(chunk.id),
 				metadata: {
@@ -200,14 +200,12 @@ export default class DocumentProcessor {
 			pineconeIndex: this.pineconeIndex,
 			maxConcurrency: this.maxConcurrency,
 		});
-		const newChunkIds: string[] = newChunks
-			.map((e) => e.id)
-			.filter((id) => id !== undefined);
+		const newChunkIds = newChunks.map((e) => String(e.id));
 		const vectorIds = await vectorStore.addDocuments(newChunks, newChunkIds);
 
 		return {
 			newChunks,
-			oldChunks,
+			skipChunks,
 			vectorIds,
 		};
 	}
