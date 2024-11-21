@@ -154,6 +154,7 @@ export default class DocumentProcessor {
 	}
 
 	private async saveToVectorStore(chunks: Document[], ids: string[]) {
+		console.log({ chunks, ids });
 		// 기존 문서들의 고유 ID 조회
 		const { records } = await this.pineconeIndex.fetch(ids);
 		console.log(records);
