@@ -98,7 +98,9 @@ export class SettingTab extends PluginSettingTab {
 					new CreatePineconeIndexModal(
 						this.app,
 						this.plugin,
-						this.fetchPineconeIndexes.bind(this),
+						async (indexName: string) => {
+							await this.fetchPineconeIndexes(indexName);
+						},
 					).open();
 				}),
 			);
@@ -139,7 +141,7 @@ export class SettingTab extends PluginSettingTab {
 	}
 
 	// Pinecone API를 호출하여 인덱스 목록을 가져오는 함수
-	async fetchPineconeIndexes() {
+	async fetchPineconeIndexes(selectIndex?: string) {
 		const pc = createPineconeClient(this.plugin.settings.pineconeApiKey);
 		if (this.indexSelectEl) {
 			// 로딩 상태 표시
@@ -173,8 +175,15 @@ export class SettingTab extends PluginSettingTab {
 							value: name,
 						});
 
-						if (name === this.plugin.settings.pineconeIndexName) {
+						// 새로 생성된 인덱스나 이전에 선택된 인덱스 선택
+						if (
+							name === selectIndex ||
+							(!selectIndex && name === this.plugin.settings.pineconeIndexName)
+						) {
 							(optionEl as HTMLOptionElement).selected = true;
+							// 설정에 저장
+							this.plugin.settings.pineconeIndexName = name;
+							this.plugin.saveSettings();
 						}
 					}
 				}
@@ -197,12 +206,12 @@ export class SettingTab extends PluginSettingTab {
 class CreatePineconeIndexModal extends Modal {
 	private indexNameInput: TextComponent;
 	private readonly plugin: SmartSeekerPlugin;
-	private onIndexCreated: () => Promise<void>;
+	private onIndexCreated: (indexName: string) => Promise<void>;
 
 	constructor(
 		app: App,
 		plugin: SmartSeekerPlugin,
-		onIndexCreated: () => Promise<void>,
+		onIndexCreated: (indexName: string) => Promise<void>,
 	) {
 		super(app);
 		this.plugin = plugin;
@@ -250,8 +259,8 @@ class CreatePineconeIndexModal extends Modal {
 				},
 			});
 			new Notice(`인덱스 '${indexName}'가 생성되었습니다.`);
-			// 콜백 함수를 통해 인덱스 목록 새로고침
-			await this.onIndexCreated();
+			// 콜백 함수를 통해 인덱스 목록 새로고침 및 새로 생성된 인덱스 선택
+			await this.onIndexCreated(indexName);
 		} catch (error) {
 			console.error("인덱스 생성 실패:", error);
 			new Notice("인덱스 생성에 실패했습니다. API 키를 확인해주세요.");
