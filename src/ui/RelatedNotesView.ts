@@ -101,7 +101,9 @@ export class RelatedNotesView extends ItemView {
 					cls: "tree-item-self is-clickable outgoing-link-item",
 				});
 
-				const itemIconEl = noteEl.createEl("div", { cls: "tree-item-icon related-note-icon is-collapsed" });
+				const itemIconEl = noteEl.createEl("div", {
+					cls: "tree-item-icon related-note-icon is-collapsed",
+				});
 				const chevronIcon = itemIconEl
 					.createSvg("svg", {
 						attr: {
