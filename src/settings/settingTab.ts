@@ -234,15 +234,13 @@ class CreatePineconeIndexModal extends Modal {
 					submitButton.disabled = !isValid || !value;
 
 					if (!isValid && value) {
-						text.inputEl.ariaInvalid = "true";
 						text.inputEl.addClass("invalid");
 						indexNameInputContainer.descEl.addClass("error");
 					} else {
-						text.inputEl.ariaInvalid = "false";
 						text.inputEl.removeClass("invalid");
 						indexNameInputContainer.descEl.removeClass("error");
 					}
-				});
+				}).inputEl.addClass("index-name-input");
 				this.indexNameInput = text;
 			});
 

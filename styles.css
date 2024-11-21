@@ -125,7 +125,7 @@ If your plugin does not need CSS, delete this file.
 	color: var(--text-error);
 }
 
-input.invalid[aria-invalid="true"] {
+input.index-name-input.invalid {
 	color: var(--text-error);
 	border-color: var(--background-modifier-error);
 	box-shadow: 0 0 0 2px var(--background-modifier-error);
