@@ -228,19 +228,22 @@ class CreatePineconeIndexModal extends Modal {
 			.setName("생성할 인덱스의 이름을 입력하세요.")
 			.setDesc("인덱스 이름은 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다.")
 			.addText((text) => {
-				text.setPlaceholder("인덱스 이름을 입력하세요").onChange((value) => {
-					// 입력값이 유효한지 확인
-					const isValid = /^[a-z0-9-]*$/.test(value);
-					submitButton.disabled = !isValid || !value;
+				text
+					.setPlaceholder("인덱스 이름을 입력하세요")
+					.onChange((value) => {
+						// 입력값이 유효한지 확인
+						const isValid = /^[a-z0-9-]*$/.test(value);
+						submitButton.disabled = !isValid || !value;
 
-					if (!isValid && value) {
-						text.inputEl.addClass("invalid");
-						indexNameInputContainer.descEl.addClass("error");
-					} else {
-						text.inputEl.removeClass("invalid");
-						indexNameInputContainer.descEl.removeClass("error");
-					}
-				}).inputEl.addClass("index-name-input");
+						if (!isValid && value) {
+							text.inputEl.addClass("invalid");
+							indexNameInputContainer.descEl.addClass("error");
+						} else {
+							text.inputEl.removeClass("invalid");
+							indexNameInputContainer.descEl.removeClass("error");
+						}
+					})
+					.inputEl.addClass("index-name-input");
 				this.indexNameInput = text;
 			});
 
