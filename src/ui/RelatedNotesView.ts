@@ -101,21 +101,23 @@ export class RelatedNotesView extends ItemView {
 					cls: "tree-item-self is-clickable outgoing-link-item",
 				});
 
-				const itemIconEl = noteEl.createEl("div", { cls: "tree-item-icon" });
-				itemIconEl.createSvg("svg", {
-					attr: {
-						xmlns: "http://www.w3.org/2000/svg",
-						width: "24",
-						height: "24",
-						viewBox: "0 0 24 24",
-						fill: "none",
-						stroke: "currentColor",
-						"stroke-width": "2",
-						"stroke-linecap": "round",
-						"stroke-linejoin": "round",
-						class: "lucide lucide-chevron-down",
-					}
-				}).createSvg("path", { attr: { d: "m6 9 6 6 6-6" } });
+				const itemIconEl = noteEl.createEl("div", { cls: "tree-item-icon related-note-icon is-collapsed" });
+				const chevronIcon = itemIconEl
+					.createSvg("svg", {
+						attr: {
+							xmlns: "http://www.w3.org/2000/svg",
+							width: "24",
+							height: "24",
+							viewBox: "0 0 24 24",
+							fill: "none",
+							stroke: "currentColor",
+							"stroke-width": "2",
+							"stroke-linecap": "round",
+							"stroke-linejoin": "round",
+							class: "lucide lucide-chevron-down",
+						},
+					})
+					.createSvg("path", { attr: { d: "m6 9 6 6 6-6" } });
 
 				const itemInnerEl = noteEl.createEl("div", { cls: "tree-item-inner" });
 
@@ -132,9 +134,22 @@ export class RelatedNotesView extends ItemView {
 					cls: "tree-item-inner-text",
 				});
 
-				itemInnerEl.createEl("div", {
+				const subtextEl = itemInnerEl.createEl("div", {
 					text: subtext,
-					cls: "tree-item-inner-subtext related-note-subtext",
+					cls: "tree-item-inner-subtext related-note-subtext is-collapsed",
+				});
+
+				// Add click handler to itemIconEl to toggle subtext
+				itemIconEl.addEventListener("click", (e) => {
+					e.stopPropagation(); // Prevent triggering the noteEl click event
+					subtextEl.toggleClass(
+						"is-collapsed",
+						!subtextEl.hasClass("is-collapsed"),
+					);
+					itemIconEl.toggleClass(
+						"is-collapsed",
+						!itemIconEl.hasClass("is-collapsed"),
+					);
 				});
 
 				// Add click handler to open the note
