@@ -224,7 +224,7 @@ class CreatePineconeIndexModal extends Modal {
 
 		contentEl.createEl("h2", { text: "새로운 Pinecone 인덱스 생성" });
 
-		const indexNameInput = new Setting(contentEl)
+		const indexNameInputContainer = new Setting(contentEl)
 			.setName("생성할 인덱스의 이름을 입력하세요.")
 			.setDesc("인덱스 이름은 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다.")
 			.addText((text) => {
@@ -236,13 +236,14 @@ class CreatePineconeIndexModal extends Modal {
 					if (!isValid && value) {
 						text.inputEl.ariaInvalid = "true";
 						text.inputEl.addClass("invalid");
-						indexNameInput.descEl.addClass("error");
+						indexNameInputContainer.descEl.addClass("error");
 					} else {
 						text.inputEl.ariaInvalid = "false";
 						text.inputEl.removeClass("invalid");
-						indexNameInput.descEl.removeClass("error");
+						indexNameInputContainer.descEl.removeClass("error");
 					}
 				});
+				this.indexNameInput = text;
 			});
 
 		// buttons
@@ -263,8 +264,20 @@ class CreatePineconeIndexModal extends Modal {
 				return;
 			}
 
-			await this.createPineconeIndex(indexName);
-			this.close();
+			submitButton.disabled = true;
+			try {
+				new Notice(`"${indexName}" 인덱스 생성 중...`);
+				await this.createPineconeIndex(indexName);
+				new Notice(`인덱스 '${indexName}'가 생성되었습니다.`);
+				// 콜백 함수를 통해 인덱스 목록 새로고침 및 새로 생성된 인덱스 선택
+				await this.onIndexCreated(indexName);
+				this.close();
+			} catch (error) {
+				console.error("인덱스 생성 실패:", error);
+				new Notice("인덱스 생성에 실패했습니다. API 키를 확인해주세요.");
+			} finally {
+				submitButton.disabled = false;
+			}
 		});
 
 		buttonContainer
@@ -275,22 +288,15 @@ class CreatePineconeIndexModal extends Modal {
 	}
 
 	async createPineconeIndex(indexName: string) {
-		try {
-			const pc = createPineconeClient(this.plugin.settings.pineconeApiKey);
-			await pc.createIndex({
-				name: indexName,
-				dimension: DEFAULT_EMBEDDING_DIMENSION,
-				metric: PINECONE_CONFIG.metric,
-				spec: {
-					...PINECONE_CONFIG.spec,
-				},
-			});
-			new Notice(`인덱스 '${indexName}'가 생성되었습니다.`);
-			// 콜백 함수를 통해 인덱스 목록 새로고침 및 새로 생성된 인덱스 선택
-			await this.onIndexCreated(indexName);
-		} catch (error) {
-			console.error("인덱스 생성 실패:", error);
-			new Notice("인덱스 생성에 실패했습니다. API 키를 확인해주세요.");
-		}
+		const pc = createPineconeClient(this.plugin.settings.pineconeApiKey);
+		await pc.createIndex({
+			name: indexName,
+			dimension: DEFAULT_EMBEDDING_DIMENSION,
+			metric: PINECONE_CONFIG.metric,
+			spec: {
+				...PINECONE_CONFIG.spec,
+			},
+		});
+		await this.onIndexCreated(indexName);
 	}
 }
