@@ -11,7 +11,7 @@ export async function openAndHighlightText(
 	searchText: string,
 	range: TextRange,
 ): Promise<void> {
-	if (filePath) {
+	if (!filePath) {
 		throw new Error("File path not found");
 	}
 
