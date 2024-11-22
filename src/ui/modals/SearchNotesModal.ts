@@ -1,18 +1,13 @@
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
 import { PluginSettings } from "@/settings/settings";
+import { openAndHighlightText } from "@/utils/editor-helpers";
 import {
 	type Index,
 	Pinecone,
 	type RecordMetadata,
 	type ScoredPineconeRecord,
 } from "@pinecone-database/pinecone";
-import {
-	type App,
-	type MarkdownView,
-	Notice,
-	SuggestModal,
-	TFile,
-} from "obsidian";
+import { type App, Notice, SuggestModal } from "obsidian";
 import { LogLevel, Logger } from "../../helpers/logger";
 import obsidianFetchApi from "../../helpers/utils/obsidianFetchApi";
 
@@ -163,53 +158,19 @@ export class SearchNotesModal extends SuggestModal<
 
 	async onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {
 		this.logger.debug("onChooseSuggestion", item);
-		const filePath = item.metadata?.filePath?.toString();
-		const searchText = item.metadata?.text
-			?.toString()
-			.replace(/^(?:\(cont'd\)\s*)?/, "") // Remove (cont'd) prefix if exists
-			.split("\n")[0]
-			.trim();
+		const filePath = item.metadata?.filePath?.toString() || "";
+		const text = item.metadata?.text?.toString() || "";
 		const fromLine = Number(item.metadata?.["loc.lines.from"] ?? 0);
 		const toLine = Number(item.metadata?.["loc.lines.to"] ?? 0);
 
-		if (!filePath || !searchText) {
-			new Notice("필요한 메타데이터가 없습니다.");
-			return;
-		}
-
-		const file = this.app.vault.getAbstractFileByPath(filePath);
-		if (!(file instanceof TFile)) {
-			new Notice("파일을 찾을 수 없습니다.");
-			return;
-		}
-
-		const leaf = this.app.workspace.getLeaf();
-		await leaf.openFile(file);
-
-		const view = leaf.view;
-		if (view.getViewType() !== "markdown") return;
-
-		const editor = (view as MarkdownView).editor;
-		if (!editor) return;
-
-		const fileContent = editor.getValue();
-		const lines = fileContent.split("\n");
-
-		// DB에 저장된 라인 수와 실제 텍스트의 라인 수가 달라질 수 있으므로,
-		// 실제 텍스트가 있는 라인을 찾습니다.
-		const foundLine =
-			lines.slice(fromLine).findIndex((line) => line.includes(searchText)) +
-			fromLine;
-
-		if (foundLine > -1) {
-			const offset = foundLine - fromLine;
-			const from = { line: foundLine, ch: 0 };
-			const to = { line: toLine + offset, ch: lines[toLine + offset].length };
-
-			// 해당 위치로 스크롤하고 텍스트를 선택
-			editor.setCursor(from);
-			editor.setSelection(from, to);
-			editor.scrollIntoView({ from, to: from }, true);
+		try {
+			await openAndHighlightText(this.app, filePath, text, {
+				from: fromLine,
+				to: toLine,
+			});
+		} catch (error) {
+			console.error("Error opening file:", error);
+			new Notice(error.message);
 		}
 	}
 
