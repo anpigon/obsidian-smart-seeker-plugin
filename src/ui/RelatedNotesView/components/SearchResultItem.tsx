@@ -2,11 +2,20 @@ import IconRightTriangle from "@/ui/icons/IconRightTriangle";
 import { useState } from "react";
 
 interface SearchResultItemProps {
+	id?: string;
 	filePath?: string;
 	title: string;
 	score: string;
 	text: string;
-	onTitleClick: (filePath: string) => void;
+	from?: number;
+	to?: number;
+	onTitleClick: (filePath?: string) => void;
+	onMatchClick: (
+		filePath?: string,
+		text?: string,
+		from?: number,
+		to?: number,
+	) => void;
 }
 
 const SearchResultItem = ({
@@ -14,7 +23,10 @@ const SearchResultItem = ({
 	score,
 	title,
 	text,
-	onTitleClick: onClick,
+	from,
+	to,
+	onMatchClick,
+	onTitleClick,
 }: SearchResultItemProps) => {
 	const [isCollapsed, setIsCollapsed] = useState(true);
 
@@ -25,17 +37,15 @@ const SearchResultItem = ({
 		setIsCollapsed(!isCollapsed);
 	};
 
-	const handleClick = () => {
-		if (filePath) {
-			onClick(filePath);
-		}
-	};
+	const handleTitleClick = () => onTitleClick(filePath);
+
+	const handleMatchClick = () => onMatchClick(filePath, text, from, to);
 
 	return (
 		<div className="tree-item search-result is-collapsed">
 			<div
 				className="tree-item-self search-result-file-title is-clickable"
-				onClick={handleClick}
+				onClick={handleTitleClick}
 			>
 				<div
 					className={`tree-item-icon collapse-icon ${isCollapsed ? "is-collapsed" : ""}`}
@@ -49,7 +59,7 @@ const SearchResultItem = ({
 				</div>
 			</div>
 			{!isCollapsed && (
-				<div className="search-result-file-matches">
+				<div className="search-result-file-matches" onClick={handleMatchClick}>
 					<div className="search-result-file-match tappable">{text}</div>
 				</div>
 			)}
