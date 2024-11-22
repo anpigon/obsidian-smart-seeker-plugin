@@ -6,7 +6,7 @@ interface SearchResultItemProps {
 	title: string;
 	score: string;
 	text: string;
-	onClick: (filePath: string) => void;
+	onTitleClick: (filePath: string) => void;
 }
 
 const SearchResultItem = ({
@@ -14,7 +14,7 @@ const SearchResultItem = ({
 	score,
 	title,
 	text,
-	onClick,
+	onTitleClick: onClick,
 }: SearchResultItemProps) => {
 	const [isCollapsed, setIsCollapsed] = useState(true);
 

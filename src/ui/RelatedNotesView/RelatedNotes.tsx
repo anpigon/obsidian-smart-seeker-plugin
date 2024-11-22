@@ -122,7 +122,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 								title={title}
 								text={subtext}
 								score={score}
-								onClick={handleClick}
+								onTitleClick={handleClick}
 							/>
 						);
 					})}
