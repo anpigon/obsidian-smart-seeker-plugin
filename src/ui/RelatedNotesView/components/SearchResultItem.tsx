@@ -6,6 +6,7 @@ interface SearchResultItemProps {
 	title: string;
 	score: string;
 	text: string;
+	onClick: (filePath: string) => void;
 }
 
 const SearchResultItem = ({
@@ -13,16 +14,29 @@ const SearchResultItem = ({
 	score,
 	title,
 	text,
+	onClick,
 }: SearchResultItemProps) => {
 	const [isCollapsed, setIsCollapsed] = useState(true);
 
-	const handleToggleCollapsed = () => {
+	const handleToggleCollapsed: React.MouseEventHandler<HTMLDivElement> = (
+		event,
+	) => {
+		event.stopPropagation();
 		setIsCollapsed(!isCollapsed);
+	};
+
+	const handleClick = () => {
+		if (filePath) {
+			onClick(filePath);
+		}
 	};
 
 	return (
 		<div className="tree-item search-result is-collapsed">
-			<div className="tree-item-self search-result-file-title is-clickable">
+			<div
+				className="tree-item-self search-result-file-title is-clickable"
+				onClick={handleClick}
+			>
 				<div
 					className={`tree-item-icon collapse-icon ${isCollapsed ? "is-collapsed" : ""}`}
 					onClick={handleToggleCollapsed}
