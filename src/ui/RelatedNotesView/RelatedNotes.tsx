@@ -6,7 +6,7 @@ import {
 
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
 import { createPineconeClient } from "@/services/PineconeManager";
-import { TFile } from "obsidian";
+import { Notice, TFile } from "obsidian";
 import { useEffect, useState } from "react";
 import SearchResultItem from "./components/SearchResultItem";
 
@@ -66,6 +66,27 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 		}
 	};
 
+	const handleClick = async (filePath: string) => {
+		console.log(filePath);
+		try {
+			if (!filePath) {
+				new Notice("File path not found");
+				return;
+			}
+
+			const targetFile = app?.vault.getAbstractFileByPath(filePath);
+			if (!(targetFile instanceof TFile)) {
+				new Notice(`File not found: ${filePath}`);
+				return;
+			}
+
+			await app?.workspace.getLeaf().openFile(targetFile);
+		} catch (error) {
+			console.error("Error opening file:", error);
+			new Notice("Failed to open file");
+		}
+	};
+
 	useEffect(() => {
 		if (currentFile) {
 			updateRelatedNotes();
@@ -101,6 +122,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 								title={title}
 								text={subtext}
 								score={score}
+								onClick={handleClick}
 							/>
 						);
 					})}
