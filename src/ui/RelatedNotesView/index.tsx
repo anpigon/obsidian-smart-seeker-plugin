@@ -48,14 +48,32 @@ export class RelatedNotesView extends ItemView {
 
 	async onOpen(): Promise<void> {
 		this.root = createRoot(this.containerEl.children[1]);
+
+		// Get initial file
+		const currentFile = this.app.workspace.getActiveFile();
+		if (currentFile && currentFile instanceof TFile) {
+			this.currentFile = currentFile;
+		}
+
 		this.render();
 
-		// Register event for file open
+		// Register event for file open with debounce
+		let timeoutId: NodeJS.Timeout;
 		this.registerEvent(
 			this.app.workspace.on("file-open", (file) => {
-				if (file && file instanceof TFile) {
-					this.currentFile = file;
-					this.render();
+				if (
+					file &&
+					file instanceof TFile &&
+					this.currentFile?.path !== file.path
+				) {
+					// Clear previous timeout
+					if (timeoutId) clearTimeout(timeoutId);
+
+					// Set new timeout
+					timeoutId = setTimeout(() => {
+						this.currentFile = file;
+						this.render();
+					}, 300); // 300ms debounce
 				}
 			}),
 		);

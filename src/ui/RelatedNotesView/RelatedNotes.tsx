@@ -57,6 +57,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 	useEffect(() => {
 		if (currentFile) {
 			console.log("useEffect:currentFile", currentFile);
+			setMatches([]);
 			setIsLoading(true);
 			app?.vault
 				.cachedRead(currentFile)
