@@ -11,8 +11,6 @@ import { useEffect, useState } from "react";
 import SearchResultItem from "./components/SearchResultItem";
 
 interface RelatedNotesProps {
-	// isLoading?: boolean;
-	// matches: ScoredPineconeRecord<RecordMetadata>[];
 	currentFile: TFile | null;
 }
 
@@ -54,26 +52,23 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 		return null;
 	};
 
-	useEffect(() => {
+	const updateRelatedNotes = async () => {
 		if (currentFile) {
-			console.log("useEffect:currentFile", currentFile);
 			setMatches([]);
 			setIsLoading(true);
-			app?.vault
-				.cachedRead(currentFile)
-				.then((content: string) => {
-					const truncatedContent = content.slice(0, 4000);
-					return queryByFileContent(truncatedContent, currentFile.path).then(
-						(matches) => {
-							if (matches) {
-								setMatches(matches);
-							}
-						},
-					);
-				})
-				.finally(() => {
-					setIsLoading(false);
-				});
+			const truncatedContent = await app?.vault.cachedRead(currentFile);
+			const matches = await queryByFileContent(
+				truncatedContent || "",
+				currentFile.path,
+			);
+			setMatches(matches || []);
+			setIsLoading(false);
+		}
+	};
+
+	useEffect(() => {
+		if (currentFile) {
+			updateRelatedNotes();
 		}
 	}, [currentFile]);
 
