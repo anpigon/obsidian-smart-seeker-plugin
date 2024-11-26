@@ -1,5 +1,6 @@
 import { AppContext, SettingsContext } from "@/helpers/context";
 import { PluginSettings } from "@/settings/settings";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IconName, ItemView, TFile, WorkspaceLeaf } from "obsidian";
 import { StrictMode } from "react";
 import { Root, createRoot } from "react-dom/client";
@@ -11,12 +12,21 @@ export const VIEW_TYPE_RELATED_NOTES = `${PLUGIN_APP_ID}-related-notes-view`;
 export class RelatedNotesView extends ItemView {
 	root: Root | null = null;
 	private currentFile: TFile | null = null;
+	private queryClient: QueryClient;
 
 	constructor(
 		leaf: WorkspaceLeaf,
 		private settings: PluginSettings,
 	) {
 		super(leaf);
+		this.queryClient = new QueryClient({
+			defaultOptions: {
+				queries: {
+					retry: false,
+					refetchOnWindowFocus: false,
+				},
+			},
+		});
 	}
 
 	getViewType(): string {
@@ -34,14 +44,16 @@ export class RelatedNotesView extends ItemView {
 	private renderComponent() {
 		this.root?.render(
 			<StrictMode>
-				<AppContext.Provider value={this.app}>
-					<SettingsContext.Provider value={this.settings}>
-						<RelatedNotes
-							key={this.currentFile?.path}
-							currentFile={this.currentFile}
-						/>
-					</SettingsContext.Provider>
-				</AppContext.Provider>
+				<QueryClientProvider client={this.queryClient}>
+					<AppContext.Provider value={this.app}>
+						<SettingsContext.Provider value={this.settings}>
+							<RelatedNotes
+								key={this.currentFile?.path}
+								currentFile={this.currentFile}
+							/>
+						</SettingsContext.Provider>
+					</AppContext.Provider>
+				</QueryClientProvider>
 			</StrictMode>,
 		);
 	}

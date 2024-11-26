@@ -1,14 +1,11 @@
 import { useApp, useSettings } from "@/helpers/hooks";
-import {
-	RecordMetadata,
-	ScoredPineconeRecord,
-} from "@pinecone-database/pinecone";
 
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
 import truncateContent from "@/helpers/utils/truncateContent";
 import { createPineconeClient } from "@/services/PineconeManager";
+import { useQuery } from "@tanstack/react-query";
 import { Notice, TFile } from "obsidian";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { openAndHighlightText } from "../../utils/editor-helpers";
 import SearchResultItem from "./components/SearchResultItem";
 
@@ -20,57 +17,45 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 	const app = useApp();
 	const settings = useSettings();
 
-	const [isLoading, setIsLoading] = useState(false);
-	const [matches, setMatches] = useState<
-		ScoredPineconeRecord<RecordMetadata>[]
-	>([]);
-
-	const queryByFileContent = async (
-		query: string,
-		excludeFilePath: string,
-	): Promise<ScoredPineconeRecord<RecordMetadata>[] | null> => {
+	const queryByFileContent = async (query: string, excludeFilePath: string) => {
 		if (!settings?.pineconeApiKey || !settings?.pineconeIndexName) {
-			return null;
+			throw new Error("Pinecone API key or index name is not set");
 		}
 
-		try {
-			const pc = createPineconeClient(settings.pineconeApiKey);
-			const index = pc.Index(settings.pineconeIndexName);
-			const embeddings = await getEmbeddingModel(settings);
-			const vector = await embeddings.embedQuery(query);
-			const queryResponse = await index.query({
-				vector,
-				topK: 100,
-				includeMetadata: true,
-				filter: {
-					filePath: { $ne: excludeFilePath },
-				},
-			});
-			return queryResponse.matches;
-		} catch (error) {
-			console.error("Error filtering documents:", error);
-		}
-
-		return null;
+		const pc = createPineconeClient(settings.pineconeApiKey);
+		const index = pc.Index(settings.pineconeIndexName);
+		const embeddings = await getEmbeddingModel(settings);
+		const vector = await embeddings.embedQuery(query);
+		const queryResponse = await index.query({
+			vector,
+			topK: 100,
+			includeMetadata: true,
+			filter: {
+				filePath: { $ne: excludeFilePath },
+			},
+		});
+		return queryResponse.matches;
 	};
 
-	const updateRelatedNotes = async () => {
-		if (currentFile) {
-			setMatches([]);
-			setIsLoading(true);
+	const {
+		data: matches = [],
+		isLoading,
+		error,
+	} = useQuery({
+		queryKey: ["related-notes", currentFile?.path],
+		queryFn: async () => {
+			if (!currentFile) return [];
 			const content = await app?.vault.cachedRead(currentFile);
 			const truncatedContent = truncateContent(content, 8192);
-			const matches = await queryByFileContent(
-				truncatedContent || "",
-				currentFile.path,
-			);
-			setMatches(matches || []);
-			setIsLoading(false);
-		}
-	};
+			return queryByFileContent(truncatedContent || "", currentFile.path);
+		},
+		enabled:
+			!!currentFile &&
+			!!settings?.pineconeApiKey &&
+			!!settings?.pineconeIndexName,
+	});
 
 	const handleTitleClick = async (filePath: string) => {
-		console.log(filePath);
 		if (!filePath) {
 			new Notice("File path not found");
 			return;
@@ -110,10 +95,23 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 	};
 
 	useEffect(() => {
-		if (currentFile) {
-			updateRelatedNotes();
+		if (error) {
+			console.error("Error fetching related notes:", error);
+			new Notice(
+				"Error fetching related notes. Please check the console for details.",
+			);
 		}
-	}, [currentFile]);
+	}, [error]);
+
+	if (!settings?.pineconeApiKey || !settings?.pineconeIndexName) {
+		return (
+			<div className="tree-item-self">
+				<div className="tree-item-inner related-notes-loading">
+					Please add your Pinecone API key and index name in the settings.
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<>
