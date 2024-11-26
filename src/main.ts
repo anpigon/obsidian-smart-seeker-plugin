@@ -205,6 +205,15 @@ export default class SmartSeekerPlugin extends Plugin {
 				new SearchNotesModal(this.app, this.settings).open();
 			},
 		});
+
+		// Add command
+		this.addCommand({
+			id: 'open-related-notes',
+			name: 'Open Related Notes',
+			callback: () => {
+				this.openRelatedNotesView();
+			}
+		});
 	}
 
 	async onload() {
@@ -224,7 +233,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		// Add icon to ribbon
 		this.addRibbonIcon("documents", "Related Notes", () => {
-			this.activateView();
+			this.openRelatedNotesView();
 		});
 
 		// 설정 탭 추가
@@ -453,7 +462,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		}
 	}
 
-	async activateView() {
+	async openRelatedNotesView() {
 		const { workspace } = this.app;
 
 		let leaf: WorkspaceLeaf | null = null;
