@@ -31,20 +31,28 @@ export class RelatedNotesView extends ItemView {
 		return "documents";
 	}
 
-	async render(): Promise<void> {
+	private renderComponent() {
 		this.root?.render(
 			<StrictMode>
 				<AppContext.Provider value={this.app}>
 					<SettingsContext.Provider value={this.settings}>
-						<RelatedNotes currentFile={this.currentFile} />
+						<RelatedNotes
+							key={this.currentFile?.path}
+							currentFile={this.currentFile}
+						/>
 					</SettingsContext.Provider>
 				</AppContext.Provider>
 			</StrictMode>,
 		);
 	}
 
+	async render(): Promise<void> {
+		this.renderComponent();
+	}
+
 	async onOpen(): Promise<void> {
-		this.root = createRoot(this.containerEl.children[1]);
+		const container = this.containerEl.children[1];
+		this.root = createRoot(container);
 
 		// Get initial file
 		const currentFile = this.app.workspace.getActiveFile();
@@ -52,7 +60,8 @@ export class RelatedNotesView extends ItemView {
 			this.currentFile = currentFile;
 		}
 
-		this.render();
+		// Initial render
+		this.renderComponent();
 
 		// Register event for file open with debounce
 		let timeoutId: NodeJS.Timeout;
@@ -69,7 +78,7 @@ export class RelatedNotesView extends ItemView {
 					// Set new timeout
 					timeoutId = setTimeout(() => {
 						this.currentFile = file;
-						this.render();
+						this.renderComponent();
 					}, 300); // 300ms debounce
 				}
 			}),
