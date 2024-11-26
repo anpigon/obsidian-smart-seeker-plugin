@@ -208,11 +208,11 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		// Add command
 		this.addCommand({
-			id: 'open-related-notes',
-			name: 'Open Related Notes',
+			id: "open-related-notes",
+			name: "Open Related Notes",
 			callback: () => {
 				this.openRelatedNotesView();
-			}
+			},
 		});
 	}
 
@@ -232,6 +232,14 @@ export default class SmartSeekerPlugin extends Plugin {
 		);
 
 		// Add icon to ribbon
+		this.addRibbonIcon("magnifying-glass", "Search Notes", () => {
+			if (!this.settings.pineconeApiKey || !this.settings.pineconeIndexName) {
+				new Notice("Please configure PineconeDB settings first");
+				return;
+			}
+			new SearchNotesModal(this.app, this.settings).open();
+		});
+
 		this.addRibbonIcon("documents", "Related Notes", () => {
 			this.openRelatedNotesView();
 		});
