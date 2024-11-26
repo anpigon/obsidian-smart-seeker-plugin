@@ -5,6 +5,7 @@ import {
 } from "@pinecone-database/pinecone";
 
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
+import truncateContent from "@/helpers/utils/truncateContent";
 import { createPineconeClient } from "@/services/PineconeManager";
 import { Notice, TFile } from "obsidian";
 import { useEffect, useState } from "react";
@@ -57,7 +58,8 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 		if (currentFile) {
 			setMatches([]);
 			setIsLoading(true);
-			const truncatedContent = await app?.vault.cachedRead(currentFile);
+			const content = await app?.vault.cachedRead(currentFile);
+			const truncatedContent = truncateContent(content, 8192);
 			const matches = await queryByFileContent(
 				truncatedContent || "",
 				currentFile.path,
