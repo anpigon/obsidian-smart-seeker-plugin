@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json",
+		"version": "node version-bump.mjs && git add manifest.json versions.json package.json",
 		"version:major": "node version-bump.mjs major && git add manifest.json versions.json package.json",
 		"version:minor": "node version-bump.mjs minor && git add manifest.json versions.json package.json",
 		"version:patch": "node version-bump.mjs patch && git add manifest.json versions.json package.json",
