@@ -1,11 +1,12 @@
 import { useApp, useSettings } from "@/helpers/hooks";
 
+import { Logger } from "@/helpers/logger";
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
 import truncateContent from "@/helpers/utils/truncateContent";
 import { createPineconeClient } from "@/services/PineconeManager";
 import { useQuery } from "@tanstack/react-query";
 import { Notice, TFile } from "obsidian";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { openAndHighlightText } from "../../utils/editor-helpers";
 import SearchResultItem from "./components/SearchResultItem";
 
@@ -16,6 +17,10 @@ interface RelatedNotesProps {
 const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 	const app = useApp();
 	const settings = useSettings();
+	const logger = useMemo(
+		() => new Logger("RelatedNotes", settings?.logLevel),
+		[settings?.logLevel],
+	);
 
 	const queryByFileContent = async (query: string, excludeFilePath: string) => {
 		if (!settings?.pineconeApiKey || !settings?.pineconeIndexName) {
@@ -47,6 +52,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 		queryFn: async () => {
 			if (!currentFile) return [];
 			const content = await app?.vault.cachedRead(currentFile);
+			logger.debug("--→ content", content?.length, content);
 			if (!content || content.length < 50) return [];
 			const truncatedContent = truncateContent(content, 8192);
 			return queryByFileContent(truncatedContent || "", currentFile.path);
@@ -158,35 +164,33 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 
 			<div className="search-result-container">
 				<div className="search-results-children">
-					{
-						matches.map((match) => {
-							const title = String(match.metadata?.title || "Untitled");
-							const subtext = String(match.metadata?.text || "")?.replace(
-								/^(?:\(cont'd\)\s*)?/,
-								"",
-							);
-							const score =
-								match.score !== undefined ? match.score.toFixed(2) : "0.00";
-							const filePath = match.metadata?.filePath?.toString();
-							const from = Number(match.metadata?.["loc.lines.from"]);
-							const to = Number(match.metadata?.["loc.lines.to"]);
-							// console.log("match", match);
-							return (
-								<SearchResultItem
-									key={match.id}
-									id={match.id}
-									filePath={filePath}
-									title={title}
-									text={subtext}
-									score={score}
-									from={from}
-									to={to}
-									onTitleClick={handleTitleClick}
-									onMatchClick={handleMatchClick}
-								/>
-							);
-						})
-					}
+					{matches.map((match) => {
+						const title = String(match.metadata?.title || "Untitled");
+						const subtext = String(match.metadata?.text || "")?.replace(
+							/^(?:\(cont'd\)\s*)?/,
+							"",
+						);
+						const score =
+							match.score !== undefined ? match.score.toFixed(2) : "0.00";
+						const filePath = match.metadata?.filePath?.toString();
+						const from = Number(match.metadata?.["loc.lines.from"]);
+						const to = Number(match.metadata?.["loc.lines.to"]);
+						// console.log("match", match);
+						return (
+							<SearchResultItem
+								key={match.id}
+								id={match.id}
+								filePath={filePath}
+								title={title}
+								text={subtext}
+								score={score}
+								from={from}
+								to={to}
+								onTitleClick={handleTitleClick}
+								onMatchClick={handleMatchClick}
+							/>
+						);
+					})}
 				</div>
 				{matches.length === 0 && (
 					<div className="search-empty-state">
