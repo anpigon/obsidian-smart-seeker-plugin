@@ -128,33 +128,39 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 
 			<div className="search-result-container">
 				<div className="search-results-children">
-					{matches.map((match) => {
-						const title = String(match.metadata?.title || "Untitled");
-						const subtext = String(match.metadata?.text || "")?.replace(
-							/^(?:\(cont'd\)\s*)?/,
-							"",
-						);
-						const score =
-							match.score !== undefined ? match.score.toFixed(2) : "0.00";
-						const filePath = match.metadata?.filePath?.toString();
-						const from = Number(match.metadata?.["loc.lines.from"]);
-						const to = Number(match.metadata?.["loc.lines.to"]);
-						// console.log("match", match);
-						return (
-							<SearchResultItem
-								key={match.id}
-								id={match.id}
-								filePath={filePath}
-								title={title}
-								text={subtext}
-								score={score}
-								from={from}
-								to={to}
-								onTitleClick={handleTitleClick}
-								onMatchClick={handleMatchClick}
-							/>
-						);
-					})}
+					{matches.length === 0 ? (
+						<div style={{ padding: "10px", textAlign: "center", color: "var(--text-muted)" }}>
+							관련된 노트를 찾을 수 없습니다.
+						</div>
+					) : (
+						matches.map((match) => {
+							const title = String(match.metadata?.title || "Untitled");
+							const subtext = String(match.metadata?.text || "")?.replace(
+								/^(?:\(cont'd\)\s*)?/,
+								"",
+							);
+							const score =
+								match.score !== undefined ? match.score.toFixed(2) : "0.00";
+							const filePath = match.metadata?.filePath?.toString();
+							const from = Number(match.metadata?.["loc.lines.from"]);
+							const to = Number(match.metadata?.["loc.lines.to"]);
+							// console.log("match", match);
+							return (
+								<SearchResultItem
+									key={match.id}
+									id={match.id}
+									filePath={filePath}
+									title={title}
+									text={subtext}
+									score={score}
+									from={from}
+									to={to}
+									onTitleClick={handleTitleClick}
+									onMatchClick={handleMatchClick}
+								/>
+							);
+						})
+					)}
 				</div>
 			</div>
 		</>
