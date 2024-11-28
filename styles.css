@@ -72,6 +72,14 @@ If your plugin does not need CSS, delete this file.
 	word-break: break-word;
 }
 
+.related-note-pane {
+	overflow-y: auto;
+	flex: 1 0 0;
+	padding-inline: 0;
+	padding-bottom: var(--size-4-8);
+	padding-top: var(--size-4-1);
+}
+
 .related-note-item {
     margin-bottom: 12px;
     padding: 8px;

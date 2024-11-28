@@ -1,11 +1,12 @@
 import { useApp, useSettings } from "@/helpers/hooks";
 
+import { Logger } from "@/helpers/logger";
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
 import truncateContent from "@/helpers/utils/truncateContent";
 import { createPineconeClient } from "@/services/PineconeManager";
 import { useQuery } from "@tanstack/react-query";
 import { Notice, TFile } from "obsidian";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { openAndHighlightText } from "../../utils/editor-helpers";
 import SearchResultItem from "./components/SearchResultItem";
 
@@ -16,6 +17,10 @@ interface RelatedNotesProps {
 const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 	const app = useApp();
 	const settings = useSettings();
+	const logger = useMemo(
+		() => new Logger("RelatedNotes", settings?.logLevel),
+		[settings?.logLevel],
+	);
 
 	const queryByFileContent = async (query: string, excludeFilePath: string) => {
 		if (!settings?.pineconeApiKey || !settings?.pineconeIndexName) {
@@ -41,11 +46,14 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 		data: matches = [],
 		isLoading,
 		error,
+		refetch,
 	} = useQuery({
 		queryKey: ["related-notes", currentFile?.path],
 		queryFn: async () => {
 			if (!currentFile) return [];
 			const content = await app?.vault.cachedRead(currentFile);
+			logger.debug("--→ content", content?.length, content);
+			if (!content || content.length < 50) return [];
 			const truncatedContent = truncateContent(content, 8192);
 			return queryByFileContent(truncatedContent || "", currentFile.path);
 		},
@@ -114,8 +122,37 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 	}
 
 	return (
-		<>
-			<div className="tree-item-self">Related Notes</div>
+		<div className="backlink-pane related-note-pane node-insert-event">
+			<div
+				className="tree-item-self is-clickable"
+				aria-label="접으려면 클릭"
+				data-tooltip-position="left"
+			>
+				<div className="tree-item-inner">Related Notes</div>
+				<div className="tree-item-flair-outer">
+					<div className="tree-item-flair">
+						<div
+							className="clickable-icon"
+							aria-label="Refresh"
+							onClick={() => refetch()}
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							>
+								<path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38" />
+							</svg>
+						</div>
+					</div>
+				</div>
+			</div>
 
 			{isLoading && (
 				<div className="tree-item-self">
@@ -155,8 +192,13 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 						);
 					})}
 				</div>
+				{matches.length === 0 && (
+					<div className="search-empty-state">
+						관련된 노트를 찾을 수 없습니다.
+					</div>
+				)}
 			</div>
-		</>
+		</div>
 	);
 };
 
