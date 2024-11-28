@@ -1,15 +1,15 @@
 {
 	"name": "smart-seeker",
-	"version": "0.1.6",
+	"version": "0.1.7",
 	"description": "An Obsidian plugin that enables fast and intelligent note search using RAG (Retrieval Augmented Generation) with Pinecone vector database and OpenAI",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json package.json",
-		"version:major": "node version-bump.mjs major && git add manifest.json versions.json package.json",
-		"version:minor": "node version-bump.mjs minor && git add manifest.json versions.json package.json",
-		"version:patch": "node version-bump.mjs patch && git add manifest.json versions.json package.json",
+		"version": "node version-bump.mjs && git add manifest.json versions.json package.json && git commit -m \"chore: bump version to $(node -p \"require('./package.json').version\")\"",
+		"version:major": "node version-bump.mjs major && git add manifest.json versions.json package.json && git commit -m \"chore: bump version to $(node -p \"require('./package.json').version\")\"",
+		"version:minor": "node version-bump.mjs minor && git add manifest.json versions.json package.json && git commit -m \"chore: bump version to $(node -p \"require('./package.json').version\")\"",
+		"version:patch": "node version-bump.mjs patch && git add manifest.json versions.json package.json && git commit -m \"chore: bump version to $(node -p \"require('./package.json').version\")\"",
 		"lint:fix": "biome check --apply ./src",
 		"format:fix": "biome format --write ./src",
 		"prepare": "husky"
