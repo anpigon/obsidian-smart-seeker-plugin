@@ -46,6 +46,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 		queryFn: async () => {
 			if (!currentFile) return [];
 			const content = await app?.vault.cachedRead(currentFile);
+			if (!content || content.length < 50) return [];
 			const truncatedContent = truncateContent(content, 8192);
 			return queryByFileContent(truncatedContent || "", currentFile.path);
 		},
