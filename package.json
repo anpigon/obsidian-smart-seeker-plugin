@@ -10,6 +10,7 @@
 		"version:major": "node version-bump.mjs major && git add manifest.json versions.json package.json && git commit -m \"chore: bump version to $(node -p \"require('./package.json').version\")\"",
 		"version:minor": "node version-bump.mjs minor && git add manifest.json versions.json package.json && git commit -m \"chore: bump version to $(node -p \"require('./package.json').version\")\"",
 		"version:patch": "node version-bump.mjs patch && git add manifest.json versions.json package.json && git commit -m \"chore: bump version to $(node -p \"require('./package.json').version\")\"",
+		"release": "git tag v$(node -p \"require('./package.json').version\") && git push && git push --tags",
 		"lint:fix": "biome check --apply ./src",
 		"format:fix": "biome format --write ./src",
 		"prepare": "husky"
