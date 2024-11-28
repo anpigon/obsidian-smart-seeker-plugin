@@ -116,8 +116,12 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 	}
 
 	return (
-		<>
-			<div className="tree-item-self is-clickable" aria-label="접으려면 클릭" data-tooltip-position="left">
+		<div className="backlink-pane related-note-pane node-insert-event">
+			<div
+				className="tree-item-self is-clickable"
+				aria-label="접으려면 클릭"
+				data-tooltip-position="left"
+			>
 				<div className="tree-item-inner">Related Notes</div>
 				<div className="tree-item-flair-outer">
 					<div className="tree-item-flair">
@@ -154,17 +158,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 
 			<div className="search-result-container">
 				<div className="search-results-children">
-					{matches.length === 0 ? (
-						<div
-							style={{
-								padding: "10px",
-								textAlign: "center",
-								color: "var(--text-muted)",
-							}}
-						>
-							관련된 노트를 찾을 수 없습니다.
-						</div>
-					) : (
+					{
 						matches.map((match) => {
 							const title = String(match.metadata?.title || "Untitled");
 							const subtext = String(match.metadata?.text || "")?.replace(
@@ -192,10 +186,15 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 								/>
 							);
 						})
-					)}
+					}
 				</div>
+				{matches.length === 0 && (
+					<div className="search-empty-state">
+						관련된 노트를 찾을 수 없습니다.
+					</div>
+				)}
 			</div>
-		</>
+		</div>
 	);
 };
 
