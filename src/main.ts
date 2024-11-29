@@ -45,7 +45,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		// if (this.taskQueue[file.path]) {
 		// 	this.taskQueue[file.path] = file;
 		// }
-		console.log('rename', file, oldPath)
+		console.log("rename", file, oldPath);
 	}
 
 	private registerVaultEvents(): void {
@@ -64,7 +64,11 @@ export default class SmartSeekerPlugin extends Plugin {
 		// );
 
 		// this.registerEvent(this.app.metadataCache.on('changed', async (file: TFile) => this.onFileChange(file)));
-		this.registerEvent(this.app.vault.on('rename', async (file: TFile, oldPath: string) => this.onFileRename(file, oldPath)));
+		this.registerEvent(
+			this.app.vault.on("rename", async (file: TFile, oldPath: string) =>
+				this.onFileRename(file, oldPath),
+			),
+		);
 
 		this.registerEvent(
 			this.app.vault.on("delete", async (file: TFile) =>

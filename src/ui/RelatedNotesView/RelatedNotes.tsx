@@ -192,7 +192,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 						);
 					})}
 				</div>
-				{matches.length === 0 && (
+				{!isLoading && matches.length === 0 && (
 					<div className="search-empty-state">
 						관련된 노트를 찾을 수 없습니다.
 					</div>
