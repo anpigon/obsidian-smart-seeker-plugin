@@ -203,8 +203,10 @@ export default class DocumentProcessor {
 		// Process updates in batches of 100
 		for (let i = 0; i < updateData.length; i += batchSize) {
 			const batch = updateData.slice(i, i + batchSize);
+			this.logger.debug("--→ batch", batch);
 			await Promise.all(batch.map((data) => this.pineconeIndex.update(data)));
-			await new Promise((resolve) => setTimeout(resolve, 100));
+			this.logger.debug("--→ update done");
+			await new Promise((resolve) => setTimeout(resolve, 1000));
 		}
 
 		this.logger.debug("saveToVectorStore update done");

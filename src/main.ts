@@ -141,7 +141,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			new Notice(`❌ 노트 처리 중 오류가 발생했습니다: ${error}`);
 		} finally {
 			this.isProcessingFolder = false;
-			if(notice) {
+			if (notice) {
 				notice.hide();
 			}
 		}
