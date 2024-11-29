@@ -182,10 +182,10 @@ export default class DocumentProcessor {
 			existingHashes.has(doc.metadata.hash),
 		);
 
-		// 변경 내용이 없는 노트는 skip
 		this.logger.debug("--→ newChunks", newChunks);
 		this.logger.debug("--→ skipChunks", skipChunks);
 
+		// 변경 내용이 없는 노트는 skip
 		// 새로운 문서나 업데이트된 문서만 저장
 		this.logger.debug("saveToVectorStore save start");
 		const embedding = getEmbeddingModel(this.settings);
