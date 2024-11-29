@@ -22,6 +22,5 @@ export async function createHash(text: string): Promise<string> {
 }
 
 export async function createContentHash(content: string) {
-	const newContent = content.replace(/^---\n.*?\n---\n/s, "");
-	return await createHash(removeAllWhitespace(newContent));
+	return await createHash(removeAllWhitespace(content));
 }
