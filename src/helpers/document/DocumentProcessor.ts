@@ -201,8 +201,10 @@ export default class DocumentProcessor {
 		this.logger.debug("--→ updateData", updateData);
 
 		// Process updates in batches of 100
-		for (let i = 0; i < updateData.length; i += batchSize) {
-			const batch = updateData.slice(i, i + batchSize);
+		const updateBatchSize = 50;
+		for (let i = 0; i < updateData.length; i += updateBatchSize) {
+			const batch = updateData.slice(i, i + updateBatchSize);
+			this.logger.debug("--→ batch:updateData", batch);
 			await Promise.all(batch.map((data) => this.pineconeIndex.update(data)));
 		}
 
