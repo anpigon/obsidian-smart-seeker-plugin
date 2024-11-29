@@ -1,3 +1,4 @@
+import { LogLevel } from "@/helpers/logger";
 import {
 	type App,
 	Modal,
@@ -104,6 +105,29 @@ export class SettingTab extends PluginSettingTab {
 					).open();
 				}),
 			);
+
+		// 개발자 옵션 섹션
+		containerEl.createEl("h3", { text: "개발자 옵션" });
+
+		// 로깅 레벨 설정
+		new Setting(containerEl)
+			.setName("로깅 레벨")
+			.setDesc(
+				"개발자 로깅 레벨을 설정합니다. DEBUG는 모든 로그를, ERROR는 오류 로그만 표시합니다.",
+			)
+			.addDropdown((dropdown) => {
+				dropdown
+					.addOption(LogLevel.DEBUG.toString(), "DEBUG")
+					.addOption(LogLevel.INFO.toString(), "INFO")
+					.addOption(LogLevel.WARN.toString(), "WARN")
+					.addOption(LogLevel.ERROR.toString(), "ERROR")
+					.addOption(LogLevel.NONE.toString(), "NONE")
+					.setValue(this.plugin.settings.logLevel.toString())
+					.onChange(async (value) => {
+						this.plugin.settings.logLevel = parseInt(value);
+						await this.plugin.saveSettings();
+					});
+			});
 
 		this.initialize();
 	}
