@@ -8,7 +8,7 @@ import {
 	type ScoredPineconeRecord,
 } from "@pinecone-database/pinecone";
 import { type App, Notice, SuggestModal } from "obsidian";
-import { LogLevel, Logger } from "../../helpers/logger";
+import { Logger } from "../../helpers/logger";
 import obsidianFetchApi from "../../helpers/utils/obsidianFetchApi";
 
 export class SearchNotesModal extends SuggestModal<
@@ -29,7 +29,7 @@ export class SearchNotesModal extends SuggestModal<
 		private settings: PluginSettings,
 	) {
 		super(app);
-		this.logger = new Logger("SearchNotesModal", LogLevel.DEBUG);
+		this.logger = new Logger("SearchNotesModal", settings.logLevel);
 
 		// Pinecone 클라이언트 초기화 with custom fetch
 		const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {

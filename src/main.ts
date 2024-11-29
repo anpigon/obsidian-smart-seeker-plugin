@@ -226,7 +226,7 @@ export default class SmartSeekerPlugin extends Plugin {
 		await this.loadSettings();
 
 		// 로그 수정
-		this.logger = new Logger("SmartSeekerPlugin", this.settings.logLevel);
+		this.logger.setLevel(this.settings.logLevel);
 
 		// Initialize Pinecone client
 		this.pineconeClient = createPineconeClient(this.settings.pineconeApiKey);
