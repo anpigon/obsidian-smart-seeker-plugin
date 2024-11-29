@@ -113,6 +113,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			return;
 		}
 
+		let notice: Notice | null = null;
 		try {
 			this.isProcessingFolder = true;
 
@@ -126,7 +127,7 @@ export default class SmartSeekerPlugin extends Plugin {
 				`📚 ${folder.name} 폴더에서 ${files.length}개의 노트를 찾았습니다.`,
 			);
 
-			const notice = new Notice(
+			notice = new Notice(
 				"🔍 폴더 내 노트를 검색 데이터베이스에 추가하는 중...",
 				0,
 			);
@@ -134,13 +135,15 @@ export default class SmartSeekerPlugin extends Plugin {
 			const result = await this.documentProcessor.processMultiFiles(files);
 			this.logger.debug(`[Process] Completed:`, result);
 
-			notice.hide();
 			new Notice("✅ 모든 노트가 검색 데이터베이스에 추가되었습니다.");
 		} catch (error) {
 			this.logger.error("Error processing note:", error);
 			new Notice(`❌ 노트 처리 중 오류가 발생했습니다: ${error}`);
 		} finally {
 			this.isProcessingFolder = false;
+			if(notice) {
+				notice.hide();
+			}
 		}
 	}
 
