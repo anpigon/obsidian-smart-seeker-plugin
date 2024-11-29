@@ -11,7 +11,7 @@
 		"version:major": "node version-bump.mjs major && npm run version:commit",
 		"version:minor": "node version-bump.mjs minor && npm run version:commit",
 		"version:patch": "node version-bump.mjs patch && npm run version:commit",
-		"release": "git tag v$(node -p \"require('./package.json').version\") && git push && git push --tags",
+		"release": "git tag $(node -p \"require('./package.json').version\") && git push && git push --tags",
 		"lint:fix": "biome check --apply ./src",
 		"format:fix": "biome format --write ./src",
 		"prepare": "husky"
