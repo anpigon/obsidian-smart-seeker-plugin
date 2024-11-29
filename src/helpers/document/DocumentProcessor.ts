@@ -198,11 +198,17 @@ export default class DocumentProcessor {
 			};
 		});
 
+		this.logger.debug("--→ updateData", updateData);
+
 		// Process updates in batches of 100
 		for (let i = 0; i < updateData.length; i += batchSize) {
 			const batch = updateData.slice(i, i + batchSize);
 			await Promise.all(batch.map((data) => this.pineconeIndex.update(data)));
 		}
+
+		this.logger.debug("saveToVectorStore update done");
+
+		this.logger.debug("saveToVectorStore insert start");
 
 		// 새로운 문서나 업데이트된 문서만 저장
 		const embedding = getEmbeddingModel(this.settings);
@@ -212,6 +218,8 @@ export default class DocumentProcessor {
 		});
 		const newChunkIds = newChunks.map((e) => String(e.id));
 		const vectorIds = await vectorStore.addDocuments(newChunks, newChunkIds);
+
+		this.logger.debug("saveToVectorStore insert done", vectorIds);
 
 		return {
 			newChunks,
