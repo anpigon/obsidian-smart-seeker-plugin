@@ -249,7 +249,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			new SearchNotesModal(this.app, this.settings).open();
 		});
 
-		this.addRibbonIcon("documents", "Related Notes", () => {
+		this.addRibbonIcon("documents", "Related Note Blocks", () => {
 			this.openRelatedNotesView();
 		});
 
