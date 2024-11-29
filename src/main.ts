@@ -33,6 +33,7 @@ export default class SmartSeekerPlugin extends Plugin {
 	private localStore: InLocalStore;
 	private taskQueue: Record<string, TFile> = {};
 	private isProcessing = false;
+	private isProcessingFolder = false;
 	private hashStorage: NoteHashStorage;
 	private documentProcessor: DocumentProcessor;
 	private pineconeClient: Pinecone;
@@ -107,8 +108,14 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	private async processFolderFiles(folder: TFolder): Promise<void> {
-		let notice: Notice | null = null;
+		if (this.isProcessingFolder) {
+			new Notice("폴더 처리가 이미 수행 중입니다.");
+			return;
+		}
+
 		try {
+			this.isProcessingFolder = true;
+
 			this.logger.debug("selected folder:", folder);
 
 			const files = this.app.vault
@@ -119,7 +126,7 @@ export default class SmartSeekerPlugin extends Plugin {
 				`📚 ${folder.name} 폴더에서 ${files.length}개의 노트를 찾았습니다.`,
 			);
 
-			notice = new Notice(
+			const notice = new Notice(
 				"🔍 폴더 내 노트를 검색 데이터베이스에 추가하는 중...",
 				0,
 			);
@@ -127,14 +134,13 @@ export default class SmartSeekerPlugin extends Plugin {
 			const result = await this.documentProcessor.processMultiFiles(files);
 			this.logger.debug(`[Process] Completed:`, result);
 
+			notice.hide();
 			new Notice("✅ 모든 노트가 검색 데이터베이스에 추가되었습니다.");
 		} catch (error) {
 			this.logger.error("Error processing note:", error);
 			new Notice(`❌ 노트 처리 중 오류가 발생했습니다: ${error}`);
 		} finally {
-			if (notice) {
-				notice.hide();
-			}
+			this.isProcessingFolder = false;
 		}
 	}
 
