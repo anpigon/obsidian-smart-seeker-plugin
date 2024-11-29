@@ -11,7 +11,6 @@ import type {
 	QueryResponse,
 	RecordMetadata,
 } from "@pinecone-database/pinecone";
-import { flatten } from "flat";
 import { FrontMatterCache, TFile } from "obsidian";
 import {
 	DEFAULT_CHUNK_OVERLAP,
@@ -183,42 +182,12 @@ export default class DocumentProcessor {
 			existingHashes.has(doc.metadata.hash),
 		);
 
+		// 변경 내용이 없는 노트는 skip
 		this.logger.debug("--→ newChunks", newChunks);
 		this.logger.debug("--→ skipChunks", skipChunks);
 
-		// 변경 내용이 없는 노트는 메타정보만 업데이트
-		const updateData = skipChunks.map((chunk) => {
-			return {
-				id: String(chunk.id),
-				metadata: {
-					...flatten<typeof chunk.metadata, typeof chunk.metadata>(
-						chunk.metadata,
-					),
-				},
-			};
-		});
-
-		this.logger.debug("--→ updateData", updateData);
-
-		// Process updates in batches of 100
-		// for (let i = 0; i < updateData.length; i += batchSize) {
-		// 	const batch = updateData.slice(i, i + batchSize);
-		// 	this.logger.debug("--→ batch", batch);
-		// 	await Promise.all(batch.map((data) => this.pineconeIndex.update(data)));
-		// 	this.logger.debug("--→ update done");
-		// 	await new Promise((resolve) => setTimeout(resolve, 1000));
-		// }
-		for (const data of updateData) {
-			this.logger.debug("--→ update start", data);
-			await this.pineconeIndex.update(data);
-			this.logger.debug("--→ update done");
-		}
-
-		this.logger.debug("saveToVectorStore update done");
-
-		this.logger.debug("saveToVectorStore insert start");
-
 		// 새로운 문서나 업데이트된 문서만 저장
+		this.logger.debug("saveToVectorStore save start");
 		const embedding = getEmbeddingModel(this.settings);
 		const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
 			pineconeIndex: this.pineconeIndex,
@@ -226,8 +195,7 @@ export default class DocumentProcessor {
 		});
 		const newChunkIds = newChunks.map((e) => String(e.id));
 		const vectorIds = await vectorStore.addDocuments(newChunks, newChunkIds);
-
-		this.logger.debug("saveToVectorStore insert done", vectorIds);
+		this.logger.debug("saveToVectorStore save done", vectorIds);
 
 		return {
 			newChunks,
