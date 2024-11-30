@@ -79,7 +79,7 @@ importers:
         specifier: ^9.1.6
         version: 9.1.6
       obsidian:
-        specifier: latest
+        specifier: ^1.7.2
         version: 1.7.2(@codemirror/state@6.4.1)(@codemirror/view@6.34.1)
       tslib:
         specifier: 2.4.0
