@@ -70,7 +70,7 @@ export class SearchNotesModal extends SuggestModal<
 
 			this.currentSearchController = new AbortController();
 
-			this.logger.debug("검색 시작:", query);
+			this.logger.debug("벡터 데이터베이스 검색 시작:", query);
 			const vector = await this.getQueryVector(query);
 
 			const results = await this.pineconeIndex.query({
@@ -78,8 +78,11 @@ export class SearchNotesModal extends SuggestModal<
 				includeMetadata: true,
 				topK,
 			});
+			this.logger.debug("벡터 데이터베이스 검색 결과:", results);
 
-			this.logger.debug("검색 결과:", results);
+			const omniSearchResults = await window.omnisearch?.search?.(query);
+			console.log("omniSearchResults", omniSearchResults);
+
 			return results.matches || [];
 		} catch (error) {
 			this.logger.error("검색 중 오류 발생:", error);
