@@ -139,8 +139,6 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			const result = await this.documentProcessor.processMultiFiles(files);
 			this.logger.debug(`[Process] Completed:`, result);
-
-			new Notice("✅ 모든 노트가 검색 데이터베이스에 추가되었습니다.");
 		} catch (error) {
 			this.logger.error("Error processing note:", error);
 			new Notice(`❌ 노트 처리 중 오류가 발생했습니다: ${error}`);

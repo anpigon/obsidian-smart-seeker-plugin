@@ -155,7 +155,7 @@ export default class DocumentProcessor {
 
 	private async saveToVectorStore(chunks: Document[], ids: string[]) {
 		const notice = new Notice(
-			"🔍 폴더 내 노트를 검색 데이터베이스에 추가하는 중...",
+			"🔍 데이터베이스에서 노트 처리를 시작하는 중...",
 			0,
 		);
 		try {
@@ -165,13 +165,15 @@ export default class DocumentProcessor {
 			const batchSize = 100;
 			const records: Record<string, PineconeRecord<RecordMetadata>> = {};
 
+			notice.setMessage(
+				`🔍 데이터베이스에서 기존 노트를 조회하는 중... (${ids.length}개)`,
+			);
 			for (let i = 0; i < ids.length; i += batchSize) {
 				const batchIds = ids.slice(i, i + batchSize);
 				const { records: batchRecords } =
 					await this.pineconeIndex.fetch(batchIds);
 				Object.assign(records, batchRecords);
 			}
-
 			this.logger.debug("records", records);
 
 			// 기존 문서들의 해시값을 Set으로 저장
@@ -187,12 +189,27 @@ export default class DocumentProcessor {
 				existingHashes.has(doc.metadata.hash),
 			);
 
+			notice.setMessage(
+				`🔍 새로운 노트 ${newChunks.length}개, 이미 처리된 노트 ${skipChunks.length}개를 확인했습니다.`,
+			);
+
 			this.logger.debug("--→ newChunks", newChunks);
 			this.logger.debug("--→ skipChunks", skipChunks);
 
 			// 변경 내용이 없는 노트는 skip
 			// 새로운 문서나 업데이트된 문서만 저장
+			if (newChunks.length === 0) {
+				notice.setMessage("✨ 모든 노트가 이미 검색 데이터베이스에 있습니다.");
+				return {
+					newChunks,
+					skipChunks,
+					vectorIds: [],
+				};
+			}
+
 			this.logger.debug("saveToVectorStore save start");
+			notice.setMessage(`📝 새로운 노트 ${newChunks.length}개를 처리하는 중...`);
+
 			const embedding = getEmbeddingModel(this.settings);
 			const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
 				pineconeIndex: this.pineconeIndex,
@@ -205,10 +222,14 @@ export default class DocumentProcessor {
 				ids: newChunkIds,
 				onProgress: (progress) => {
 					this.logger.debug("saveToVectorStore save progress", progress);
+					notice.setMessage(
+						`📝 새로운 노트를 처리하는 중... (${Math.round(progress * 100)}%)`,
+					);
 				},
 			});
 			this.logger.debug("saveToVectorStore save done", vectorIds);
 
+			notice.setMessage("✅ 모든 노트가 검색 데이터베이스에 추가되었습니다.");
 			return {
 				newChunks,
 				skipChunks,
@@ -216,7 +237,9 @@ export default class DocumentProcessor {
 			};
 		} finally {
 			if (notice) {
-				notice.hide();
+				setTimeout(() => {
+					notice.hide();
+				}, 3000);
 			}
 		}
 	}
