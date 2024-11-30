@@ -5,24 +5,28 @@ import {
 	type Index,
 	Pinecone,
 	type RecordMetadata,
-	type ScoredPineconeRecord,
 } from "@pinecone-database/pinecone";
 import { type App, Notice, SuggestModal } from "obsidian";
 import { Logger } from "../../helpers/logger";
 import obsidianFetchApi from "../../helpers/utils/obsidianFetchApi";
 
-export class SearchNotesModal extends SuggestModal<
-	ScoredPineconeRecord<RecordMetadata>
-> {
+type SearchResult = {
+	title: string;
+	score: number;
+	text: string;
+	filePath: string;
+	fromLine: number;
+	toLine: number;
+};
+
+export class SearchNotesModal extends SuggestModal<SearchResult> {
 	private logger: Logger;
-	private debouncedGetSuggestions: (
-		query: string,
-	) => Promise<ScoredPineconeRecord<RecordMetadata>[]>;
+	private debouncedGetSuggestions: (query: string) => Promise<SearchResult[]>;
 	private pineconeIndex: Index<RecordMetadata>;
 	private isSearching = false;
 	private currentSearchController: AbortController | null = null;
 	private previousQuery = "";
-	private previousResults: ScoredPineconeRecord<RecordMetadata>[] = [];
+	private previousResults: SearchResult[] = [];
 
 	constructor(
 		app: App,
@@ -62,7 +66,7 @@ export class SearchNotesModal extends SuggestModal<
 		}
 	}
 
-	private async searchNotes(query: string, topK = 10) {
+	private async searchNotes(query: string, topK = 10): Promise<SearchResult[]> {
 		try {
 			if (this.currentSearchController) {
 				this.currentSearchController.abort();
@@ -73,17 +77,40 @@ export class SearchNotesModal extends SuggestModal<
 			this.logger.debug("벡터 데이터베이스 검색 시작:", query);
 			const vector = await this.getQueryVector(query);
 
-			const results = await this.pineconeIndex.query({
+			const pioneconeResults = await this.pineconeIndex.query({
 				vector,
 				includeMetadata: true,
 				topK,
 			});
-			this.logger.debug("벡터 데이터베이스 검색 결과:", results);
+			this.logger.debug("벡터 데이터베이스 검색 결과:", pioneconeResults);
+			const results: SearchResult[] =
+				pioneconeResults.matches?.map((item) => {
+					const score = item.score ?? 0;
+					const title = item.metadata?.title?.toString() ?? "Untitled";
+					const filePath = item.metadata?.filePath?.toString() || "";
+					const fromLine = Number(item.metadata?.["loc.lines.from"] ?? 0);
+					const toLine = Number(item.metadata?.["loc.lines.to"] ?? 0);
+					let text = item.metadata?.text?.toString() || "";
+
+					// "(cont'd)" 로 시작하는 경우 제거
+					if (text?.startsWith("(cont'd)")) {
+						text = text.substring("(cont'd)".length).trim();
+					}
+
+					return {
+						title,
+						score,
+						text,
+						filePath,
+						fromLine,
+						toLine,
+					};
+				}) || [];
 
 			const omniSearchResults = await window.omnisearch?.search?.(query);
 			console.log("omniSearchResults", omniSearchResults);
 
-			return results.matches || [];
+			return results;
 		} catch (error) {
 			this.logger.error("검색 중 오류 발생:", error);
 			new Notice("검색 중 오류가 발생했습니다.");
@@ -93,9 +120,7 @@ export class SearchNotesModal extends SuggestModal<
 		}
 	}
 
-	async getSuggestions(
-		query: string,
-	): Promise<ScoredPineconeRecord<RecordMetadata>[]> {
+	async getSuggestions(query: string): Promise<SearchResult[]> {
 		const trimmedQuery = query.trim();
 
 		// 쿼리가 비어있거나 2글자 미만인 경우 빈 배열 반환
@@ -121,13 +146,10 @@ export class SearchNotesModal extends SuggestModal<
 		return await embeddings.embedQuery(query);
 	}
 
-	renderSuggestion(
-		item: ScoredPineconeRecord<RecordMetadata>,
-		el: HTMLElement,
-	) {
-		const title = item.metadata?.title?.toString() || "Untitled";
+	renderSuggestion(item: SearchResult, el: HTMLElement) {
+		const title = item.title || "Untitled";
 		const score = item.score !== undefined ? item.score.toFixed(2) : "N/A";
-		let text = item.metadata?.text?.toString() || "";
+		let text = item.text || "";
 
 		// "(cont'd)" 로 시작하는 경우 제거
 		if (text.startsWith("(cont'd)")) {
@@ -159,12 +181,12 @@ export class SearchNotesModal extends SuggestModal<
 		}
 	}
 
-	async onChooseSuggestion(item: ScoredPineconeRecord<RecordMetadata>) {
+	async onChooseSuggestion(item: SearchResult) {
 		this.logger.debug("onChooseSuggestion", item);
-		const filePath = item.metadata?.filePath?.toString() || "";
-		const text = item.metadata?.text?.toString() || "";
-		const fromLine = Number(item.metadata?.["loc.lines.from"] ?? 0);
-		const toLine = Number(item.metadata?.["loc.lines.to"] ?? 0);
+		const filePath = item.filePath || "";
+		const text = item.text || "";
+		const fromLine = Number(item.fromLine ?? 0);
+		const toLine = Number(item.toLine ?? 0);
 
 		try {
 			await openAndHighlightText(this.app, filePath, text, {
