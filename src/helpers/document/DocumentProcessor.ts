@@ -155,7 +155,7 @@ export default class DocumentProcessor {
 
 	private async saveToVectorStore(chunks: Document[], ids: string[]) {
 		const notice = new Notice(
-			"🔍 데이터베이스에서 노트 처리를 시작하는 중...",
+			"🔍 검색 데이터베이스에 노트 저장을 시작하는 중...",
 			0,
 		);
 		try {
@@ -190,7 +190,7 @@ export default class DocumentProcessor {
 			);
 
 			notice.setMessage(
-				`🔍 새로운 노트 ${newChunks.length}개, 이미 처리된 노트 ${skipChunks.length}개를 확인했습니다.`,
+				`🔍 새로운 노트 ${newChunks.length}개, 검색 데이터베이스에 있는 노트 ${skipChunks.length}개를 확인했습니다.`,
 			);
 
 			this.logger.debug("--→ newChunks", newChunks);
@@ -208,7 +208,9 @@ export default class DocumentProcessor {
 			}
 
 			this.logger.debug("saveToVectorStore save start");
-			notice.setMessage(`📝 새로운 노트 ${newChunks.length}개를 처리하는 중...`);
+			notice.setMessage(
+				`📝 새로운 노트 ${newChunks.length}개를 검색 데이터베이스에 저장하는 중...`,
+			);
 
 			const embedding = getEmbeddingModel(this.settings);
 			const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
@@ -223,13 +225,13 @@ export default class DocumentProcessor {
 				onProgress: (progress) => {
 					this.logger.debug("saveToVectorStore save progress", progress);
 					notice.setMessage(
-						`📝 새로운 노트를 처리하는 중... (${Math.round(progress * 100)}%)`,
+						`📝 새로운 노트를 검색 데이터베이스에 저장하는 중... (${Math.round(progress * 100)}%)`,
 					);
 				},
 			});
 			this.logger.debug("saveToVectorStore save done", vectorIds);
 
-			notice.setMessage("✅ 모든 노트가 검색 데이터베이스에 추가되었습니다.");
+			notice.setMessage("✅ 모든 노트가 검색 데이터베이스에 저장되었습니다.");
 			return {
 				newChunks,
 				skipChunks,
