@@ -287,9 +287,18 @@ export class PineconeStore extends VectorStore {
 	async addVectors(
 		vectors: number[][],
 		documents: Document[],
-		options?: { ids?: string[]; namespace?: string } | string[],
+		options?:
+			| {
+					ids?: string[];
+					namespace?: string;
+					onProgress?: (progress: number) => void;
+			  }
+			| string[],
 	) {
 		const ids = Array.isArray(options) ? options : options?.ids;
+		const onProgress = !Array.isArray(options)
+			? options?.onProgress
+			: undefined;
 		const documentIds = ids == null ? documents.map(() => uuid.v4()) : ids;
 		const pineconeVectors = vectors.map((values, idx) => {
 			// Pinecone doesn't support nested objects, so we flatten them
@@ -339,8 +348,15 @@ export class PineconeStore extends VectorStore {
 		// Pinecone recommends a limit of 100 vectors per upsert request
 		const chunkSize = 100;
 		const chunkedVectors = chunkArray(pineconeVectors, chunkSize);
+		const totalChunks = chunkedVectors.length;
+		let completedChunks = 0;
+
 		const batchRequests = chunkedVectors.map((chunk) =>
-			this.caller.call(async () => namespace.upsert(chunk)),
+			this.caller.call(async () => {
+				await namespace.upsert(chunk);
+				completedChunks++;
+				onProgress?.(Math.round((completedChunks / totalChunks) * 100));
+			}),
 		);
 
 		await Promise.all(batchRequests);
