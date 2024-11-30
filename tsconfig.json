@@ -17,5 +17,5 @@
 			"@/*": ["src/*"]
 		}
 	},
-	"include": ["**/*.ts", "src/ui/RelatedNotesView/index.tsx"]
+	"include": ["src/**/*.ts", "src/**/*.tsx"]
 }
