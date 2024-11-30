@@ -11,7 +11,7 @@ import type {
 	QueryResponse,
 	RecordMetadata,
 } from "@pinecone-database/pinecone";
-import { FrontMatterCache, TFile } from "obsidian";
+import { FrontMatterCache, Notice, TFile } from "obsidian";
 import {
 	DEFAULT_CHUNK_OVERLAP,
 	DEFAULT_CHUNK_SIZE,
@@ -154,54 +154,71 @@ export default class DocumentProcessor {
 	}
 
 	private async saveToVectorStore(chunks: Document[], ids: string[]) {
-		this.logger.debug("saveToVectorStore", { chunks, ids });
+		const notice = new Notice(
+			"🔍 폴더 내 노트를 검색 데이터베이스에 추가하는 중...",
+			0,
+		);
+		try {
+			this.logger.debug("saveToVectorStore", { chunks, ids });
 
-		// 기존 문서들의 고유 ID를 100개씩 나누어 조회
-		const batchSize = 100;
-		const records: Record<string, PineconeRecord<RecordMetadata>> = {};
+			// 기존 문서들의 고유 ID를 100개씩 나누어 조회
+			const batchSize = 100;
+			const records: Record<string, PineconeRecord<RecordMetadata>> = {};
 
-		for (let i = 0; i < ids.length; i += batchSize) {
-			const batchIds = ids.slice(i, i + batchSize);
-			const { records: batchRecords } =
-				await this.pineconeIndex.fetch(batchIds);
-			Object.assign(records, batchRecords);
+			for (let i = 0; i < ids.length; i += batchSize) {
+				const batchIds = ids.slice(i, i + batchSize);
+				const { records: batchRecords } =
+					await this.pineconeIndex.fetch(batchIds);
+				Object.assign(records, batchRecords);
+			}
+
+			this.logger.debug("records", records);
+
+			// 기존 문서들의 해시값을 Set으로 저장
+			const existingHashes = new Set(
+				Object.values(records).map(
+					(record) => (record.metadata as { hash: string }).hash,
+				),
+			);
+			const newChunks = chunks.filter(
+				(doc) => !existingHashes.has(doc.metadata.hash),
+			);
+			const skipChunks = chunks.filter((doc) =>
+				existingHashes.has(doc.metadata.hash),
+			);
+
+			this.logger.debug("--→ newChunks", newChunks);
+			this.logger.debug("--→ skipChunks", skipChunks);
+
+			// 변경 내용이 없는 노트는 skip
+			// 새로운 문서나 업데이트된 문서만 저장
+			this.logger.debug("saveToVectorStore save start");
+			const embedding = getEmbeddingModel(this.settings);
+			const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
+				pineconeIndex: this.pineconeIndex,
+				maxConcurrency: this.maxConcurrency,
+			});
+			const texts = newChunks.map(({ pageContent }) => pageContent);
+			const newVectors = await vectorStore.embeddings.embedDocuments(texts);
+			const newChunkIds = newChunks.map((e) => String(e.id));
+			const vectorIds = await vectorStore.addVectors(newVectors, newChunks, {
+				ids: newChunkIds,
+				onProgress: (progress) => {
+					this.logger.debug("saveToVectorStore save progress", progress);
+				},
+			});
+			this.logger.debug("saveToVectorStore save done", vectorIds);
+
+			return {
+				newChunks,
+				skipChunks,
+				vectorIds,
+			};
+		} finally {
+			if (notice) {
+				notice.hide();
+			}
 		}
-
-		this.logger.debug("records", records);
-
-		// 기존 문서들의 해시값을 Set으로 저장
-		const existingHashes = new Set(
-			Object.values(records).map(
-				(record) => (record.metadata as { hash: string }).hash,
-			),
-		);
-		const newChunks = chunks.filter(
-			(doc) => !existingHashes.has(doc.metadata.hash),
-		);
-		const skipChunks = chunks.filter((doc) =>
-			existingHashes.has(doc.metadata.hash),
-		);
-
-		this.logger.debug("--→ newChunks", newChunks);
-		this.logger.debug("--→ skipChunks", skipChunks);
-
-		// 변경 내용이 없는 노트는 skip
-		// 새로운 문서나 업데이트된 문서만 저장
-		this.logger.debug("saveToVectorStore save start");
-		const embedding = getEmbeddingModel(this.settings);
-		const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
-			pineconeIndex: this.pineconeIndex,
-			maxConcurrency: this.maxConcurrency,
-		});
-		const newChunkIds = newChunks.map((e) => String(e.id));
-		const vectorIds = await vectorStore.addDocuments(newChunks, newChunkIds);
-		this.logger.debug("saveToVectorStore save done", vectorIds);
-
-		return {
-			newChunks,
-			skipChunks,
-			vectorIds,
-		};
 	}
 
 	async filterDocumentsByQuery(documents: Document[]) {
