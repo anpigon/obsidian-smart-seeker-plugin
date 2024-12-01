@@ -200,20 +200,20 @@ export class SearchNotesModal extends SuggestModal<SearchResult> {
 	}
 
 	// debounce 유틸리티 함수
-	private debounce<T extends (...args: unknown[]) => Promise<unknown>>(
-		func: T,
-		wait: number,
-	): (...args: Parameters<T>) => ReturnType<T> {
+	private debounce<
+		T extends (...args: any[]) => Promise<any>,
+		R = Awaited<ReturnType<T>>,
+	>(func: T, wait: number): (...args: Parameters<T>) => Promise<R> {
 		let timeout: NodeJS.Timeout;
 
-		return (...args: Parameters<T>): ReturnType<T> => {
+		return (...args: Parameters<T>): Promise<R> => {
 			return new Promise((resolve) => {
 				clearTimeout(timeout);
 				timeout = setTimeout(async () => {
 					const result = await func.apply(this, args);
 					resolve(result);
 				}, wait);
-			}) as ReturnType<T>;
+			});
 		};
 	}
 }
