@@ -52,11 +52,34 @@ If your plugin does not need CSS, delete this file.
 .search-notes-modal__title {
 	font-weight: bold;
 	color: var(--text-normal);
+	margin-right: auto;
+}
+
+.search-notes-modal__source-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 12px;
+	font-size: 0.8em;
+	font-weight: 500;
+	margin-left: 8px;
+	color: var(--text-muted);
+	background-color: var(--background-modifier-border);
+}
+
+.search-notes-modal__source-badge.pinecone {
+	color: var(--text-on-accent);
+	background-color: var(--interactive-accent);
+}
+
+.search-notes-modal__source-badge.omniSearch {
+	color: var(--text-on-accent);
+	background-color: var(--background-modifier-success);
 }
 
 .search-notes-modal__score {
-	color: var(--text-faint, gray);
+	margin-left: 4px;
 	font-size: 0.8em;
+	color: var(--text-muted);
 }
 
 .search-notes-modal__preview {
@@ -67,9 +90,10 @@ If your plugin does not need CSS, delete this file.
 	text-overflow: ellipsis;
 	display: -webkit-box;
 	white-space: normal;
-	-webkit-line-clamp: 2;
+	-webkit-line-clamp: 3;
 	-webkit-box-orient: vertical;
-	word-break: break-word;
+	word-break: break-all;
+	white-space: normal;
 }
 
 .related-note-pane {

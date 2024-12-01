@@ -17,6 +17,7 @@ type SearchResult = {
 	filePath: string;
 	fromLine: number;
 	toLine: number;
+	source: "pinecone" | "omniSearch";
 };
 
 export class SearchNotesModal extends SuggestModal<SearchResult> {
@@ -104,6 +105,7 @@ export class SearchNotesModal extends SuggestModal<SearchResult> {
 						filePath,
 						fromLine,
 						toLine,
+						source: "pinecone",
 					};
 				}) || [];
 
@@ -125,6 +127,7 @@ export class SearchNotesModal extends SuggestModal<SearchResult> {
 					filePath,
 					fromLine,
 					toLine,
+					source: "omniSearch",
 				});
 			});
 
@@ -198,7 +201,11 @@ export class SearchNotesModal extends SuggestModal<SearchResult> {
 			cls: "search-notes-modal__title",
 		});
 		headerEl.createEl("span", {
-			text: `(Score: ${score})`,
+			text: item.source === "pinecone" ? "Pinecone" : "OmniSearch",
+			cls: `search-notes-modal__source-badge ${item.source}`,
+		});
+		headerEl.createEl("span", {
+			text: score,
 			cls: "search-notes-modal__score",
 		});
 
