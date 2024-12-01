@@ -1,5 +1,5 @@
 import SmartSeekerPlugin from "@/main";
-import { NoteMetadata } from "@/types";
+import type { NoteMetadata } from "@/types";
 import { Document } from "@langchain/core/documents";
 import {
 	MarkdownTextSplitter,
