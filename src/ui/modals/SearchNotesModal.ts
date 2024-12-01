@@ -108,9 +108,27 @@ export class SearchNotesModal extends SuggestModal<SearchResult> {
 				}) || [];
 
 			const omniSearchResults = await window.omnisearch?.search?.(query);
-			console.log("omniSearchResults", omniSearchResults);
+			this.logger.debug("omniSearchResults", omniSearchResults);
 
-			return results;
+			omniSearchResults?.forEach((result) => {
+				const score = result.score;
+				const title = result.basename;
+				const filePath = result.path;
+				const fromLine = result.matches?.[0].offset;
+				const toLine = result.matches?.[result.matches.length - 1].offset;
+				const text = result.excerpt;
+
+				results.push({
+					title,
+					score,
+					text,
+					filePath,
+					fromLine,
+					toLine,
+				});
+			});
+
+			return results?.sort((a, b) => b.score - a.score);
 		} catch (error) {
 			this.logger.error("검색 중 오류 발생:", error);
 			new Notice("검색 중 오류가 발생했습니다.");
@@ -144,6 +162,18 @@ export class SearchNotesModal extends SuggestModal<SearchResult> {
 	private async getQueryVector(query: string): Promise<number[]> {
 		const embeddings = await getEmbeddingModel(this.settings);
 		return await embeddings.embedQuery(query);
+	}
+
+	/**
+	 * Compute softmax values for each sets of scores in x.
+	 * @param x number array of scores
+	 * @returns array of probabilities
+	 */
+	private softmax(x: number[]): number[] {
+		const maxVal = Math.max(...x);
+		const expValues = x.map((value) => Math.exp(value - maxVal));
+		const sumExp = expValues.reduce((acc, val) => acc + val, 0);
+		return expValues.map((value) => value / sumExp);
 	}
 
 	renderSuggestion(item: SearchResult, el: HTMLElement) {
