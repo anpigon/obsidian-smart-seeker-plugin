@@ -216,6 +216,7 @@ export default class DocumentProcessor {
 					.map((doc) => ({
 						id: String(doc.id),
 						metadata: doc.metadata,
+						text: doc.pageContent,
 					}));
 
 				await vectorStore.updateMetadata(updates, {

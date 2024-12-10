@@ -371,7 +371,7 @@ export class PineconeStore extends VectorStore {
 	 * @returns Promise that resolves when all updates are complete
 	 */
 	async updateMetadata(
-		updates: { id: string; metadata: Record<string, any> }[],
+		updates: { id: string; metadata: Record<string, any>, text: string		}[],
 		options?: {
 			namespace?: string;
 			onProgress?: (progress: number) => void;
@@ -391,18 +391,40 @@ export class PineconeStore extends VectorStore {
 			this.caller.call(async () => {
 				// Process each update in the chunk
 				for (const update of chunk) {
-					const metadata = { ...update.metadata };
+					const documentMetadata = { ...update.metadata };
+					const stringArrays: Record<string, string[]> = {};
+					for (const key of Object.keys(documentMetadata)) {
+						if (
+							Array.isArray(documentMetadata[key]) &&
+							documentMetadata[key].every(
+								(el: unknown) => typeof el === "string",
+							)
+						) {
+							stringArrays[key] = documentMetadata[key];
+							delete documentMetadata[key];
+						}
+					}
+					const metadata: {
+						[key: string]: string | number | boolean | string[];
+					} = {
+						...flatten(documentMetadata),
+						...stringArrays,
+						[this.textKey]: update.text						,
+					};
 					// Pinecone doesn't support null values, so we remove them
 					for (const key of Object.keys(metadata)) {
 						if (metadata[key] == null) {
 							delete metadata[key];
 						} else if (
 							typeof metadata[key] === "object" &&
-							Object.keys(metadata[key] as object).length === 0
+							Object.keys(metadata[key] as unknown as object).length === 0
 						) {
 							delete metadata[key];
 						}
 					}
+
+					console.log("update", update);
+					console.log("metadata", metadata);
 
 					await namespace.update({
 						id: update.id,
