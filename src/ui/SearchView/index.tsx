@@ -120,37 +120,49 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 			</div>
 
 			<div className="search-result-container">
-				<div className="search-results-children">
-					{searchResults.map((match) => {
-						const title = String(match.metadata?.title || "Untitled");
-						const subtext = String(match.metadata?.text || "")?.replace(
-							/^(?:\(cont'd\)\s*)?/,
-							"",
-						);
-						const score =
-							match.score !== undefined ? match.score.toFixed(2) : "0.00";
-						const filePath = match.metadata?.filePath?.toString();
-						const from = Number(match.metadata?.["loc.lines.from"]);
-						const to = Number(match.metadata?.["loc.lines.to"]);
-
-						return (
-							<SearchResultItem
-								key={match.id}
-								id={match.id}
-								filePath={filePath}
-								title={title}
-								text={subtext}
-								score={score}
-								from={from}
-								to={to}
-								onTitleClick={handleTitleClick}
-								onMatchClick={handleMatchClick}
-							/>
-						);
-					})}
-				</div>
-				{!isPending && isSuccess && searchResults.length === 0 && (
+				{isPending && (
+					<div className="tree-item-self">
+						<div className="tree-item-inner related-notes-loading">
+							<div className="search-status">
+								<div className="search-loading">Searching...</div>
+							</div>
+						</div>
+					</div>
+				)}
+				{isSuccess && searchResults.length === 0 && (
 					<div className="search-empty-state">No results found.</div>
+				)}
+
+				{isSuccess && (
+					<div className="search-results-children">
+						{searchResults.map((match) => {
+							const title = String(match.metadata?.title || "Untitled");
+							const subtext = String(match.metadata?.text || "")?.replace(
+								/^(?:\(cont'd\)\s*)?/,
+								"",
+							);
+							const score =
+								match.score !== undefined ? match.score.toFixed(2) : "0.00";
+							const filePath = match.metadata?.filePath?.toString();
+							const from = Number(match.metadata?.["loc.lines.from"]);
+							const to = Number(match.metadata?.["loc.lines.to"]);
+
+							return (
+								<SearchResultItem
+									key={match.id}
+									id={match.id}
+									filePath={filePath}
+									title={title}
+									text={subtext}
+									score={score}
+									from={from}
+									to={to}
+									onTitleClick={handleTitleClick}
+									onMatchClick={handleMatchClick}
+								/>
+							);
+						})}
+					</div>
 				)}
 			</div>
 		</div>

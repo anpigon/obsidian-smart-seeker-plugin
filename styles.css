@@ -173,3 +173,7 @@ input.index-name-input.invalid {
 .related-note-icon.is-collapsed svg {
 	transform: rotate(-90deg) translateX(2px);
 } */
+
+div.workspace-leaf-content[data-type="smart-seeker-search-view"] .search-result-container {
+	padding: var(--size-4-3) 1px var(--size-4-4);
+}
