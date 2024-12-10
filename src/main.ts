@@ -22,6 +22,7 @@ import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { createPineconeClient } from "./services/PineconeManager";
 import { DEFAULT_SETTINGS, type PluginSettings } from "./settings/settings";
 import { SettingTab } from "./settings/settingTab";
+import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
 import {
 	RelatedNotesView,
 	VIEW_TYPE_RELATED_NOTES,
@@ -211,16 +212,30 @@ export default class SmartSeekerPlugin extends Plugin {
 					new Notice("Please configure PineconeDB settings first");
 					return;
 				}
-				this.openSearchView();
+				new SearchNotesModal(this.app, this.settings).open();
 			},
 		});
 
 		// Add command
 		this.addCommand({
-			id: "open-related-note-chunks",
-			name: "Open Related Note Chunks",
-			callback: () => {
+			id: "open-related-notes-view",
+			name: "Open Related Notes View",
+			checkCallback: (checking) => {
+				if (checking) {
+					return Boolean(this.settings.pineconeApiKey && this.settings.pineconeIndexName);
+				}
 				this.openRelatedNotesView();
+			},
+		});
+
+		this.addCommand({
+			id: "open-search-view",
+			name: "Open Search View",
+			checkCallback: (checking) => {
+				if (checking) {
+					return Boolean(this.settings.pineconeApiKey && this.settings.pineconeIndexName);
+				}
+				this.openSearchView();
 			},
 		});
 	}

@@ -9,7 +9,7 @@ import {
 	QueryClientProvider,
 	useMutation,
 } from "@tanstack/react-query";
-import { ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
+import { IconName, ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import {
 	FormEvent,
 	StrictMode,
@@ -351,6 +351,10 @@ export class SearchViewContainer extends ItemView {
 
 	async onClose(): Promise<void> {
 		this.root?.unmount();
+	}
+
+	getIcon(): IconName {
+		return "search";
 	}
 
 	private renderComponent() {
