@@ -36,8 +36,12 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 	const settings = useSettings();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [searchResults, setSearchResults] = useState<any[]>([]);
-	const [showSuggestion, setShowSuggestion] = useState(false);
+	const [isFocus, setIsFocus] = useState(false);
 	const searchInputRef = useRef<HTMLInputElement>(null);
+
+	const showSuggestion = useMemo(() => {
+		return isFocus && !searchQuery;
+	}, [isFocus, searchQuery]);
 
 	const logger = useMemo(
 		() => new Logger("SearchView", settings?.logLevel),
@@ -49,14 +53,25 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 			throw new Error("Pinecone API key or index name is not set");
 		}
 
+		const isTagSearch = query.startsWith("tag:");
+		const searchQuery = isTagSearch ? query.slice(4).trim() : query;
+
 		const pc = createPineconeClient(settings.pineconeApiKey);
 		const index = pc.Index(settings.pineconeIndexName);
 		const embeddings = await getEmbeddingModel(settings);
-		const vector = await embeddings.embedQuery(query);
+		const vector = await embeddings.embedQuery(searchQuery);
+
 		const queryResponse = await index.query({
 			vector,
 			topK: 100,
 			includeMetadata: true,
+			filter: isTagSearch
+				? {
+						tags: {
+							$in: [searchQuery],
+						},
+					}
+				: undefined,
 		});
 		return queryResponse.matches;
 	};
@@ -65,6 +80,10 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		mutationFn: async (query: string) => {
 			if (!query) return [];
 			return queryByContent(query);
+		},
+		onMutate: (query: string) => {
+			setSearchQuery(query);
+			setIsFocus(false);
 		},
 		onSuccess: (data) => {
 			setSearchResults(data || []);
@@ -123,11 +142,19 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 	}, []);
 
 	const handleFocus = useCallback(() => {
-		setShowSuggestion(true);
+		setIsFocus(true);
 	}, []);
 
 	const handleBlur = useCallback(() => {
-		setShowSuggestion(false);
+		setIsFocus(false);
+	}, []);
+
+	const handleSuggestionClick = useCallback((suggestion: string) => {
+		setSearchQuery((prev) => {
+			const newQuery = suggestion + " ";
+			searchInputRef.current?.focus();
+			return newQuery;
+		});
 	}, []);
 
 	return (
@@ -167,6 +194,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 						width: 300,
 						marginTop: 8,
 					}}
+					onSuggestionClick={handleSuggestionClick}
 				/>
 			)}
 

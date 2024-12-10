@@ -1,8 +1,12 @@
 interface SearchSuggestionProps {
 	style?: React.CSSProperties;
+	onSuggestionClick?: (suggestion: string) => void;
 }
 
-const SearchSuggestion = ({ style }: SearchSuggestionProps) => {
+const SearchSuggestion = ({
+	style,
+	onSuggestionClick,
+}: SearchSuggestionProps) => {
 	const suggestions = [
 		{
 			type: "group",
@@ -72,6 +76,11 @@ const SearchSuggestion = ({ style }: SearchSuggestionProps) => {
 						className={`suggestion-item mod-complex search-suggest-item${
 							suggestion.type === "group" ? " mod-group" : ""
 						}`}
+						onClick={() => {
+							if (!suggestion.type && suggestion.title && onSuggestionClick) {
+								onSuggestionClick(suggestion.title);
+							}
+						}}
 					>
 						<div className="suggestion-content">
 							<div
