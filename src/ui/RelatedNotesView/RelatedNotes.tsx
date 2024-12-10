@@ -128,7 +128,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 				aria-label="접으려면 클릭"
 				data-tooltip-position="left"
 			>
-				<div className="tree-item-inner">Related Note Blocks</div>
+				<div className="tree-item-inner">Related Note Chunks</div>
 				<div className="tree-item-flair-outer">
 					<div className="tree-item-flair">
 						<div

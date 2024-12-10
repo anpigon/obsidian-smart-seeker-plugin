@@ -21,6 +21,7 @@ import { createPineconeClient } from "src/services/PineconeManager";
 import type { PluginSettings } from "src/settings/settings";
 import { PineconeStore } from "../langchain/vectorstores";
 import { Logger } from "../logger";
+import { delay } from "../utils/delay";
 import { getFileNameSafe } from "../utils/fileUtils";
 import getEmbeddingModel from "../utils/getEmbeddingModel";
 import { createContentHash, createHash } from "../utils/hash";
@@ -165,15 +166,20 @@ export default class DocumentProcessor {
 			const batchSize = 100;
 			const records: Record<string, PineconeRecord<RecordMetadata>> = {};
 
+			const totalChunks = chunks.length;
 			notice.setMessage(
-				`🔍 데이터베이스에서 기존 노트를 조회하는 중... (${ids.length}개)`,
+				`🔍 데이터베이스에서 기존 노트 청크를 조회하는 중... (0/${totalChunks}개)`,
 			);
 			for (let i = 0; i < ids.length; i += batchSize) {
 				const batchIds = ids.slice(i, i + batchSize);
 				const { records: batchRecords } =
 					await this.pineconeIndex.fetch(batchIds);
 				Object.assign(records, batchRecords);
+				notice.setMessage(
+					`🔍 데이터베이스에서 기존 노트 청크를 조회하는 중... (${i + Math.min(batchSize, batchIds.length)}/${totalChunks}개)`,
+				);
 			}
+			await delay(500);
 			this.logger.debug("records", records);
 
 			// 기존 문서들의 해시값을 Set으로 저장
@@ -185,38 +191,62 @@ export default class DocumentProcessor {
 			const newChunks = chunks.filter(
 				(doc) => !existingHashes.has(doc.metadata.hash),
 			);
-			const skipChunks = chunks.filter((doc) =>
+			const existsChunks = chunks.filter((doc) =>
 				existingHashes.has(doc.metadata.hash),
 			);
 
 			notice.setMessage(
-				`🔍 새로운 노트 ${newChunks.length}개, 검색 데이터베이스에 있는 노트 ${skipChunks.length}개를 확인했습니다.`,
+				`🔍 새로운 노트 청크 ${newChunks.length}개, 업데이트가 필요한 노트 청크 ${existsChunks.length}개를 확인했습니다.`,
 			);
+			await delay(1000);
 
 			this.logger.debug("--→ newChunks", newChunks);
-			this.logger.debug("--→ skipChunks", skipChunks);
-
-			// 변경 내용이 없는 노트는 skip
-			// 새로운 문서나 업데이트된 문서만 저장
-			if (newChunks.length === 0) {
-				notice.setMessage("✨ 모든 노트가 이미 검색 데이터베이스에 있습니다.");
-				return {
-					newChunks,
-					skipChunks,
-					vectorIds: [],
-				};
-			}
-
-			this.logger.debug("saveToVectorStore save start");
-			notice.setMessage(
-				`📝 새로운 노트 ${newChunks.length}개를 검색 데이터베이스에 저장하는 중...`,
-			);
+			this.logger.debug("--→ existsChunks", existsChunks);
 
 			const embedding = getEmbeddingModel(this.settings);
 			const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
 				pineconeIndex: this.pineconeIndex,
 				maxConcurrency: this.maxConcurrency,
 			});
+
+			// 기존 문서들의 고유-ID를 검색 데이터베이스에@update
+			if (existsChunks.length > 0) {
+				this.logger.debug("updateMetadata start");
+				notice.setMessage(`🔄 기존 노트 청크 메타데이터 업데이트 중... (0%)`);
+				const updates = existsChunks
+					.filter((doc) => doc.id)
+					.map((doc) => ({
+						id: String(doc.id),
+						metadata: doc.metadata,
+						text: doc.pageContent,
+					}));
+
+				await vectorStore.updateMetadata(updates, {
+					onProgress: (progress) => {
+						this.logger.debug("updateMetadata progress", progress);
+						notice.setMessage(
+							`🔄 기존 노트 청크 메타데이터 업데이트 중... (${progress}%)`,
+						);
+					},
+				});
+				await delay(500);
+			}
+
+			if (newChunks.length === 0) {
+				notice.setMessage(
+					"✨ 모든 노트 청크가 검색 데이터베이스에 저장되었습니다.",
+				);
+				return {
+					newChunks,
+					skipChunks: existsChunks,
+					vectorIds: [],
+				};
+			}
+
+			this.logger.debug("saveToVectorStore save start");
+			notice.setMessage(
+				`📝 새로운 노트 청크 ${newChunks.length}개를 검색 데이터베이스에 저장하는 중... (0%)`,
+			);
 			const texts = newChunks.map(({ pageContent }) => pageContent);
 			const newVectors = await vectorStore.embeddings.embedDocuments(texts);
 			const newChunkIds = newChunks.map((e) => String(e.id));
@@ -225,16 +255,19 @@ export default class DocumentProcessor {
 				onProgress: (progress) => {
 					this.logger.debug("saveToVectorStore save progress", progress);
 					notice.setMessage(
-						`📝 새로운 노트를 검색 데이터베이스에 저장하는 중... (${Math.round(progress * 100)}%)`,
+						`📝 새로운 노트 청크를 검색 데이터베이스에 저장하는 중... (${progress}%)`,
 					);
 				},
 			});
+			await delay(500);
 			this.logger.debug("saveToVectorStore save done", vectorIds);
 
-			notice.setMessage("✅ 모든 노트가 검색 데이터베이스에 저장되었습니다.");
+			notice.setMessage(
+				"✅ 모든 노트 청크가 검색 데이터베이스에 저장되었습니다.",
+			);
 			return {
 				newChunks,
-				skipChunks,
+				skipChunks: existsChunks,
 				vectorIds,
 			};
 		} finally {
@@ -307,8 +340,9 @@ export default class DocumentProcessor {
 			...(frontmatter as unknown as NoteMetadata),
 			id,
 			hash,
-			folderPath: this.getParentPaths(file),
-			filePath: file.path,
+			folderPaths: this.getParentPaths(file),
+			filepath: file.path,
+			filename: file.name,
 			ctime: file.stat.ctime,
 			mtime: file.stat.mtime,
 			title: getFileNameSafe(file.path),

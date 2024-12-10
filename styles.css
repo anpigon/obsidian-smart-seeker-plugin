@@ -173,3 +173,11 @@ input.index-name-input.invalid {
 .related-note-icon.is-collapsed svg {
 	transform: rotate(-90deg) translateX(2px);
 } */
+
+/* smart-seeker-search-view */
+div.workspace-leaf-content[data-type="smart-seeker-search-view"] .search-result-container {
+	padding: var(--size-4-3) 1px var(--size-4-4);
+}
+div.workspace-leaf-content[data-type="smart-seeker-search-view"] .suggestion-item:not(.mod-group):hover {
+    background-color: var(--background-modifier-hover);
+}

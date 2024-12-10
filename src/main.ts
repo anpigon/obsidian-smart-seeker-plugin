@@ -22,11 +22,11 @@ import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { createPineconeClient } from "./services/PineconeManager";
 import { DEFAULT_SETTINGS, type PluginSettings } from "./settings/settings";
 import { SettingTab } from "./settings/settingTab";
-import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
 import {
 	RelatedNotesView,
 	VIEW_TYPE_RELATED_NOTES,
 } from "./ui/RelatedNotesView";
+import { SearchViewContainer, VIEW_TYPE_SEARCH } from "./ui/SearchView";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.DEBUG);
@@ -211,14 +211,14 @@ export default class SmartSeekerPlugin extends Plugin {
 					new Notice("Please configure PineconeDB settings first");
 					return;
 				}
-				new SearchNotesModal(this.app, this.settings).open();
+				this.openSearchView();
 			},
 		});
 
 		// Add command
 		this.addCommand({
-			id: "open-related-note-blocks",
-			name: "Open Related Note Blocks",
+			id: "open-related-note-chunks",
+			name: "Open Related Note Chunks",
 			callback: () => {
 				this.openRelatedNotesView();
 			},
@@ -234,10 +234,14 @@ export default class SmartSeekerPlugin extends Plugin {
 		// Initialize Pinecone client
 		this.pineconeClient = createPineconeClient(this.settings.pineconeApiKey);
 
-		// Register view
+		// Register views
 		this.registerView(
 			VIEW_TYPE_RELATED_NOTES,
 			(leaf: WorkspaceLeaf) => new RelatedNotesView(leaf, this.settings),
+		);
+		this.registerView(
+			VIEW_TYPE_SEARCH,
+			(leaf: WorkspaceLeaf) => new SearchViewContainer(leaf, this.settings),
 		);
 
 		// Add icon to ribbon
@@ -246,10 +250,10 @@ export default class SmartSeekerPlugin extends Plugin {
 				new Notice("Please configure PineconeDB settings first");
 				return;
 			}
-			new SearchNotesModal(this.app, this.settings).open();
+			this.openSearchView();
 		});
 
-		this.addRibbonIcon("documents", "Related Note Blocks", () => {
+		this.addRibbonIcon("documents", "Related Note Chunks", () => {
 			this.openRelatedNotesView();
 		});
 
@@ -495,6 +499,27 @@ export default class SmartSeekerPlugin extends Plugin {
 			if (leaf)
 				await leaf.setViewState({
 					type: VIEW_TYPE_RELATED_NOTES,
+					active: true,
+				});
+		}
+	}
+
+	private async openSearchView() {
+		const { workspace } = this.app;
+
+		let leaf: WorkspaceLeaf | null = null;
+		const leaves = workspace.getLeavesOfType(VIEW_TYPE_SEARCH);
+
+		if (leaves.length > 0) {
+			// View already exists, show it
+			leaf = leaves[0];
+			workspace.revealLeaf(leaf);
+		} else {
+			// Create new leaf
+			leaf = workspace.getRightLeaf(false);
+			if (leaf)
+				await leaf.setViewState({
+					type: VIEW_TYPE_SEARCH,
 					active: true,
 				});
 		}
