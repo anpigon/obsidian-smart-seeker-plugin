@@ -62,16 +62,18 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 				query = tagMatch[2] || "";
 			}
 		} else if (isPathSearch) {
-			const pathMatch = searchQuery.match(/^path:([^\s]+)(?:\s+(.*))?$/);
+			// 쌍따옴표로 감싸진 경로를 처리하거나 공백이 없는 경로를 처리
+			const pathMatch = searchQuery.match(/^path:(?:"([^"]+)"|([^\s]+))(?:\s+(.*))?$/);
 			if (pathMatch) {
-				path = pathMatch[1];
-				query = pathMatch[2] || "";
+				path = pathMatch[1] || pathMatch[2]; // 쌍따옴표 안의 값 또는 공백이 없는 값
+				query = pathMatch[3] || "";
 			}
 		} else if (isFileSearch) {
-			const fileMatch = searchQuery.match(/^file:([^\s]+)(?:\s+(.*))?$/);
+			// 쌍따옴표로 감싸진 파일명을 처리하거나 공백이 없는 파일명을 처리
+			const fileMatch = searchQuery.match(/^file:(?:"([^"]+)"|([^\s]+))(?:\s+(.*))?$/);
 			if (fileMatch) {
-				filename = fileMatch[1];
-				query = fileMatch[2] || "";
+				filename = fileMatch[1] || fileMatch[2]; // 쌍따옴표 안의 값 또는 공백이 없는 값
+				query = fileMatch[3] || "";
 			}
 		}
 
