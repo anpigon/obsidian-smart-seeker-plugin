@@ -91,18 +91,18 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 					},
 				}
 			: isPathSearch
-			? {
-					path: {
-						$eq: path,
-					},
-				}
-			: isFileSearch
-			? {
-					filename: {
-						$eq: filename,
-					},
-				}
-			: undefined;
+				? {
+						folderPath: {
+							$eq: path,
+						},
+					}
+				: isFileSearch
+					? {
+							filename: {
+								$eq: filename,
+							},
+						}
+					: undefined;
 
 		logger.debug("isTagSearch:", isTagSearch);
 		logger.debug("isPathSearch:", isPathSearch);
