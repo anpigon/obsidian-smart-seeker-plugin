@@ -198,7 +198,7 @@ export default class DocumentProcessor {
 			notice.setMessage(
 				`🔍 새로운 노트 청크 ${newChunks.length}개, 검색 데이터베이스에 있는 노트 청크 ${existsChunks.length}개를 확인했습니다.`,
 			);
-			await delay(500);
+			await delay(1000);
 
 			this.logger.debug("--→ newChunks", newChunks);
 			this.logger.debug("--→ existsChunks", existsChunks);
@@ -255,7 +255,7 @@ export default class DocumentProcessor {
 				onProgress: (progress) => {
 					this.logger.debug("saveToVectorStore save progress", progress);
 					notice.setMessage(
-						`📝 새로운 노트 청크를 검색 데이터베이스에 저장하는 중... (${Math.round(progress * 100)}%)`,
+						`📝 새로운 노트 청크를 검색 데이터베이스에 저장하는 중... (${progress}%)`,
 					);
 				},
 			});
