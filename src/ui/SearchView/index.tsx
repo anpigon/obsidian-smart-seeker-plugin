@@ -77,6 +77,10 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 			);
 			if (fileMatch) {
 				filename = fileMatch[1] || fileMatch[2]; // 쌍따옴표 안의 값 또는 공백이 없는 값
+				// 파일 확장자가 없으면 .md 추가
+				if (!filename.includes(".")) {
+					filename += ".md";
+				}
 				query = fileMatch[3] || "";
 			}
 		}
