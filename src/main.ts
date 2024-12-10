@@ -22,7 +22,6 @@ import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { createPineconeClient } from "./services/PineconeManager";
 import { DEFAULT_SETTINGS, type PluginSettings } from "./settings/settings";
 import { SettingTab } from "./settings/settingTab";
-import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
 import {
 	RelatedNotesView,
 	VIEW_TYPE_RELATED_NOTES,
@@ -218,8 +217,8 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		// Add command
 		this.addCommand({
-			id: "open-related-note-blocks",
-			name: "Open Related Note Blocks",
+			id: "open-related-note-chunks",
+			name: "Open Related Note Chunks",
 			callback: () => {
 				this.openRelatedNotesView();
 			},
@@ -254,7 +253,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			this.openSearchView();
 		});
 
-		this.addRibbonIcon("documents", "Related Note Blocks", () => {
+		this.addRibbonIcon("documents", "Related Note Chunks", () => {
 			this.openRelatedNotesView();
 		});
 
