@@ -45,30 +45,40 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		[settings?.logLevel],
 	);
 
-	const queryByContent = async (query: string) => {
+	const queryByContent = async (searchQuery: string) => {
+		const isTagSearch = searchQuery.startsWith("tag:");
+		let query = searchQuery;
+		let tag = "";
+
+		if (isTagSearch) {
+			// tag: 제거하고 태그와 검색어 분리
+			const [tagPart, ...searchParts] = searchQuery.slice(4).split(/\s+/);
+			// # 제거
+			tag = tagPart.replace(/^#/, "");
+			query = searchParts.join(" ");
+		}
+
 		if (!settings?.pineconeApiKey || !settings?.pineconeIndexName) {
 			throw new Error("Pinecone API key or index name is not set");
 		}
 
-		const isTagSearch = query.startsWith("tag:");
-		const searchQuery = isTagSearch ? query.slice(4).trim() : query;
-
 		const pc = createPineconeClient(settings.pineconeApiKey);
 		const index = pc.Index(settings.pineconeIndexName);
 		const embeddings = await getEmbeddingModel(settings);
-		const vector = await embeddings.embedQuery(searchQuery);
+		const vector = await embeddings.embedQuery(query);
 		const filter = isTagSearch
 			? {
 					tags: {
-						$in: [searchQuery],
+						$in: [tag],
 					},
 				}
 			: undefined;
 
 		logger.debug("isTagSearch:", isTagSearch);
+		logger.debug("tag:", tag);
+		logger.debug("query:", query);
 		logger.debug("filter:", filter);
-		logger.debug("Search query:", searchQuery);
-		logger.debug("Search vector:", vector);
+		logger.debug("vector:", vector);
 
 		const queryResponse = await index.query({
 			vector,
