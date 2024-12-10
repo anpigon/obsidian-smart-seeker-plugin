@@ -38,7 +38,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 	const [searchResults, setSearchResults] = useState<any[]>([]);
 	const [showSuggestion, setShowSuggestion] = useState(false);
 	const searchInputRef = useRef<HTMLInputElement>(null);
-	const [searchInputRect, setSearchInputRect] = useState<DOMRect | null>(null);
+
 	const logger = useMemo(
 		() => new Logger("SearchView", settings?.logLevel),
 		[settings?.logLevel],
@@ -123,11 +123,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 	}, []);
 
 	const handleFocus = useCallback(() => {
-		const rect = searchInputRef.current?.getBoundingClientRect();
-		if (rect) {
-			setSearchInputRect(rect);
-			setShowSuggestion(true);
-		}
+		setShowSuggestion(true);
 	}, []);
 
 	const handleBlur = useCallback(() => {
@@ -165,13 +161,11 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 				</form>
 			</div>
 
-			{showSuggestion && searchInputRect && (
+			{showSuggestion && (
 				<SearchSuggestion
 					style={{
-						position: "absolute",
 						width: 300,
-						left: searchInputRect.left,
-						top: searchInputRect.bottom + 8,
+						marginTop: 8,
 					}}
 				/>
 			)}
@@ -190,7 +184,9 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 					<div className="search-empty-state">일치하는 결과가 없습니다.</div>
 				)}
 				{isIdle && searchResults.length === 0 && (
-					<div className="search-empty-state">검색어를 입력하고 엔터키로 검색해주세요.</div>
+					<div className="search-empty-state">
+						검색어를 입력하고 엔터키로 검색해주세요.
+					</div>
 				)}
 
 				{isSuccess && (
