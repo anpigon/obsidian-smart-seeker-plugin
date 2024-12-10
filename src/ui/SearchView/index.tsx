@@ -148,8 +148,11 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		setShowSuggestion(true);
 	}, []);
 
-	const handleBlur = useCallback(() => {
-		console.log(searchSuggestionRef.current);
+	const handleBlur = useCallback((e: React.FocusEvent) => {
+		// 제안 목록 영역을 클릭한 경우 제안 목록을 숨기지 않음
+		if (searchSuggestionRef.current?.contains(e.relatedTarget as Node)) {
+			return;
+		}
 		setShowSuggestion(false);
 	}, []);
 

@@ -76,6 +76,7 @@ const SearchSuggestion = forwardRef<HTMLDivElement, SearchSuggestionProps>(
 									onClose?.();
 								}
 							}}
+							tabIndex={0}
 						>
 							<div className="suggestion-content">
 								<div
