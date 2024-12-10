@@ -222,7 +222,9 @@ export default class SmartSeekerPlugin extends Plugin {
 			name: "Open Related Notes View",
 			checkCallback: (checking) => {
 				if (checking) {
-					return Boolean(this.settings.pineconeApiKey && this.settings.pineconeIndexName);
+					return Boolean(
+						this.settings.pineconeApiKey && this.settings.pineconeIndexName,
+					);
 				}
 				this.openRelatedNotesView();
 			},
@@ -233,7 +235,9 @@ export default class SmartSeekerPlugin extends Plugin {
 			name: "Open Search View",
 			checkCallback: (checking) => {
 				if (checking) {
-					return Boolean(this.settings.pineconeApiKey && this.settings.pineconeIndexName);
+					return Boolean(
+						this.settings.pineconeApiKey && this.settings.pineconeIndexName,
+					);
 				}
 				this.openSearchView();
 			},

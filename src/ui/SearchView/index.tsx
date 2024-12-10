@@ -340,7 +340,7 @@ export class SearchViewContainer extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Search Notes";
+		return "Semantic Search";
 	}
 
 	async onOpen(): Promise<void> {
