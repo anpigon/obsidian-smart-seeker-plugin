@@ -60,18 +60,24 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		const index = pc.Index(settings.pineconeIndexName);
 		const embeddings = await getEmbeddingModel(settings);
 		const vector = await embeddings.embedQuery(searchQuery);
+		const filter = isTagSearch
+			? {
+					tags: {
+						$in: [searchQuery],
+					},
+				}
+			: undefined;
+
+		logger.debug("isTagSearch:", isTagSearch);
+		logger.debug("filter:", filter);
+		logger.debug("Search query:", searchQuery);
+		logger.debug("Search vector:", vector);
 
 		const queryResponse = await index.query({
 			vector,
 			topK: 100,
 			includeMetadata: true,
-			filter: isTagSearch
-				? {
-						tags: {
-							$in: [searchQuery],
-						},
-					}
-				: undefined,
+			filter,
 		});
 		return queryResponse.matches;
 	};
