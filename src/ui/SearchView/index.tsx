@@ -221,6 +221,8 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 			<div className="search-input-container global-search-input-container">
 				<form onSubmit={handleSearch}>
 					<input
+						required
+						className="search-input"
 						ref={searchInputRef}
 						type="search"
 						enterKeyHint="search"
@@ -238,12 +240,13 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 							onClick={handleClearSearch}
 						/>
 					)}
-					<div
+					<button
+						type="submit"
 						className="input-right-decorator clickable-icon"
 						aria-label="엔터키로 검색 시작"
 					>
 						<IconCornerDownLeft />
-					</div>
+					</button>
 				</form>
 			</div>
 
