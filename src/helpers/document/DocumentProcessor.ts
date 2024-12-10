@@ -196,7 +196,7 @@ export default class DocumentProcessor {
 			);
 
 			notice.setMessage(
-				`🔍 새로운 노트 청크 ${newChunks.length}개, 검색 데이터베이스에 있는 노트 청크 ${existsChunks.length}개를 확인했습니다.`,
+				`🔍 새로운 노트 청크 ${newChunks.length}개, 업데이트가 필요한 노트 청크 ${existsChunks.length}개를 확인했습니다.`,
 			);
 			await delay(1000);
 
