@@ -165,14 +165,18 @@ export default class DocumentProcessor {
 			const batchSize = 100;
 			const records: Record<string, PineconeRecord<RecordMetadata>> = {};
 
+			const totalChunks = chunks.length;
 			notice.setMessage(
-				`🔍 데이터베이스에서 기존 노트를 조회하는 중... (${ids.length}개)`,
+				`🔍 데이터베이스에서 기존 노트를 조회하는 중...\n(0/${totalChunks}개)`,
 			);
 			for (let i = 0; i < ids.length; i += batchSize) {
 				const batchIds = ids.slice(i, i + batchSize);
 				const { records: batchRecords } =
-					await this.pineconeIndex.fetch(batchIds);
+				await this.pineconeIndex.fetch(batchIds);
 				Object.assign(records, batchRecords);
+				notice.setMessage(
+					`🔍 데이터베이스에서 기존 노트를 조회하는 중...\n(${i + Math.min(batchSize, batchIds.length)}/${totalChunks}개)`,
+				);
 			}
 			this.logger.debug("records", records);
 
@@ -188,6 +192,12 @@ export default class DocumentProcessor {
 			const skipChunks = chunks.filter((doc) =>
 				existingHashes.has(doc.metadata.hash),
 			);
+
+			await new Promise((resolve) => {
+				setTimeout(() => {
+					resolve(null);
+				}, 1000);
+			});
 
 			notice.setMessage(
 				`🔍 새로운 노트 ${newChunks.length}개, 검색 데이터베이스에 있는 노트 ${skipChunks.length}개를 확인했습니다.`,
