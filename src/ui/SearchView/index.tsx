@@ -51,11 +51,11 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		let tag = "";
 
 		if (isTagSearch) {
-			// tag: 제거하고 태그와 검색어 분리
-			const [tagPart, ...searchParts] = searchQuery.slice(4).split(/\s+/);
-			// # 제거
-			tag = tagPart.replace(/^#/, "");
-			query = searchParts.join(" ");
+			const tagMatch = searchQuery.match(/^tag:#?([^\s]+)(?:\s+(.*))?$/);
+			if (tagMatch) {
+				tag = tagMatch[1];
+				query = tagMatch[2] || "";
+			}
 		}
 
 		if (!settings?.pineconeApiKey || !settings?.pineconeIndexName) {
@@ -86,6 +86,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 			includeMetadata: true,
 			filter,
 		});
+		logger.debug("queryResponse:", queryResponse);
 		return queryResponse.matches;
 	};
 
