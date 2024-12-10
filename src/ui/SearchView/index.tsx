@@ -38,6 +38,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 	const [searchResults, setSearchResults] = useState<any[]>([]);
 	const [showSuggestion, setShowSuggestion] = useState(false);
 	const searchInputRef = useRef<HTMLInputElement>(null);
+	const searchSuggestionRef = useRef<HTMLDivElement>(null);
 
 	const logger = useMemo(
 		() => new Logger("SearchView", settings?.logLevel),
@@ -148,6 +149,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 	}, []);
 
 	const handleBlur = useCallback(() => {
+		console.log(searchSuggestionRef.current);
 		setShowSuggestion(false);
 	}, []);
 
@@ -192,6 +194,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 					width: 300,
 					marginTop: 8,
 				}}
+				ref={searchSuggestionRef}
 				onSuggestionClick={handleSuggestionClick}
 				isOpen={showSuggestion && !searchQuery}
 				onClose={() => setShowSuggestion(false)}
