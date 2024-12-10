@@ -10,11 +10,19 @@ import {
 	useMutation,
 } from "@tanstack/react-query";
 import { ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
-import { FormEvent, StrictMode, useCallback, useMemo, useState } from "react";
+import {
+	FormEvent,
+	StrictMode,
+	useCallback,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { Root, createRoot } from "react-dom/client";
 import { PLUGIN_APP_ID } from "../../constants";
 import { openAndHighlightText } from "../../utils/editor-helpers";
 import SearchResultItem from "../RelatedNotesView/components/SearchResultItem";
+import SearchSuggestion from "./components/SearchSuggestion";
 
 export const VIEW_TYPE_SEARCH = `${PLUGIN_APP_ID}-search-view`;
 
@@ -27,6 +35,9 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 	const settings = useSettings();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [searchResults, setSearchResults] = useState<any[]>([]);
+	const [showSuggestion, setShowSuggestion] = useState(false);
+	const searchInputRef = useRef<HTMLInputElement>(null);
+	const [searchInputRect, setSearchInputRect] = useState<DOMRect | null>(null);
 	const logger = useMemo(
 		() => new Logger("SearchView", settings?.logLevel),
 		[settings?.logLevel],
@@ -110,17 +121,32 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		setSearchQuery("");
 	}, []);
 
+	const handleFocus = useCallback(() => {
+		const rect = searchInputRef.current?.getBoundingClientRect();
+		if (rect) {
+			setSearchInputRect(rect);
+			setShowSuggestion(true);
+		}
+	}, []);
+
+	const handleBlur = useCallback(() => {
+		setShowSuggestion(false);
+	}, []);
+
 	return (
 		<div className="search-view">
 			<div className="search-input-container global-search-input-container">
 				<form onSubmit={handleSearch}>
 					<input
+						ref={searchInputRef}
 						type="search"
 						enterKeyHint="search"
 						spellCheck={false}
 						placeholder="Search notes..."
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
+						onFocus={handleFocus}
+						onBlur={handleBlur}
 					/>
 					{searchQuery && (
 						<div
@@ -151,6 +177,17 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 					</div>
 				</form>
 			</div>
+
+			{showSuggestion && searchInputRect && (
+				<SearchSuggestion
+					style={{
+						position: "absolute",
+						width: 300,
+						left: searchInputRect.left,
+						top: searchInputRect.bottom + 8,
+					}}
+				/>
+			)}
 
 			<div className="search-result-container">
 				{isPending && (
