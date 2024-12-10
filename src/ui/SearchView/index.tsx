@@ -21,6 +21,7 @@ import {
 import { Root, createRoot } from "react-dom/client";
 import { PLUGIN_APP_ID } from "../../constants";
 import { openAndHighlightText } from "../../utils/editor-helpers";
+import IconCornerDownLeft from "../icons/IconCornerDownLeft";
 import SearchResultItem from "../RelatedNotesView/components/SearchResultItem";
 import SearchSuggestion from "./components/SearchSuggestion";
 
@@ -60,7 +61,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		return queryResponse.matches;
 	};
 
-	const { mutate, isPending, isSuccess } = useMutation({
+	const { mutate, isPending, isSuccess, isIdle } = useMutation({
 		mutationFn: async (query: string) => {
 			if (!query) return [];
 			return queryByContent(query);
@@ -159,21 +160,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 						className="input-right-decorator clickable-icon"
 						aria-label="엔터키로 검색 시작"
 					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							className="lucide lucideCornerDownLeft"
-						>
-							<polyline points="9 10 4 15 9 20" />
-							<path d="M20 4v7a4 4 0 0 1-4 4H4" />
-						</svg>
+						<IconCornerDownLeft />
 					</div>
 				</form>
 			</div>
@@ -200,7 +187,10 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 					</div>
 				)}
 				{isSuccess && searchResults.length === 0 && (
-					<div className="search-empty-state">No results found.</div>
+					<div className="search-empty-state">일치하는 결과가 없습니다.</div>
+				)}
+				{isIdle && searchResults.length === 0 && (
+					<div className="search-empty-state">검색어를 입력하고 엔터키로 검색해주세요.</div>
 				)}
 
 				{isSuccess && (
