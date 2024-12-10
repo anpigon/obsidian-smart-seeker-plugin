@@ -7,7 +7,7 @@ import { PluginSettings } from "@/settings/settings";
 import {
 	QueryClient,
 	QueryClientProvider,
-	useQuery,
+	useMutation,
 } from "@tanstack/react-query";
 import { ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import { FormEvent, StrictMode, useCallback, useMemo, useState } from "react";
@@ -26,6 +26,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 	const app = useApp();
 	const settings = useSettings();
 	const [searchQuery, setSearchQuery] = useState("");
+	const [searchResults, setSearchResults] = useState<any[]>([]);
 	const logger = useMemo(
 		() => new Logger("SearchView", settings?.logLevel),
 		[settings?.logLevel],
@@ -48,21 +49,14 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		return queryResponse.matches;
 	};
 
-	const {
-		data: matches = [],
-		isLoading,
-		error,
-		refetch,
-	} = useQuery({
-		queryKey: ["search-notes", searchQuery],
-		queryFn: async () => {
-			if (!searchQuery) return [];
-			return queryByContent(searchQuery);
+	const { mutate, isPending, isSuccess } = useMutation({
+		mutationFn: async (query: string) => {
+			if (!query) return [];
+			return queryByContent(query);
 		},
-		enabled:
-			!!searchQuery &&
-			!!settings?.pineconeApiKey &&
-			!!settings?.pineconeIndexName,
+		onSuccess: (data) => {
+			setSearchResults(data || []);
+		},
 	});
 
 	const handleTitleClick = async (filePath: string) => {
@@ -107,9 +101,9 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 	const handleSearch = useCallback(
 		(e: FormEvent<HTMLFormElement>) => {
 			e.preventDefault();
-			refetch();
+			mutate(searchQuery);
 		},
-		[refetch],
+		[mutate, searchQuery],
 	);
 
 	return (
@@ -127,7 +121,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 
 			<div className="search-result-container">
 				<div className="search-results-children">
-					{matches.map((match) => {
+					{searchResults.map((match) => {
 						const title = String(match.metadata?.title || "Untitled");
 						const subtext = String(match.metadata?.text || "")?.replace(
 							/^(?:\(cont'd\)\s*)?/,
@@ -155,7 +149,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 						);
 					})}
 				</div>
-				{!isLoading && matches.length === 0 && searchQuery && (
+				{!isPending && isSuccess && searchResults.length === 0 && (
 					<div className="search-empty-state">No results found.</div>
 				)}
 			</div>
