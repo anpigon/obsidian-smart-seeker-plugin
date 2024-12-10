@@ -203,10 +203,35 @@ export default class DocumentProcessor {
 			this.logger.debug("--→ newChunks", newChunks);
 			this.logger.debug("--→ existsChunks", existsChunks);
 
-			// 변경 내용이 없는 노트는 skip
-			// 새로운 문서나 업데이트된 문서만 저장
+			const embedding = getEmbeddingModel(this.settings);
+			const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
+				pineconeIndex: this.pineconeIndex,
+				maxConcurrency: this.maxConcurrency,
+			});
+
+			// 기존 문서들의 고유-ID를 검색 데이터베이스에@update
+			if (existsChunks.length > 0) {
+				const updates = existsChunks
+					.filter((doc) => doc.id)
+					.map((doc) => ({
+						id: String(doc.id),
+						metadata: doc.metadata,
+					}));
+
+				await vectorStore.updateMetadata(updates, {
+					onProgress: (progress) => {
+						this.logger.debug("updateMetadata progress", progress);
+						notice.setMessage(
+							`🔄 기존 노트 청크 메타데이터 업데이트 중... (${progress}%)`,
+						);
+					},
+				});
+			}
+
 			if (newChunks.length === 0) {
-				notice.setMessage("✨ 모든 노트가 이미 검색 데이터베이스에 있습니다.");
+				notice.setMessage(
+					"✨ 모든 노트 청크가 검색 데이터베이스에 저장되었습니다.",
+				);
 				return {
 					newChunks,
 					skipChunks: existsChunks,
@@ -218,12 +243,6 @@ export default class DocumentProcessor {
 			notice.setMessage(
 				`📝 새로운 노트 청크 ${newChunks.length}개를 검색 데이터베이스에 저장하는 중...`,
 			);
-
-			const embedding = getEmbeddingModel(this.settings);
-			const vectorStore = await PineconeStore.fromExistingIndex(embedding, {
-				pineconeIndex: this.pineconeIndex,
-				maxConcurrency: this.maxConcurrency,
-			});
 			const texts = newChunks.map(({ pageContent }) => pageContent);
 			const newVectors = await vectorStore.embeddings.embedDocuments(texts);
 			const newChunkIds = newChunks.map((e) => String(e.id));
@@ -238,7 +257,9 @@ export default class DocumentProcessor {
 			});
 			this.logger.debug("saveToVectorStore save done", vectorIds);
 
-			notice.setMessage("✅ 모든 노트가 검색 데이터베이스에 저장되었습니다.");
+			notice.setMessage(
+				"✅ 모든 노트 청크가 검색 데이터베이스에 저장되었습니다.",
+			);
 			return {
 				newChunks,
 				skipChunks: existsChunks,

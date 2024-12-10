@@ -365,6 +365,59 @@ export class PineconeStore extends VectorStore {
 	}
 
 	/**
+	 * Update metadata for existing vectors in the Pinecone index
+	 * @param updates - Array of objects containing id and metadata to update
+	 * @param options - Optional parameters including namespace and progress callback
+	 * @returns Promise that resolves when all updates are complete
+	 */
+	async updateMetadata(
+		updates: { id: string; metadata: Record<string, any> }[],
+		options?: {
+			namespace?: string;
+			onProgress?: (progress: number) => void;
+		},
+	): Promise<void> {
+		const onProgress = options?.onProgress;
+		const optionsNamespace = options?.namespace ?? this.namespace;
+		const namespace = this.pineconeIndex.namespace(optionsNamespace ?? "");
+
+		// Pinecone recommends a limit of 100 vectors per request
+		const chunkSize = 100;
+		const chunkedUpdates = chunkArray(updates, chunkSize);
+		const totalChunks = chunkedUpdates.length;
+		let completedChunks = 0;
+
+		const batchRequests = chunkedUpdates.map((chunk) =>
+			this.caller.call(async () => {
+				// Process each update in the chunk
+				for (const update of chunk) {
+					const metadata = { ...update.metadata };
+					// Pinecone doesn't support null values, so we remove them
+					for (const key of Object.keys(metadata)) {
+						if (metadata[key] == null) {
+							delete metadata[key];
+						} else if (
+							typeof metadata[key] === "object" &&
+							Object.keys(metadata[key] as object).length === 0
+						) {
+							delete metadata[key];
+						}
+					}
+
+					await namespace.update({
+						id: update.id,
+						metadata,
+					});
+				}
+				completedChunks++;
+				onProgress?.(Math.round((completedChunks / totalChunks) * 100));
+			}),
+		);
+
+		await Promise.all(batchRequests);
+	}
+
+	/**
 	 * Method that deletes vectors from the Pinecone database.
 	 * @param params Parameters for the delete operation.
 	 * @returns Promise that resolves when the delete operation is complete.
