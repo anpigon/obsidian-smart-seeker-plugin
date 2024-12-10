@@ -81,12 +81,12 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 			if (!query) return [];
 			return queryByContent(query);
 		},
-		onMutate: (query: string) => {
-			setSearchQuery(query);
-			setIsFocus(false);
-		},
 		onSuccess: (data) => {
 			setSearchResults(data || []);
+		},
+		onError: (error) => {
+			logger.error("Error in queryByContent:", error);
+			new Notice(error.message);
 		},
 	});
 
