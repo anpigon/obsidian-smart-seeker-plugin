@@ -36,12 +36,8 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 	const settings = useSettings();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [searchResults, setSearchResults] = useState<any[]>([]);
-	const [isFocus, setIsFocus] = useState(false);
+	const [showSuggestion, setShowSuggestion] = useState(false);
 	const searchInputRef = useRef<HTMLInputElement>(null);
-
-	const showSuggestion = useMemo(() => {
-		return isFocus && !searchQuery;
-	}, [isFocus, searchQuery]);
 
 	const logger = useMemo(
 		() => new Logger("SearchView", settings?.logLevel),
@@ -148,19 +144,16 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 	}, []);
 
 	const handleFocus = useCallback(() => {
-		setIsFocus(true);
+		setShowSuggestion(true);
 	}, []);
 
 	const handleBlur = useCallback(() => {
-		setIsFocus(false);
+		setShowSuggestion(false);
 	}, []);
 
 	const handleSuggestionClick = useCallback((suggestion: string) => {
-		setSearchQuery((prev) => {
-			const newQuery = suggestion + " ";
-			searchInputRef.current?.focus();
-			return newQuery;
-		});
+		setSearchQuery(suggestion);
+		searchInputRef.current?.focus();
 	}, []);
 
 	return (
@@ -194,15 +187,15 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 				</form>
 			</div>
 
-			{showSuggestion && (
-				<SearchSuggestion
-					style={{
-						width: 300,
-						marginTop: 8,
-					}}
-					onSuggestionClick={handleSuggestionClick}
-				/>
-			)}
+			<SearchSuggestion
+				style={{
+					width: 300,
+					marginTop: 8,
+				}}
+				onSuggestionClick={handleSuggestionClick}
+				isOpen={showSuggestion && !searchQuery}
+				onClose={() => setShowSuggestion(false)}
+			/>
 
 			<div className="search-result-container">
 				{isPending && (

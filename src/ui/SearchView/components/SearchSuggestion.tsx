@@ -1,11 +1,15 @@
 interface SearchSuggestionProps {
 	style?: React.CSSProperties;
 	onSuggestionClick?: (suggestion: string) => void;
+	isOpen?: boolean;
+	onClose?: () => void;
 }
 
 const SearchSuggestion = ({
 	style,
 	onSuggestionClick,
+	isOpen,
+	onClose,
 }: SearchSuggestionProps) => {
 	const suggestions = [
 		{
@@ -68,7 +72,15 @@ const SearchSuggestion = ({
 	];
 
 	return (
-		<div className="suggestion-container mod-search-suggestion" style={style}>
+		<div
+			className="suggestion-container mod-search-suggestion"
+			style={{ ...style, display: isOpen ? "block" : "none" }}
+			onClick={(e) => {
+				if (e.target === e.currentTarget) {
+					onClose?.();
+				}
+			}}
+		>
 			<div className="suggestion">
 				{suggestions.map((suggestion, index) => (
 					<div
@@ -79,6 +91,7 @@ const SearchSuggestion = ({
 						onClick={() => {
 							if (!suggestion.type && suggestion.title && onSuggestionClick) {
 								onSuggestionClick(suggestion.title);
+								onClose?.();
 							}
 						}}
 					>
