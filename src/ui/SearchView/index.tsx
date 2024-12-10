@@ -108,16 +108,17 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 
 	return (
 		<div className="search-view">
-			<div className="search-input-container">
+			<div className="search-input-container global-search-input-container">
 				<form onSubmit={handleSearch}>
-					<div className="search-input-wrapper">
-						<input
-							type="search"
-							placeholder="Search notes..."
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-						/>
-					</div>
+					<input
+						type="search" enterKeyHint="search"
+						spellCheck={false}
+						placeholder="Search notes..."
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+					/>
+					<div className="search-input-clear-button" aria-label="검색어 지우기"></div>
+					<div className="input-right-decorator clickable-icon" aria-label="엔터키로 검색 시작"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucideCornerDownLeft"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg></div>
 				</form>
 			</div>
 
