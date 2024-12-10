@@ -26,14 +26,14 @@ const SearchSuggestion = forwardRef<HTMLDivElement, SearchSuggestionProps>(
 					</a>
 				),
 			},
-			// {
-			// 	title: "path:",
-			// 	description: "파일 경로 일치",
-			// },
-			// {
-			// 	title: "file:",
-			// 	description: "파일 이름과 일치",
-			// },
+			{
+				title: "path:",
+				description: "파일 경로 일치",
+			},
+			{
+				title: "file:",
+				description: "파일 이름과 일치",
+			},
 			{
 				title: "tag:",
 				description: "태그 검색",

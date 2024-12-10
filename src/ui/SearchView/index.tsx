@@ -47,14 +47,31 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 
 	const queryByContent = async (searchQuery: string) => {
 		const isTagSearch = searchQuery.startsWith("tag:");
+		const isPathSearch = searchQuery.startsWith("path:");
+		const isFileSearch = searchQuery.startsWith("file:");
+
 		let query = searchQuery;
 		let tag = "";
+		let path = "";
+		let filename = "";
 
 		if (isTagSearch) {
 			const tagMatch = searchQuery.match(/^tag:#?([^\s]+)(?:\s+(.*))?$/);
 			if (tagMatch) {
 				tag = tagMatch[1];
 				query = tagMatch[2] || "";
+			}
+		} else if (isPathSearch) {
+			const pathMatch = searchQuery.match(/^path:([^\s]+)(?:\s+(.*))?$/);
+			if (pathMatch) {
+				path = pathMatch[1];
+				query = pathMatch[2] || "";
+			}
+		} else if (isFileSearch) {
+			const fileMatch = searchQuery.match(/^file:([^\s]+)(?:\s+(.*))?$/);
+			if (fileMatch) {
+				filename = fileMatch[1];
+				query = fileMatch[2] || "";
 			}
 		}
 
@@ -66,16 +83,33 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		const index = pc.Index(settings.pineconeIndexName);
 		const embeddings = await getEmbeddingModel(settings);
 		const vector = await embeddings.embedQuery(query);
+
 		const filter = isTagSearch
 			? {
 					tags: {
 						$in: [tag],
 					},
 				}
+			: isPathSearch
+			? {
+					path: {
+						$eq: path,
+					},
+				}
+			: isFileSearch
+			? {
+					filename: {
+						$eq: filename,
+					},
+				}
 			: undefined;
 
 		logger.debug("isTagSearch:", isTagSearch);
+		logger.debug("isPathSearch:", isPathSearch);
+		logger.debug("isFileSearch:", isFileSearch);
 		logger.debug("tag:", tag);
+		logger.debug("path:", path);
+		logger.debug("filename:", filename);
 		logger.debug("query:", query);
 		logger.debug("filter:", filter);
 		logger.debug("vector:", vector);
