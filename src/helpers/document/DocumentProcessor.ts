@@ -94,8 +94,7 @@ export default class DocumentProcessor {
 			);
 
 			for (const [idx, splitDocument] of splitDocuments.entries()) {
-				const hash = await createHash(splitDocument.metadata.filePath);
-				const id = `${hash}-${idx}`;
+				const id = `${splitDocument.metadata.id}-${idx}`;
 				result.ids.push(id);
 				splitDocument.id = id;
 				result.chunks.push(splitDocument);
