@@ -371,7 +371,7 @@ export class PineconeStore extends VectorStore {
 	 * @returns Promise that resolves when all updates are complete
 	 */
 	async updateMetadata(
-		updates: { id: string; metadata: Record<string, any>, text: string		}[],
+		updates: { id: string; metadata: Record<string, any>; text: string }[],
 		options?: {
 			namespace?: string;
 			onProgress?: (progress: number) => void;
@@ -409,7 +409,7 @@ export class PineconeStore extends VectorStore {
 					} = {
 						...flatten(documentMetadata),
 						...stringArrays,
-						[this.textKey]: update.text						,
+						[this.textKey]: update.text,
 					};
 					// Pinecone doesn't support null values, so we remove them
 					for (const key of Object.keys(metadata)) {

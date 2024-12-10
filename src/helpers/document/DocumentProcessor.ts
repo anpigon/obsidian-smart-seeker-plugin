@@ -211,6 +211,8 @@ export default class DocumentProcessor {
 
 			// 기존 문서들의 고유-ID를 검색 데이터베이스에@update
 			if (existsChunks.length > 0) {
+				this.logger.debug("updateMetadata start");
+				notice.setMessage(`🔄 기존 노트 청크 메타데이터 업데이트 중... (0%)`);
 				const updates = existsChunks
 					.filter((doc) => doc.id)
 					.map((doc) => ({
@@ -227,6 +229,7 @@ export default class DocumentProcessor {
 						);
 					},
 				});
+				await delay(500);
 			}
 
 			if (newChunks.length === 0) {
@@ -242,7 +245,7 @@ export default class DocumentProcessor {
 
 			this.logger.debug("saveToVectorStore save start");
 			notice.setMessage(
-				`📝 새로운 노트 청크 ${newChunks.length}개를 검색 데이터베이스에 저장하는 중...`,
+				`📝 새로운 노트 청크 ${newChunks.length}개를 검색 데이터베이스에 저장하는 중... (0%)`,
 			);
 			const texts = newChunks.map(({ pageContent }) => pageContent);
 			const newVectors = await vectorStore.embeddings.embedDocuments(texts);
@@ -256,6 +259,7 @@ export default class DocumentProcessor {
 					);
 				},
 			});
+			await delay(500);
 			this.logger.debug("saveToVectorStore save done", vectorIds);
 
 			notice.setMessage(
