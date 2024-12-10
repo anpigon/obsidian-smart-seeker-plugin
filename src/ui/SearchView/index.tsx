@@ -19,7 +19,7 @@ import {
 	useState,
 } from "react";
 import { Root, createRoot } from "react-dom/client";
-import { PLUGIN_APP_ID } from "../../constants";
+import { PLUGIN_APP_ID, ZERO_VECTOR } from "../../constants";
 import { openAndHighlightText } from "../../utils/editor-helpers";
 import IconCornerDownLeft from "../icons/IconCornerDownLeft";
 import SearchResultItem from "../RelatedNotesView/components/SearchResultItem";
@@ -63,14 +63,18 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 			}
 		} else if (isPathSearch) {
 			// 쌍따옴표로 감싸진 경로를 처리하거나 공백이 없는 경로를 처리
-			const pathMatch = searchQuery.match(/^path:(?:"([^"]+)"|([^\s]+))(?:\s+(.*))?$/);
+			const pathMatch = searchQuery.match(
+				/^path:(?:"([^"]+)"|([^\s]+))(?:\s+(.*))?$/,
+			);
 			if (pathMatch) {
 				path = pathMatch[1] || pathMatch[2]; // 쌍따옴표 안의 값 또는 공백이 없는 값
 				query = pathMatch[3] || "";
 			}
 		} else if (isFileSearch) {
 			// 쌍따옴표로 감싸진 파일명을 처리하거나 공백이 없는 파일명을 처리
-			const fileMatch = searchQuery.match(/^file:(?:"([^"]+)"|([^\s]+))(?:\s+(.*))?$/);
+			const fileMatch = searchQuery.match(
+				/^file:(?:"([^"]+)"|([^\s]+))(?:\s+(.*))?$/,
+			);
 			if (fileMatch) {
 				filename = fileMatch[1] || fileMatch[2]; // 쌍따옴표 안의 값 또는 공백이 없는 값
 				query = fileMatch[3] || "";
@@ -84,7 +88,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		const pc = createPineconeClient(settings.pineconeApiKey);
 		const index = pc.Index(settings.pineconeIndexName);
 		const embeddings = await getEmbeddingModel(settings);
-		const vector = await embeddings.embedQuery(query);
+		const vector = query ? await embeddings.embedQuery(query) : ZERO_VECTOR;
 
 		const filter = isTagSearch
 			? {
@@ -94,7 +98,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 				}
 			: isPathSearch
 				? {
-						folderPath: {
+						folderPaths: {
 							$eq: path,
 						},
 					}
