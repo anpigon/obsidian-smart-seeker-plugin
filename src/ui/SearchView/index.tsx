@@ -110,12 +110,14 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		<div className="search-view">
 			<div className="search-input-container">
 				<form onSubmit={handleSearch}>
-					<input
-						type="text"
-						placeholder="Search notes..."
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-					/>
+					<div className="search-input-wrapper">
+						<input
+							type="search"
+							placeholder="Search notes..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+						/>
+					</div>
 				</form>
 			</div>
 
