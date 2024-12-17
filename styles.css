@@ -181,3 +181,7 @@ div.workspace-leaf-content[data-type="smart-seeker-search-view"] .search-result-
 div.workspace-leaf-content[data-type="smart-seeker-search-view"] .suggestion-item:not(.mod-group):hover {
     background-color: var(--background-modifier-hover);
 }
+
+dialog.modal:not([open]) {
+	display: none;
+}

@@ -3,28 +3,18 @@ import { useState } from "react";
 
 interface SearchResultItemProps {
 	id?: string;
-	filePath?: string;
 	title: string;
 	score: string;
 	text: string;
-	from?: number;
-	to?: number;
-	onTitleClick: (filePath?: string) => void;
-	onMatchClick: (
-		filePath?: string,
-		text?: string,
-		from?: number,
-		to?: number,
-	) => void;
+	onTitleClick: (id?: string) => void;
+	onMatchClick: (id?: string) => void;
 }
 
 const SearchResultItem = ({
-	filePath,
+	id,
 	score,
 	title,
 	text,
-	from,
-	to,
 	onMatchClick,
 	onTitleClick,
 }: SearchResultItemProps) => {
@@ -37,9 +27,9 @@ const SearchResultItem = ({
 		setIsCollapsed(!isCollapsed);
 	};
 
-	const handleTitleClick = () => onTitleClick(filePath);
+	const handleTitleClick = () => onTitleClick(id);
 
-	const handleMatchClick = () => onMatchClick(filePath, text, from, to);
+	const handleMatchClick = () => onMatchClick(id);
 
 	return (
 		<div className="tree-item search-result is-collapsed">
@@ -48,7 +38,9 @@ const SearchResultItem = ({
 				onClick={handleTitleClick}
 			>
 				<div
-					className={`tree-item-icon collapse-icon ${isCollapsed ? "is-collapsed" : ""}`}
+					className={`tree-item-icon collapse-icon ${
+						isCollapsed ? "is-collapsed" : ""
+					}`}
 					onClick={handleToggleCollapsed}
 				>
 					<IconRightTriangle />
