@@ -1,3 +1,4 @@
+import type { PluginSettings } from "@/constants/settings";
 import SmartSeekerPlugin from "@/main";
 import type { NoteMetadata } from "@/types";
 import { Document } from "@langchain/core/documents";
@@ -18,7 +19,6 @@ import {
 	ZERO_VECTOR,
 } from "src/constants";
 import { createPineconeClient } from "src/services/PineconeManager";
-import type { PluginSettings } from "src/settings/settings";
 import { PineconeStore } from "../langchain/vectorstores";
 import { Logger } from "../logger";
 import { delay } from "../utils/delay";
@@ -175,7 +175,9 @@ export default class DocumentProcessor {
 					await this.pineconeIndex.fetch(batchIds);
 				Object.assign(records, batchRecords);
 				notice.setMessage(
-					`🔍 데이터베이스에서 기존 노트 청크를 조회하는 중... (${i + Math.min(batchSize, batchIds.length)}/${totalChunks}개)`,
+					`🔍 데이터베이스에서 기존 노트 청크를 조회하는 중... (${
+						i + Math.min(batchSize, batchIds.length)
+					}/${totalChunks}개)`,
 				);
 			}
 			await delay(500);

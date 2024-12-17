@@ -1,9 +1,9 @@
+import { PluginSettings } from "@/constants/settings";
 import { AppContext, SettingsContext } from "@/helpers/context";
 import { useApp, useSettings } from "@/helpers/hooks";
 import { Logger } from "@/helpers/logger";
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
 import { createPineconeClient } from "@/services/PineconeManager";
-import { PluginSettings } from "@/settings/settings";
 import {
 	QueryClient,
 	QueryClientProvider,
@@ -148,7 +148,12 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		},
 	});
 
-	const handleTitleClick = async (filePath: string) => {
+	const handleTitleClick = async (id: string) => {
+		if (!app) return;
+
+		const match = searchResults.find((item) => item.id === id);
+		const filePath = match?.metadata?.filePath?.toString();
+
 		if (!filePath) {
 			new Notice("File path not found");
 			return;
@@ -168,18 +173,36 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		}
 	};
 
-	const handleMatchClick = async (
-		filePath: string,
-		text: string,
-		fromLine: number,
-		toLine: number,
-	) => {
+	const handleMatchClick = async (id: string) => {
 		if (!app) return;
+
+		const match = searchResults.find((item) => item.id === id);
+		const filePath = match?.metadata?.filePath?.toString();
+
+		if (!filePath) {
+			new Notice("File path not found");
+			// showConfirmDialog(id);
+			return;
+		}
+
+		const targetFile = app?.vault.getAbstractFileByPath(filePath);
+		if (!(targetFile instanceof TFile)) {
+			new Notice(`File not found: ${filePath}`);
+			// showConfirmDialog(id);
+			return;
+		}
+
+		const text = String(match?.metadata?.text || "")?.replace(
+			/^(?:\(cont'd\)\s*)?/,
+			"",
+		);
+		const from = Number(match?.metadata?.["loc.lines.from"]);
+		const to = Number(match?.metadata?.["loc.lines.to"]);
 
 		try {
 			await openAndHighlightText(app, filePath, text, {
-				from: fromLine,
-				to: toLine,
+				from,
+				to,
 			});
 		} catch (error) {
 			console.error("Error opening file:", error);
@@ -290,20 +313,14 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 							);
 							const score =
 								match.score !== undefined ? match.score.toFixed(2) : "0.00";
-							const filePath = match.metadata?.filePath?.toString();
-							const from = Number(match.metadata?.["loc.lines.from"]);
-							const to = Number(match.metadata?.["loc.lines.to"]);
 
 							return (
 								<SearchResultItem
 									key={match.id}
 									id={match.id}
-									filePath={filePath}
 									title={title}
 									text={subtext}
 									score={score}
-									from={from}
-									to={to}
 									onTitleClick={handleTitleClick}
 									onMatchClick={handleMatchClick}
 								/>

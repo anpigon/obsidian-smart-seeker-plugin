@@ -14,13 +14,13 @@ import {
 	PLUGIN_APP_ID,
 	ZERO_VECTOR,
 } from "./constants";
+import { DEFAULT_SETTINGS, type PluginSettings } from "./constants/settings";
 import DocumentProcessor from "./helpers/document/DocumentProcessor";
 import { InLocalStore } from "./helpers/langchain/store/InLocalStore";
 import { LogLevel, Logger } from "./helpers/logger";
 import NoteHashStorage from "./helpers/storage/NoteHashStorage";
 import calculateTokenCount from "./helpers/utils/calculateTokenCount";
 import { createPineconeClient } from "./services/PineconeManager";
-import { DEFAULT_SETTINGS, type PluginSettings } from "./settings/settings";
 import { SettingTab } from "./settings/settingTab";
 import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
 import {

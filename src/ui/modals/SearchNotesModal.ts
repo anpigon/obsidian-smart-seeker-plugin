@@ -1,5 +1,5 @@
+import { PluginSettings } from "@/constants/settings";
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
-import { PluginSettings } from "@/settings/settings";
 import { openAndHighlightText } from "@/utils/editor-helpers";
 import {
 	type Index,

@@ -1,5 +1,5 @@
+import { PluginSettings } from "@/constants/settings";
 import { AppContext, SettingsContext } from "@/helpers/context";
-import { PluginSettings } from "@/settings/settings";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IconName, ItemView, TFile, WorkspaceLeaf } from "obsidian";
 import { StrictMode } from "react";
