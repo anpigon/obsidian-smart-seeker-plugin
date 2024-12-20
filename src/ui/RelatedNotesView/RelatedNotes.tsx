@@ -7,6 +7,7 @@ import { Logger } from "@/helpers/logger";
 import {
 	openNote,
 	openNoteAndHighlightText,
+	removeFrontmatter,
 } from "@/helpers/utils/editorHelpers";
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
 import truncateContent from "@/helpers/utils/truncateContent";
@@ -74,9 +75,12 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 		queryFn: async () => {
 			if (!currentFile) return [];
 			const content = await app?.vault.cachedRead(currentFile);
-			// logger.debug("--→ content", content?.length, content);
-			if (!content || content.length < 50) return [];
-			const truncatedContent = truncateContent(content, 8192);
+			if (!content || !content?.length) return [];
+
+			const title = currentFile.basename;
+			const cleanedContent = removeFrontmatter(content);
+			const query = `# ${title}\n\n${cleanedContent}`;
+			const truncatedContent = truncateContent(query, 8192);
 			return queryByFileContent(truncatedContent || "", currentFile.path);
 		},
 		enabled:

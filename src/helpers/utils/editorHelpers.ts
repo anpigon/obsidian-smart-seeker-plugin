@@ -91,3 +91,8 @@ export async function openNoteAndHighlightText(
 		throw new Error("Failed to open file");
 	}
 }
+
+export function removeFrontmatter(content: string): string {
+	const frontmatterRegex = /^---\s*[\s\S]*?\s*---\s*/;
+	return content.replace(frontmatterRegex, "");
+}
