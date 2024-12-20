@@ -3,8 +3,8 @@ import type { FrontMatterCache } from "obsidian";
 export interface NoteMetadata extends FrontMatterCache {
 	id: string;
 	folderPaths: string[];
-	filepath: string;
-	filename: string;
+	filePath: string;
+	fileName: string;
 	ctime: number;
 	mtime: number;
 	title: string;

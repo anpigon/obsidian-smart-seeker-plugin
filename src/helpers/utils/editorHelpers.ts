@@ -1,15 +1,19 @@
-import { App, TFile, MarkdownView, Notice } from "obsidian";
+import { App, MarkdownView, TFile, WorkspaceLeaf } from "obsidian";
 
 interface TextRange {
 	from: number;
 	to: number;
 }
 
-export async function openAndHighlightText(
+export async function openNote(app: App, filePath: string) {
+	return openNoteAndHighlightText(app, filePath);
+}
+
+export async function openNoteAndHighlightText(
 	app: App,
 	filePath: string,
-	searchText: string,
-	range: TextRange,
+	searchText?: string,
+	range?: TextRange,
 ): Promise<void> {
 	if (!filePath) {
 		throw new Error("File path not found");
@@ -21,13 +25,33 @@ export async function openAndHighlightText(
 	}
 
 	try {
-		const leaf = app.workspace.getLeaf();
-		if (!leaf) return;
+		// 열려있는 모든 마크다운 뷰를 가져옵니다.
+		const leaves = app?.workspace.getLeavesOfType("markdown") ?? [];
 
-		await leaf.openFile(targetFile);
+		let targetLeaf: WorkspaceLeaf | null = null;
 
-		const view = leaf.view;
-		if (view.getViewType() !== "markdown") return;
+		// 열려있는 뷰를 순회하면서 targetFile을 표시하는 뷰를 찾습니다.
+		for (const leaf of leaves) {
+			const view = leaf.view;
+			if (view instanceof MarkdownView && view.file === targetFile) {
+				targetLeaf = leaf;
+				break;
+			}
+		}
+
+		if (targetLeaf) {
+			app?.workspace.setActiveLeaf(targetLeaf);
+		} else {
+			targetLeaf = app.workspace.getLeaf(true);
+			await targetLeaf?.openFile(targetFile);
+		}
+
+		if (!searchText || !range) {
+			return;
+		}
+
+		const view = targetLeaf?.view;
+		if (view?.getViewType() !== "markdown") return;
 
 		const editor = (view as MarkdownView).editor;
 		if (!editor) return;

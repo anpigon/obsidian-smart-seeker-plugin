@@ -1,6 +1,6 @@
 import { PluginSettings } from "@/constants/settings";
+import { openNoteAndHighlightText } from "@/helpers/utils/editorHelpers";
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
-import { openAndHighlightText } from "@/utils/editor-helpers";
 import {
 	type Index,
 	Pinecone,
@@ -226,7 +226,7 @@ export class SearchNotesModal extends SuggestModal<SearchResult> {
 		const toLine = Number(item.toLine ?? 0);
 
 		try {
-			await openAndHighlightText(this.app, filePath, text, {
+			await openNoteAndHighlightText(this.app, filePath, text, {
 				from: fromLine,
 				to: toLine,
 			});

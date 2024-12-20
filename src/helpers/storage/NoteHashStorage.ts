@@ -1,7 +1,7 @@
 import { PLUGIN_APP_ID } from "src/constants";
 
 export interface NoteHash {
-	filepath: string;
+	filePath: string;
 	hash: string;
 	timestamp: number;
 }
@@ -33,7 +33,7 @@ export default class NoteHashStorage {
 				const db = (event.target as IDBOpenDBRequest).result;
 				if (!db.objectStoreNames.contains(this.storeName)) {
 					const store = db.createObjectStore(this.storeName, {
-						keyPath: "filepath",
+						keyPath: "filePath",
 					});
 					store.createIndex("timestamp", "timestamp", {
 						unique: false,
@@ -56,13 +56,13 @@ export default class NoteHashStorage {
 		return transaction.objectStore(this.storeName);
 	}
 
-	async saveHash(filepath: string, hash: string): Promise<void> {
+	async saveHash(filePath: string, hash: string): Promise<void> {
 		try {
 			const store = await this.getDBStore("readwrite");
 
 			return new Promise((resolve, reject) => {
 				const noteHash: NoteHash = {
-					filepath,
+					filePath,
 					hash,
 					timestamp: Date.now(),
 				};
@@ -84,12 +84,12 @@ export default class NoteHashStorage {
 		}
 	}
 
-	async getHash(filepath: string): Promise<string | null> {
+	async getHash(filePath: string): Promise<string | null> {
 		try {
 			const store = await this.getDBStore("readonly");
 
 			return new Promise((resolve, reject) => {
-				const request = store.get(filepath);
+				const request = store.get(filePath);
 
 				request.onerror = () => {
 					console.error("해시 조회 실패:", request.error);
@@ -107,12 +107,12 @@ export default class NoteHashStorage {
 		}
 	}
 
-	async exists(filepath: string): Promise<boolean> {
+	async exists(filePath: string): Promise<boolean> {
 		try {
 			const store = await this.getDBStore("readonly");
 
 			return new Promise((resolve, reject) => {
-				const request = store.count(filepath);
+				const request = store.count(filePath);
 
 				request.onerror = () => {
 					console.error("존재 여부 확인 실패:", request.error);
@@ -129,12 +129,12 @@ export default class NoteHashStorage {
 		}
 	}
 
-	async deleteHash(filepath: string): Promise<void> {
+	async deleteHash(filePath: string): Promise<void> {
 		try {
 			const store = await this.getDBStore("readwrite");
 
 			return new Promise((resolve, reject) => {
-				const request = store.delete(filepath);
+				const request = store.delete(filePath);
 
 				request.onerror = () => {
 					console.error("해시 삭제 실패:", request.error);

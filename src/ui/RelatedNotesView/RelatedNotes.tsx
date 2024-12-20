@@ -1,13 +1,19 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { useApp, useSettings } from "@/helpers/hooks";
 
+import { ZERO_VECTOR } from "@/constants";
+import { NotFoundError } from "@/errors/NotFoundError";
 import { Logger } from "@/helpers/logger";
+import {
+	openNote,
+	openNoteAndHighlightText,
+} from "@/helpers/utils/editorHelpers";
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
 import truncateContent from "@/helpers/utils/truncateContent";
 import { createPineconeClient } from "@/services/PineconeManager";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MarkdownView, Notice, TFile, WorkspaceLeaf } from "obsidian";
+import { Notice, TFile } from "obsidian";
 import { useEffect, useMemo, useRef } from "react";
-import { openAndHighlightText } from "../../utils/editor-helpers";
 import SearchResultItem from "./components/SearchResultItem";
 
 interface RelatedNotesProps {
@@ -15,7 +21,7 @@ interface RelatedNotesProps {
 }
 
 const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
-	const app = useApp();
+	const app = useApp()!;
 	const settings = useSettings();
 	const logger = useMemo(
 		() => new Logger("RelatedNotes", settings?.logLevel),
@@ -24,17 +30,17 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 
 	const queryClient = useQueryClient();
 
-	const confirmDialogRef = useRef<HTMLDialogElement>(null);
-	const filePathToDeleteRef = useRef<string | null>(null);
+	const deleteConfirmDialogRef = useRef<HTMLDialogElement>(null);
+	const deleteTargetIdRef = useRef<string | null>(null);
 
 	const showConfirmDialog = (id: string) => {
-		filePathToDeleteRef.current = id;
-		confirmDialogRef.current?.showModal();
+		deleteTargetIdRef.current = id;
+		deleteConfirmDialogRef.current?.showModal();
 	};
 
 	const closeConfirmDialog = () => {
-		confirmDialogRef.current?.close();
-		filePathToDeleteRef.current = null;
+		deleteConfirmDialogRef.current?.close();
+		deleteTargetIdRef.current = null;
 	};
 
 	const queryByFileContent = async (query: string, excludeFilePath: string) => {
@@ -80,18 +86,34 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 	});
 
 	const handlePineconeDelete = async () => {
-		const filePathToDelete = filePathToDeleteRef.current;
-		if (!filePathToDelete) return;
+		const deleteTargetId = deleteTargetIdRef.current;
+		if (!deleteTargetId) return;
 
 		try {
 			if (!settings?.pineconeApiKey || !settings?.pineconeIndexName) {
 				throw new Error("Pinecone API key or index name is not set");
 			}
 
+			const find = matches.find((item) => item.id === deleteTargetId);
+			const parentId = find?.metadata?.id?.toString();
+
 			const pc = createPineconeClient(settings?.pineconeApiKey);
 			const index = pc.Index(settings?.pineconeIndexName);
-			await index.deleteOne(filePathToDelete);
-			new Notice(`Successfully removed ${filePathToDelete} from Pinecone.`);
+			const results = await index.query({
+				vector: ZERO_VECTOR,
+				topK: 100,
+				includeMetadata: true,
+				includeValues: false,
+				filter: { id: parentId },
+			});
+			const ids = (results?.matches || [])
+				.filter((item) => item?.metadata?.id === parentId)
+				.map((item) => item.id);
+			await index.deleteMany(ids);
+
+			new Notice(
+				`Successfully removed "${find?.metadata?.title}" from Pinecone.`,
+			);
 			queryClient.invalidateQueries({
 				queryKey: ["related-notes"],
 			});
@@ -102,91 +124,60 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 		closeConfirmDialog();
 	};
 
-	const handleTitleClick = async (id: string) => {
-		if (!app) return;
-
+	const validateAndGetFile = async (
+		id: string,
+	): Promise<{ file: TFile; match: any }> => {
 		const match = matches.find((item) => item.id === id);
-		const filePath = match?.metadata?.filePath?.toString();
-		logger.debug("--→ handleTitleClick", match);
-
-		if (!filePath) {
-			new Notice("File path not found");
-			showConfirmDialog(id);
-			return;
+		if (!match) {
+			throw new NotFoundError(`Match not found: ${id}`);
 		}
 
+		const filePath = match?.metadata?.filePath?.toString();
+		if (!filePath) {
+			throw new NotFoundError(`File not found: ${filePath}`);
+		}
+
+		const file = app?.vault.getAbstractFileByPath(filePath);
+		if (!(file instanceof TFile)) {
+			throw new NotFoundError(`File not found: ${filePath}`);
+		}
+
+		return { file, match };
+	};
+
+	const handleTitleClick = async (id: string) => {
 		try {
-			const targetFile = app?.vault.getAbstractFileByPath(filePath);
-			if (!(targetFile instanceof TFile)) {
-				new Notice(`File not found: ${filePath}`);
-				showConfirmDialog(id);
-				return;
-			}
+			const { file, match } = await validateAndGetFile(id);
+			logger.debug("--→ handleTitleClick", match);
 
-			// 열려있는 모든 마크다운 뷰를 가져옵니다.
-			const leaves = app?.workspace.getLeavesOfType("markdown") ?? [];
-
-			let targetLeaf: WorkspaceLeaf | null = null;
-
-			// 열려있는 뷰를 순회하면서 targetFile을 표시하는 뷰를 찾습니다.
-			for (const leaf of leaves) {
-				const view = leaf.view;
-				if (view instanceof MarkdownView) {
-					const file = view.file;
-					if (file === targetFile) {
-						targetLeaf = leaf;
-						break;
-					}
-				}
-			}
-
-			if (targetLeaf) {
-				// targetFile이 열려있으면 포커스를 이동합니다.
-				app?.workspace.setActiveLeaf(targetLeaf);
-			} else {
-				// targetFile이 열려있지 않으면 파일을 엽니다.
-				await app?.workspace.getLeaf(true).openFile(targetFile);
-			}
+			await openNote(app, file.path);
 		} catch (error) {
-			console.error("Error opening file:", error);
-			new Notice("Failed to open file");
+			if (error instanceof NotFoundError) {
+				showConfirmDialog(id);
+			} else {
+				console.error("Error opening file:", error);
+				new Notice("Failed to open file");
+			}
 		}
 	};
 
 	const handleMatchClick = async (id: string) => {
-		if (!app) return;
-
-		const match = matches.find((item) => item.id === id);
-		const filePath = match?.metadata?.filePath?.toString();
-
-		if (!filePath) {
-			new Notice("File path not found");
-			showConfirmDialog(id);
-			return;
-		}
-
-		const targetFile = app?.vault.getAbstractFileByPath(filePath);
-		if (!(targetFile instanceof TFile)) {
-			new Notice(`File not found: ${filePath}`);
-			showConfirmDialog(id);
-			return;
-		}
-
-		const text = String(match?.metadata?.text || "")?.replace(
-			/^(?:\(cont'd\)\s*)?/,
-			"",
-		);
-		const from = Number(match?.metadata?.["loc.lines.from"]);
-		const to = Number(match?.metadata?.["loc.lines.to"]);
-
 		try {
-			await openAndHighlightText(app, filePath, text, {
-				from,
-				to,
-			});
+			const { file, match } = await validateAndGetFile(id);
+			logger.debug("--→ handleMatchClick", match);
+
+			const text = String(match?.metadata?.text || "");
+			const from = Number(match?.metadata?.["loc.lines.from"]);
+			const to = Number(match?.metadata?.["loc.lines.to"]);
+
+			await openNoteAndHighlightText(app, file.path, text, { from, to });
 		} catch (error) {
-			console.error("Error opening file:", error);
-			new Notice(error.message);
+			if (error instanceof NotFoundError) {
+				showConfirmDialog(id);
+			} else {
+				console.error("Error opening file:", error);
+				new Notice("Failed to open file");
+			}
 		}
 	};
 
@@ -283,7 +274,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 				</div>
 			</div>
 
-			<dialog ref={confirmDialogRef} className="modal">
+			<dialog ref={deleteConfirmDialogRef} className="modal">
 				<div className="modal-content">
 					<h2>Remove from Pinecone?</h2>
 					<p>The file was not found. Do you want to remove it from Pinecone?</p>

@@ -1,7 +1,14 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+/* eslint-disable no-mixed-spaces-and-tabs */
 import { PluginSettings } from "@/constants/settings";
+import { NotFoundError } from "@/errors/NotFoundError";
 import { AppContext, SettingsContext } from "@/helpers/context";
 import { useApp, useSettings } from "@/helpers/hooks";
 import { Logger } from "@/helpers/logger";
+import {
+	openNote,
+	openNoteAndHighlightText,
+} from "@/helpers/utils/editorHelpers";
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
 import { createPineconeClient } from "@/services/PineconeManager";
 import {
@@ -20,7 +27,6 @@ import {
 } from "react";
 import { Root, createRoot } from "react-dom/client";
 import { PLUGIN_APP_ID, ZERO_VECTOR } from "../../constants";
-import { openAndHighlightText } from "../../utils/editor-helpers";
 import IconCornerDownLeft from "../icons/IconCornerDownLeft";
 import SearchResultItem from "../RelatedNotesView/components/SearchResultItem";
 import SearchSuggestion from "./components/SearchSuggestion";
@@ -32,7 +38,7 @@ interface SearchViewProps {
 }
 
 const SearchView = ({ onClose }: SearchViewProps) => {
-	const app = useApp();
+	const app = useApp()!;
 	const settings = useSettings();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -148,65 +154,60 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		},
 	});
 
-	const handleTitleClick = async (id: string) => {
-		if (!app) return;
-
+	const validateAndGetFile = async (
+		id: string,
+	): Promise<{ file: TFile; match: any }> => {
 		const match = searchResults.find((item) => item.id === id);
-		const filePath = match?.metadata?.filePath?.toString();
-
-		if (!filePath) {
-			new Notice("File path not found");
-			return;
+		if (!match) {
+			throw new NotFoundError(`Match not found: ${id}`);
 		}
 
-		try {
-			const targetFile = app?.vault.getAbstractFileByPath(filePath);
-			if (!(targetFile instanceof TFile)) {
-				new Notice(`File not found: ${filePath}`);
-				return;
-			}
+		const filePath = match?.metadata?.filePath?.toString();
+		if (!filePath) {
+			throw new NotFoundError(`File not found: ${filePath}`);
+		}
 
-			await app?.workspace.getLeaf().openFile(targetFile);
+		const file = app?.vault.getAbstractFileByPath(filePath);
+		if (!(file instanceof TFile)) {
+			throw new NotFoundError(`File not found: ${filePath}`);
+		}
+
+		return { file, match };
+	};
+
+	const handleTitleClick = async (id: string) => {
+		try {
+			const { file, match } = await validateAndGetFile(id);
+			logger.debug("--→ handleTitleClick", match);
+
+			await openNote(app, file.path);
 		} catch (error) {
-			console.error("Error opening file:", error);
-			new Notice("Failed to open file");
+			if (error instanceof NotFoundError) {
+				// showConfirmDialog(id);
+			} else {
+				console.error("Error opening file:", error);
+				new Notice("Failed to open file");
+			}
 		}
 	};
 
 	const handleMatchClick = async (id: string) => {
-		if (!app) return;
-
-		const match = searchResults.find((item) => item.id === id);
-		const filePath = match?.metadata?.filePath?.toString();
-
-		if (!filePath) {
-			new Notice("File path not found");
-			// showConfirmDialog(id);
-			return;
-		}
-
-		const targetFile = app?.vault.getAbstractFileByPath(filePath);
-		if (!(targetFile instanceof TFile)) {
-			new Notice(`File not found: ${filePath}`);
-			// showConfirmDialog(id);
-			return;
-		}
-
-		const text = String(match?.metadata?.text || "")?.replace(
-			/^(?:\(cont'd\)\s*)?/,
-			"",
-		);
-		const from = Number(match?.metadata?.["loc.lines.from"]);
-		const to = Number(match?.metadata?.["loc.lines.to"]);
-
 		try {
-			await openAndHighlightText(app, filePath, text, {
-				from,
-				to,
-			});
+			const { file, match } = await validateAndGetFile(id);
+			logger.debug("--→ handleMatchClick", match);
+
+			const text = String(match?.metadata?.text || "");
+			const from = Number(match?.metadata?.["loc.lines.from"]);
+			const to = Number(match?.metadata?.["loc.lines.to"]);
+
+			await openNoteAndHighlightText(app, file.path, text, { from, to });
 		} catch (error) {
-			console.error("Error opening file:", error);
-			new Notice(error.message);
+			if (error instanceof NotFoundError) {
+				// showConfirmDialog(id);
+			} else {
+				console.error("Error opening file:", error);
+				new Notice("Failed to open file");
+			}
 		}
 	};
 

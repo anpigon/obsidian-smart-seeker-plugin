@@ -39,6 +39,9 @@ const context = await esbuild.context({
 	treeShaking: true,
 	outfile: "main.js",
 	minify: prod,
+	alias: {
+		"@": "./src",
+	},
 });
 
 if (prod) {
