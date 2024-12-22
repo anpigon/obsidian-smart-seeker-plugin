@@ -15,7 +15,7 @@ class CreatePineconeIndexModal extends Modal {
 	constructor(
 		app: App,
 		plugin: SmartSeekerPlugin,
-		onIndexCreated: (indexName: string) => Promise<void>
+		onIndexCreated: (indexName: string) => Promise<void>,
 	) {
 		super(app);
 		this.plugin = plugin;
@@ -30,11 +30,10 @@ class CreatePineconeIndexModal extends Modal {
 
 		const indexNameInputContainer = new Setting(contentEl)
 			.setName("생성할 인덱스의 이름을 입력하세요.")
-			.setDesc(
-				"인덱스 이름은 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다."
-			)
+			.setDesc("인덱스 이름은 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다.")
 			.addText((text) => {
-				text.setPlaceholder("인덱스 이름을 입력하세요")
+				text
+					.setPlaceholder("인덱스 이름을 입력하세요")
 					.onChange((value) => {
 						// 입력값이 유효한지 확인
 						const isValid = /^[a-z0-9-]*$/.test(value);
@@ -80,9 +79,7 @@ class CreatePineconeIndexModal extends Modal {
 				this.close();
 			} catch (error) {
 				console.error("인덱스 생성 실패:", error);
-				new Notice(
-					"인덱스 생성에 실패했습니다. API 키를 확인해주세요."
-				);
+				new Notice("인덱스 생성에 실패했습니다. API 키를 확인해주세요.");
 			} finally {
 				submitButton.disabled = false;
 			}
