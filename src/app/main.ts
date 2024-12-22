@@ -1,3 +1,4 @@
+import { SearchViewContainer, VIEW_TYPE_SEARCH } from "@/features/noteSearch";
 import { QuickSearchModal } from "@/features/quickSearch/QuickSearchModal";
 import {
 	RelatedNotesView,
@@ -19,7 +20,6 @@ import {
 	DEFAULT_SETTINGS,
 	type PluginSettings,
 } from "@/shared/constants/settings";
-import { SearchViewContainer, VIEW_TYPE_SEARCH } from "@/ui/SearchView";
 import { Pinecone } from "@pinecone-database/pinecone";
 import {
 	type FrontMatterCache,
