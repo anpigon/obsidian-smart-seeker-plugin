@@ -90,7 +90,9 @@ export default class DocumentProcessor {
 		for (const document of documents) {
 			const splitDocuments = await this.textSplitter.splitDocuments(
 				[document],
-				{ appendChunkOverlapHeader: true },
+				{
+					appendChunkOverlapHeader: true,
+				},
 			);
 
 			for (const [idx, splitDocument] of splitDocuments.entries()) {

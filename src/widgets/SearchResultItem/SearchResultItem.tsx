@@ -38,9 +38,7 @@ const SearchResultItem = ({
 				onClick={handleTitleClick}
 			>
 				<div
-					className={`tree-item-icon collapse-icon ${
-						isCollapsed ? "is-collapsed" : ""
-					}`}
+					className={`tree-item-icon collapse-icon ${isCollapsed ? "is-collapsed" : ""}`}
 					onClick={handleToggleCollapsed}
 				>
 					<IconRightTriangle />

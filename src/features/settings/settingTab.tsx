@@ -67,7 +67,9 @@ const SettingTab: React.FC = () => {
 	const fetchPineconeIndexes = async () => {
 		const pc = createPineconeClient(settings.pineconeApiKey);
 		const { indexes = [] } = await pc.listIndexes();
-		const filteredIndexes = indexes.filter((e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION);
+		const filteredIndexes = indexes.filter(
+			(e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION,
+		);
 		return filteredIndexes;
 	};
 
@@ -87,7 +89,9 @@ const SettingTab: React.FC = () => {
 
 	useEffect(() => {
 		if (pineconeIndexes && pineconeIndexes.length > 0) {
-			const selected = pineconeIndexes.find(({ name }) => name === settings.pineconeIndexName);
+			const selected = pineconeIndexes.find(
+				({ name }) => name === settings.pineconeIndexName,
+			);
 			if (!selected) {
 				settings.pineconeIndexName = pineconeIndexes[0].name;
 				plugin.saveSettings();
@@ -103,14 +107,17 @@ const SettingTab: React.FC = () => {
 		}
 	}, [isError, error]);
 
-	const createApiKeyDescription = useCallback((description: string, link: string) => {
-		return (
-			<>
-				{description}
-				<br />키 발급 바로가기: <a href={link}>{link}</a>
-			</>
-		);
-	}, []);
+	const createApiKeyDescription = useCallback(
+		(description: string, link: string) => {
+			return (
+				<>
+					{description}
+					<br />키 발급 바로가기: <a href={link}>{link}</a>
+				</>
+			);
+		},
+		[],
+	);
 
 	const handleOpenAIApiKeyChange = useCallback(
 		(key: SettingTabKey) => async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,7 +171,10 @@ const SettingTab: React.FC = () => {
 			</SettingItem>
 
 			<SettingItem heading name="Pinecone 인덱스 설정" />
-			<SettingItem name="Pinecone 인덱스" description="사용할 Pinecone 인덱스를 선택하세요">
+			<SettingItem
+				name="Pinecone 인덱스"
+				description="사용할 Pinecone 인덱스를 선택하세요"
+			>
 				<select
 					className="dropdown"
 					disabled={isFetching || pineconeIndexes?.length === 0}
@@ -199,16 +209,23 @@ const SettingTab: React.FC = () => {
 					<IconRefresh />
 				</button>
 			</SettingItem>
-			<SettingItem name="Pinecone 인덱스 생성" description="새로운 Pinecone 인덱스를 생성합니다">
+			<SettingItem
+				name="Pinecone 인덱스 생성"
+				description="새로운 Pinecone 인덱스를 생성합니다"
+			>
 				<button
 					type="button"
 					onClick={async () => {
-						await new CreatePineconeIndexModal(app, plugin, async (indexName: string) => {
-							await refetchPineconeIndexes();
-							setPineconeIndex(indexName);
-							settings.pineconeIndexName = indexName;
-							plugin.saveSettings();
-						}).open();
+						await new CreatePineconeIndexModal(
+							app,
+							plugin,
+							async (indexName: string) => {
+								await refetchPineconeIndexes();
+								setPineconeIndex(indexName);
+								settings.pineconeIndexName = indexName;
+								plugin.saveSettings();
+							},
+						).open();
 					}}
 				>
 					생성
@@ -223,7 +240,9 @@ const SettingTab: React.FC = () => {
 				<select
 					className="dropdown"
 					onChange={async (e) => {
-						settings.logLevel = (Number.parseInt(e.target.value, 10) as LogLevel) ?? LogLevel.INFO;
+						settings.logLevel =
+							(Number.parseInt(e.target.value, 10) as LogLevel) ??
+							LogLevel.INFO;
 						await plugin.saveSettings();
 					}}
 				>
