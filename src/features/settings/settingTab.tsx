@@ -38,7 +38,7 @@ export default class SmartSeekerSettingTab extends PluginSettingTab {
 				<AppProvider app={this.app} plugin={this.plugin}>
 					<SettingTab />
 				</AppProvider>
-			</StrictMode>
+			</StrictMode>,
 		);
 	}
 
@@ -61,7 +61,7 @@ const SettingTab: React.FC = () => {
 			settings.pineconeIndexName = e.target.value;
 			await plugin.saveSettings();
 		},
-		[plugin, settings]
+		[plugin, settings],
 	);
 
 	// Pinecone API를 호출하여 인덱스 목록을 가져오는 함수
@@ -69,7 +69,7 @@ const SettingTab: React.FC = () => {
 		const pc = createPineconeClient(settings.pineconeApiKey);
 		const { indexes = [] } = await pc.listIndexes();
 		const filteredIndexes = indexes.filter(
-			(e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION
+			(e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION,
 		);
 		return filteredIndexes;
 	};
@@ -88,7 +88,7 @@ const SettingTab: React.FC = () => {
 	useEffect(() => {
 		if (pineconeIndexes && pineconeIndexes.length > 0) {
 			const selected = pineconeIndexes.find(
-				({ name }) => name === settings.pineconeIndexName
+				({ name }) => name === settings.pineconeIndexName,
 			);
 			if (!selected) {
 				settings.pineconeIndexName = pineconeIndexes[0].name;
@@ -114,23 +114,22 @@ const SettingTab: React.FC = () => {
 				</>
 			);
 		},
-		[]
+		[],
 	);
 
 	const handleOpenAIApiKeyChange = useCallback(
-		(key: SettingTabKey) =>
-			async (e: React.ChangeEvent<HTMLInputElement>) => {
-				const apiKeyMap = {
-					[SettingTabKey.OPENAI_API]: () =>
-						(settings.openAIApiKey = e.target.value),
-					[SettingTabKey.PINECONE_API]: () =>
-						(settings.pineconeApiKey = e.target.value),
-				};
+		(key: SettingTabKey) => async (e: React.ChangeEvent<HTMLInputElement>) => {
+			const apiKeyMap = {
+				[SettingTabKey.OPENAI_API]: () =>
+					(settings.openAIApiKey = e.target.value),
+				[SettingTabKey.PINECONE_API]: () =>
+					(settings.pineconeApiKey = e.target.value),
+			};
 
-				apiKeyMap[key]?.();
-				await plugin.saveSettings();
-			},
-		[plugin, settings]
+			apiKeyMap[key]?.();
+			await plugin.saveSettings();
+		},
+		[plugin, settings],
 	);
 
 	return (
@@ -140,32 +139,28 @@ const SettingTab: React.FC = () => {
 				name="OpenAI API 키"
 				description={createApiKeyDescription(
 					"OpenAI API 키를 입력하세요.",
-					"https://platform.openai.com/api-keys"
+					"https://platform.openai.com/api-keys",
 				)}
 			>
 				<input
 					type="password"
 					spellCheck={false}
 					placeholder="sk-..."
-					onChange={handleOpenAIApiKeyChange.bind(
-						SettingTabKey.OPENAI_API
-					)}
+					onChange={handleOpenAIApiKeyChange.bind(SettingTabKey.OPENAI_API)}
 				/>
 			</SettingItem>
 			<SettingItem
 				name="Pinecone API 키"
 				description={createApiKeyDescription(
 					"벡터 데이터베이스 연동을 위한 Pinecone API 키를 입력하세요.",
-					"https://app.pinecone.io/organizations/-/projects/-/keys"
+					"https://app.pinecone.io/organizations/-/projects/-/keys",
 				)}
 			>
 				<input
 					type="password"
 					spellCheck={false}
 					placeholder="pc-..."
-					onChange={handleOpenAIApiKeyChange.bind(
-						SettingTabKey.PINECONE_API
-					)}
+					onChange={handleOpenAIApiKeyChange.bind(SettingTabKey.PINECONE_API)}
 				/>
 			</SettingItem>
 
@@ -180,9 +175,7 @@ const SettingTab: React.FC = () => {
 					value={pineconeIndex ?? ""}
 					onChange={handlePineconeIndexChange}
 				>
-					{isFetching && (
-						<option>인덱스 목록을 불러오는 중...</option>
-					)}
+					{isFetching && <option>인덱스 목록을 불러오는 중...</option>}
 					{!isFetching &&
 						pineconeIndexes?.map(({ name }) => (
 							<option key={name} value={name}>
@@ -201,9 +194,7 @@ const SettingTab: React.FC = () => {
 							await refetchPineconeIndexes();
 							new Notice("인덱스 목록을 새로고침했습니다");
 						} catch (error) {
-							new Notice(
-								"인덱스 목록 조회 실패. API 키를 확인해주세요"
-							);
+							new Notice("인덱스 목록 조회 실패. API 키를 확인해주세요");
 							console.error("Failed to fetch indexes:", error);
 						}
 					}}
@@ -225,7 +216,7 @@ const SettingTab: React.FC = () => {
 								setPineconeIndex(indexName);
 								settings.pineconeIndexName = indexName;
 								plugin.saveSettings();
-							}
+							},
 						).open();
 					}}
 				>
@@ -242,8 +233,7 @@ const SettingTab: React.FC = () => {
 					className="dropdown"
 					onChange={async (e) => {
 						settings.logLevel =
-							(parseInt(e.target.value) as LogLevel) ??
-							LogLevel.INFO;
+							(parseInt(e.target.value) as LogLevel) ?? LogLevel.INFO;
 						await plugin.saveSettings();
 					}}
 				>
