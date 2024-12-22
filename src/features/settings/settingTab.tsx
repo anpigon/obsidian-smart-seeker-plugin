@@ -13,8 +13,8 @@ import { createRoot, Root } from "react-dom/client";
 import CreatePineconeIndexModal from "./CreatePineconeIndexModal";
 
 enum SettingTabKey {
-	OPENAI_API,
-	PINECONE_API,
+	OPENAI_API = 0,
+	PINECONE_API = 1,
 }
 
 export default class SmartSeekerSettingTab extends PluginSettingTab {
