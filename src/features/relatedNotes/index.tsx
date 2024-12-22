@@ -1,5 +1,5 @@
 import { PLUGIN_APP_ID } from "@/shared/constants";
-import { PluginSettings } from "@/shared/constants/settings";
+import type { PluginSettings } from "@/shared/constants/settings";
 import { AppContext, SettingsContext } from "@/shared/context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IconName, ItemView, TFile, WorkspaceLeaf } from "obsidian";
@@ -14,10 +14,7 @@ export class RelatedNotesView extends ItemView {
 	private currentFile: TFile | null = null;
 	private queryClient: QueryClient;
 
-	constructor(
-		leaf: WorkspaceLeaf,
-		private settings: PluginSettings,
-	) {
+	constructor(leaf: WorkspaceLeaf, private settings: PluginSettings) {
 		super(leaf);
 		this.queryClient = new QueryClient({
 			defaultOptions: {
@@ -54,7 +51,7 @@ export class RelatedNotesView extends ItemView {
 						</SettingsContext.Provider>
 					</AppContext.Provider>
 				</QueryClientProvider>
-			</StrictMode>,
+			</StrictMode>
 		);
 	}
 
@@ -93,7 +90,7 @@ export class RelatedNotesView extends ItemView {
 						this.renderComponent();
 					}, 300); // 300ms debounce
 				}
-			}),
+			})
 		);
 	}
 
