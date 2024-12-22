@@ -4,7 +4,7 @@ import {
 	PINECONE_CONFIG,
 } from "@/shared/constants";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
-import { type App, Modal, Notice, Setting, TextComponent } from "obsidian";
+import { type App, Modal, Notice, Setting, type TextComponent } from "obsidian";
 
 // Pinecone 인덱스 생성 다이아로그
 class CreatePineconeIndexModal extends Modal {
@@ -102,7 +102,6 @@ class CreatePineconeIndexModal extends Modal {
 				...PINECONE_CONFIG.spec,
 			},
 		});
-		await this.onIndexCreated(indexName);
 	}
 }
 

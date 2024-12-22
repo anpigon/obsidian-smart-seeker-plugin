@@ -20,7 +20,10 @@ enum SettingTabKey {
 export default class SmartSeekerSettingTab extends PluginSettingTab {
 	root: Root | null = null;
 
-	constructor(app: App, readonly plugin: SmartSeekerPlugin) {
+	constructor(
+		app: App,
+		readonly plugin: SmartSeekerPlugin,
+	) {
 		super(app, plugin);
 	}
 
@@ -117,18 +120,17 @@ const SettingTab: React.FC = () => {
 	);
 
 	const handleOpenAIApiKeyChange = useCallback(
-		(key: SettingTabKey) =>
-			async (e: React.ChangeEvent<HTMLInputElement>) => {
-				const apiKeyMap = {
-					[SettingTabKey.OPENAI_API]: () =>
-						(settings.openAIApiKey = e.target.value),
-					[SettingTabKey.PINECONE_API]: () =>
-						(settings.pineconeApiKey = e.target.value),
-				};
+		(key: SettingTabKey) => async (e: React.ChangeEvent<HTMLInputElement>) => {
+			const apiKeyMap = {
+				[SettingTabKey.OPENAI_API]: () =>
+					(settings.openAIApiKey = e.target.value),
+				[SettingTabKey.PINECONE_API]: () =>
+					(settings.pineconeApiKey = e.target.value),
+			};
 
-				apiKeyMap[key]?.();
-				await plugin.saveSettings();
-			},
+			apiKeyMap[key]?.();
+			await plugin.saveSettings();
+		},
 		[plugin, settings],
 	);
 
@@ -147,9 +149,7 @@ const SettingTab: React.FC = () => {
 					spellCheck={false}
 					placeholder="sk-..."
 					defaultValue={settings.openAIApiKey}
-					onChange={handleOpenAIApiKeyChange.bind(
-						SettingTabKey.OPENAI_API,
-					)}
+					onChange={handleOpenAIApiKeyChange.bind(SettingTabKey.OPENAI_API)}
 				/>
 			</SettingItem>
 			<SettingItem
@@ -164,9 +164,7 @@ const SettingTab: React.FC = () => {
 					spellCheck={false}
 					placeholder="pc-..."
 					defaultValue={settings.pineconeApiKey}
-					onChange={handleOpenAIApiKeyChange.bind(
-						SettingTabKey.PINECONE_API,
-					)}
+					onChange={handleOpenAIApiKeyChange.bind(SettingTabKey.PINECONE_API)}
 				/>
 			</SettingItem>
 
@@ -181,9 +179,7 @@ const SettingTab: React.FC = () => {
 					value={pineconeIndex ?? ""}
 					onChange={handlePineconeIndexChange}
 				>
-					{isFetching && (
-						<option>인덱스 목록을 불러오는 중...</option>
-					)}
+					{isFetching && <option>인덱스 목록을 불러오는 중...</option>}
 					{!isFetching &&
 						pineconeIndexes?.map(({ name }) => (
 							<option key={name} value={name}>
@@ -203,9 +199,7 @@ const SettingTab: React.FC = () => {
 							await refetchPineconeIndexes();
 							new Notice("인덱스 목록을 새로고침했습니다");
 						} catch (error) {
-							new Notice(
-								"인덱스 목록 조회 실패. API 키를 확인해주세요",
-							);
+							new Notice("인덱스 목록 조회 실패. API 키를 확인해주세요");
 							console.error("Failed to fetch indexes:", error);
 						}
 					}}
@@ -244,8 +238,7 @@ const SettingTab: React.FC = () => {
 					className="dropdown"
 					onChange={async (e) => {
 						settings.logLevel =
-							(parseInt(e.target.value) as LogLevel) ??
-							LogLevel.INFO;
+							(parseInt(e.target.value) as LogLevel) ?? LogLevel.INFO;
 						await plugin.saveSettings();
 					}}
 				>
