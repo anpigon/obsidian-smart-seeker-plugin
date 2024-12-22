@@ -1,4 +1,4 @@
-import SmartSeekerPlugin from "@/app/main";
+import type SmartSeekerPlugin from "@/app/main";
 import type { PluginSettings } from "@/shared/constants/settings";
 import { AppContext, PluginContext, SettingsContext } from "@/shared/context";
 import type { App } from "obsidian";
@@ -25,7 +25,9 @@ export const useSettings = (): PluginSettings => {
 export const usePlugin = (): SmartSeekerPlugin => {
 	const context = useContext(PluginContext);
 	if (!context) {
-		throw new Error("usePlugin must be used within a PluginContext.Provider");
+		throw new Error(
+			"usePlugin must be used within a PluginContext.Provider",
+		);
 	}
 	return context;
 };
