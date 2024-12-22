@@ -12,6 +12,7 @@ import type { NoteMetadata } from "@/shared/types";
 import { delay } from "@/shared/utils/delay";
 import { getFileNameSafe } from "@/shared/utils/file/fileUtils";
 import { createContentHash, createHash } from "@/shared/utils/hash";
+import { PineconeStore } from "@/shared/vectors/vectorstores";
 import { Document } from "@langchain/core/documents";
 import {
 	MarkdownTextSplitter,
@@ -24,7 +25,6 @@ import type {
 	RecordMetadata,
 } from "@pinecone-database/pinecone";
 import { FrontMatterCache, Notice, TFile } from "obsidian";
-import { PineconeStore } from "../../../features/vectorStorage/vectorstores";
 
 interface DocumentChunk {
 	ids: string[];

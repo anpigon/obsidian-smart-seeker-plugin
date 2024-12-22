@@ -5,7 +5,6 @@ import {
 	RelatedNotesView,
 	VIEW_TYPE_RELATED_NOTES,
 } from "@/features/relatedNotes";
-import { InLocalStore } from "@/features/vectorStorage/store/InLocalStore";
 import {
 	DEFAULT_MIN_TOKEN_COUNT,
 	PLUGIN_APP_ID,
@@ -20,6 +19,7 @@ import NoteHashStorage from "@/shared/documents/noteProcess/storage/NoteHashStor
 import { LogLevel, Logger } from "@/shared/lib/logger";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
 import calculateTokenCount from "@/shared/utils/calculateTokenCount";
+import { InLocalStore } from "@/shared/vectors/store/InLocalStore";
 import { Pinecone } from "@pinecone-database/pinecone";
 import {
 	type FrontMatterCache,
