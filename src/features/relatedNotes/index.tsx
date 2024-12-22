@@ -1,11 +1,11 @@
 import { AppContext, SettingsContext } from "@/helpers/context";
+import { PLUGIN_APP_ID } from "@/shared/constants";
 import { PluginSettings } from "@/shared/constants/settings";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { IconName, ItemView, TFile, WorkspaceLeaf } from "obsidian";
 import { StrictMode } from "react";
 import { Root, createRoot } from "react-dom/client";
-import { PLUGIN_APP_ID } from "../../shared/constants";
-import RelatedNotes from "./RelatedNotes";
+import RelatedNotes from "./components/RelatedNotes";
 
 export const VIEW_TYPE_RELATED_NOTES = `${PLUGIN_APP_ID}-related-notes-view`;
 
@@ -14,10 +14,7 @@ export class RelatedNotesView extends ItemView {
 	private currentFile: TFile | null = null;
 	private queryClient: QueryClient;
 
-	constructor(
-		leaf: WorkspaceLeaf,
-		private settings: PluginSettings,
-	) {
+	constructor(leaf: WorkspaceLeaf, private settings: PluginSettings) {
 		super(leaf);
 		this.queryClient = new QueryClient({
 			defaultOptions: {
@@ -54,7 +51,7 @@ export class RelatedNotesView extends ItemView {
 						</SettingsContext.Provider>
 					</AppContext.Provider>
 				</QueryClientProvider>
-			</StrictMode>,
+			</StrictMode>
 		);
 	}
 
@@ -93,7 +90,7 @@ export class RelatedNotesView extends ItemView {
 						this.renderComponent();
 					}, 300); // 300ms debounce
 				}
-			}),
+			})
 		);
 	}
 
