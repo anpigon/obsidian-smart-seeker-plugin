@@ -1,6 +1,9 @@
 import type SmartSeekerPlugin from "@/app/main";
 import AppProvider from "@/app/provider";
-import { DEFAULT_EMBEDDING_DIMENSION } from "@/shared/constants";
+import {
+	DEFAULT_EMBEDDING_DIMENSION,
+	EMBEDDING_MODEL_OPTIONS,
+} from "@/shared/constants";
 import { useApp, usePlugin, useSettings } from "@/shared/hooks";
 import { LogLevel } from "@/shared/lib/logger";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
@@ -168,6 +171,26 @@ const SettingTab: React.FC = () => {
 					defaultValue={settings.pineconeApiKey}
 					onChange={handleOpenAIApiKeyChange.bind(SettingTabKey.PINECONE_API)}
 				/>
+			</SettingItem>
+
+			<SettingItem heading name="임베딩 모델" />
+			<SettingItem
+				name="임베딩 모델 선택"
+				description="사용할 임베딩 모델을 선택하세요"
+			>
+				<select
+					className="dropdown"
+					onChange={async (e) => {
+						settings.embeddingModel = e.target.value;
+						await plugin.saveSettings();
+					}}
+				>
+					{EMBEDDING_MODEL_OPTIONS.map((model) => (
+						<option key={model.name} value={`${model.provider}/${model.id}`}>
+							{model.name}
+						</option>
+					))}
+				</select>
 			</SettingItem>
 
 			<SettingItem heading name="Pinecone 설정" />

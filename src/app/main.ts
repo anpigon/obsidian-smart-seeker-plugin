@@ -20,7 +20,7 @@ import { LogLevel, Logger } from "@/shared/lib/logger";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
 import calculateTokenCount from "@/shared/utils/calculateTokenCount";
 import { InLocalStore } from "@/shared/vectors/store/InLocalStore";
-import { Pinecone } from "@pinecone-database/pinecone";
+import type { Pinecone } from "@pinecone-database/pinecone";
 import {
 	type FrontMatterCache,
 	type Menu,
@@ -29,7 +29,7 @@ import {
 	type TAbstractFile,
 	TFile,
 	TFolder,
-	WorkspaceLeaf,
+	type WorkspaceLeaf,
 } from "obsidian";
 
 export default class SmartSeekerPlugin extends Plugin {
