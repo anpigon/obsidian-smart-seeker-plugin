@@ -14,6 +14,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	pineconeApiKey: "", // 기본값 설정
 	pineconeIndexName: "", // 기본값 설정
 	pineconeEnvironment: "aws/us-east-1",
-	logLevel: LogLevel.DEBUG,
+	logLevel: LogLevel.INFO,
 	embeddingModel: "openai/text-embedding-3-small",
 };
