@@ -1,6 +1,4 @@
 import { SettingTab } from "@/app/settings/settingTab";
-import DocumentProcessor from "@/features/noteProcess/DocumentProcessor";
-import NoteHashStorage from "@/features/noteProcess/storage/NoteHashStorage";
 import { SearchViewContainer, VIEW_TYPE_SEARCH } from "@/features/noteSearch";
 import { QuickSearchModal } from "@/features/quickSearch/QuickSearchModal";
 import {
@@ -17,6 +15,8 @@ import {
 	DEFAULT_SETTINGS,
 	type PluginSettings,
 } from "@/shared/constants/settings";
+import DocumentProcessor from "@/shared/documents/noteProcess/DocumentProcessor";
+import NoteHashStorage from "@/shared/documents/noteProcess/storage/NoteHashStorage";
 import { LogLevel, Logger } from "@/shared/lib/logger";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
 import calculateTokenCount from "@/shared/utils/calculateTokenCount";

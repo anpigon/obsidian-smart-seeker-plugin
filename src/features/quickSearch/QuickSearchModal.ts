@@ -29,7 +29,10 @@ export class QuickSearchModal extends SuggestModal<SearchResult> {
 	private previousQuery = "";
 	private previousResults: SearchResult[] = [];
 
-	constructor(app: App, private settings: PluginSettings) {
+	constructor(
+		app: App,
+		private settings: PluginSettings,
+	) {
 		super(app);
 		this.logger = new Logger("SearchNotesModal", settings.logLevel);
 
@@ -53,7 +56,7 @@ export class QuickSearchModal extends SuggestModal<SearchResult> {
 		// debounce 함수 생성 (300ms 딜레이)
 		this.debouncedGetSuggestions = this.debounce(
 			(query: string) => this.searchNotes(query),
-			300
+			300,
 		);
 	}
 
@@ -64,10 +67,7 @@ export class QuickSearchModal extends SuggestModal<SearchResult> {
 		}
 	}
 
-	private async searchNotes(
-		query: string,
-		topK = 10
-	): Promise<SearchResult[]> {
+	private async searchNotes(query: string, topK = 10): Promise<SearchResult[]> {
 		try {
 			if (this.currentSearchController) {
 				this.currentSearchController.abort();
@@ -87,12 +87,9 @@ export class QuickSearchModal extends SuggestModal<SearchResult> {
 			const results: SearchResult[] =
 				pioneconeResults.matches?.map((item) => {
 					const score = item.score ?? 0;
-					const title =
-						item.metadata?.title?.toString() ?? "Untitled";
+					const title = item.metadata?.title?.toString() ?? "Untitled";
 					const filePath = item.metadata?.filePath?.toString() || "";
-					const fromLine = Number(
-						item.metadata?.["loc.lines.from"] ?? 0
-					);
+					const fromLine = Number(item.metadata?.["loc.lines.from"] ?? 0);
 					const toLine = Number(item.metadata?.["loc.lines.to"] ?? 0);
 					let text = item.metadata?.text?.toString() || "";
 
@@ -120,8 +117,7 @@ export class QuickSearchModal extends SuggestModal<SearchResult> {
 				const title = result.basename;
 				const filePath = result.path;
 				const fromLine = result.matches?.[0].offset;
-				const toLine =
-					result.matches?.[result.matches.length - 1].offset;
+				const toLine = result.matches?.[result.matches.length - 1].offset;
 				const text = result.excerpt;
 
 				results.push({
@@ -243,7 +239,7 @@ export class QuickSearchModal extends SuggestModal<SearchResult> {
 	// debounce 유틸리티 함수
 	private debounce<
 		T extends (...args: any[]) => Promise<any>,
-		R = Awaited<ReturnType<T>>
+		R = Awaited<ReturnType<T>>,
 	>(func: T, wait: number): (...args: Parameters<T>) => Promise<R> {
 		let timeout: NodeJS.Timeout;
 

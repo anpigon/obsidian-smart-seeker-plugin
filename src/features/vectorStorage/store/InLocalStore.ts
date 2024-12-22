@@ -11,7 +11,10 @@ export class InLocalStore<T = any> extends BaseStore<string, T> {
 
 	protected store: Record<string, T> = {};
 
-	constructor(private vault: Vault, private pluginId: string) {
+	constructor(
+		private vault: Vault,
+		private pluginId: string,
+	) {
 		super();
 		this.initialize();
 	}

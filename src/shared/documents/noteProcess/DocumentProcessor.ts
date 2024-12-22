@@ -24,7 +24,7 @@ import type {
 	RecordMetadata,
 } from "@pinecone-database/pinecone";
 import { FrontMatterCache, Notice, TFile } from "obsidian";
-import { PineconeStore } from "../vectorStorage/vectorstores";
+import { PineconeStore } from "../../../features/vectorStorage/vectorstores";
 
 interface DocumentChunk {
 	ids: string[];

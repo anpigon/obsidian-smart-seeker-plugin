@@ -14,7 +14,10 @@ export class RelatedNotesView extends ItemView {
 	private currentFile: TFile | null = null;
 	private queryClient: QueryClient;
 
-	constructor(leaf: WorkspaceLeaf, private settings: PluginSettings) {
+	constructor(
+		leaf: WorkspaceLeaf,
+		private settings: PluginSettings,
+	) {
 		super(leaf);
 		this.queryClient = new QueryClient({
 			defaultOptions: {
@@ -51,7 +54,7 @@ export class RelatedNotesView extends ItemView {
 						</SettingsContext.Provider>
 					</AppContext.Provider>
 				</QueryClientProvider>
-			</StrictMode>
+			</StrictMode>,
 		);
 	}
 
@@ -90,7 +93,7 @@ export class RelatedNotesView extends ItemView {
 						this.renderComponent();
 					}, 300); // 300ms debounce
 				}
-			})
+			}),
 		);
 	}
 
