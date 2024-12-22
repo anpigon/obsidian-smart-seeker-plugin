@@ -21,7 +21,7 @@ export class Logger {
 
 	debug(message: string, ...args: unknown[]): void {
 		if (this.level <= LogLevel.DEBUG) {
-			console.log(`${this.prefix} ${message}`, ...args);
+			console.debug(`${this.prefix} ${message}`, ...args);
 		}
 	}
 
