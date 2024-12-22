@@ -194,6 +194,7 @@ const SettingTab: React.FC = () => {
 				</select>
 				<button
 					aria-label="Pinecone 인덱스 목록 새로고침"
+					type="button"
 					onClick={async () => {
 						try {
 							await refetchPineconeIndexes();
