@@ -1,4 +1,4 @@
-import { PluginSettings } from "@/shared/constants/settings";
+import type { PluginSettings } from "@/shared/constants/settings";
 import { AppContext, SettingsContext } from "@/shared/context";
 import type { App } from "obsidian";
 import { useContext } from "react";
