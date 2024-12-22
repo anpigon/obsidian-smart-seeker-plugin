@@ -1,9 +1,9 @@
 import type SmartSeekerPlugin from "@/app/main";
+import AppProvider from "@/app/provider";
 import {
 	DEFAULT_EMBEDDING_DIMENSION,
 	PINECONE_CONFIG,
 } from "@/shared/constants";
-import { AppContext, PluginContext, SettingsContext } from "@/shared/context";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
 import {
 	type App,
@@ -39,14 +39,10 @@ export default class SmartSeekerSettingTab extends PluginSettingTab {
 
 		this.root?.render(
 			<StrictMode>
-				<AppContext.Provider value={this.app}>
-					<PluginContext.Provider value={this.plugin}>
-						<SettingsContext.Provider value={this.plugin.settings}>
-							<SettingTabContainer />
-						</SettingsContext.Provider>
-					</PluginContext.Provider>
-				</AppContext.Provider>
-			</StrictMode>,
+				<AppProvider app={this.app} plugin={this.plugin}>
+					<SettingTabContainer />
+				</AppProvider>
+			</StrictMode>
 		);
 
 		// // OpenAI API 설정
@@ -159,13 +155,13 @@ export default class SmartSeekerSettingTab extends PluginSettingTab {
 
 	private createApiKeyDescription(
 		description: string,
-		linkUrl: string,
+		linkUrl: string
 	): DocumentFragment {
 		const fragment = document.createDocumentFragment();
 		fragment.append(
 			description,
 			document.createElement("br"),
-			"키 발급 바로가기: ",
+			"키 발급 바로가기: "
 		);
 		const a = document.createElement("a", { is: "external-link" });
 		a.href = linkUrl;
@@ -178,14 +174,14 @@ export default class SmartSeekerSettingTab extends PluginSettingTab {
 	private createPineconeApiKeyDescription(): DocumentFragment {
 		return this.createApiKeyDescription(
 			"벡터 데이터베이스 연동을 위한 Pinecone API 키를 입력하세요.",
-			"https://app.pinecone.io/organizations/-/projects/-/keys",
+			"https://app.pinecone.io/organizations/-/projects/-/keys"
 		);
 	}
 
 	private createOpenAIApiKeyDescription(): DocumentFragment {
 		return this.createApiKeyDescription(
 			"OpenAI API 키를 입력하세요.",
-			"https://platform.openai.com/api-keys",
+			"https://platform.openai.com/api-keys"
 		);
 	}
 
@@ -204,7 +200,7 @@ export default class SmartSeekerSettingTab extends PluginSettingTab {
 		try {
 			const { indexes = [] } = await pc.listIndexes();
 			const filteredIndexes = indexes.filter(
-				(e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION,
+				(e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION
 			);
 
 			if (this.indexSelectEl) {
@@ -219,15 +215,19 @@ export default class SmartSeekerSettingTab extends PluginSettingTab {
 					optionEl.disabled = true;
 				} else {
 					for (const { name } of filteredIndexes) {
-						const optionEl = this.indexSelectEl?.createEl("option", {
-							text: name,
-							value: name,
-						});
+						const optionEl = this.indexSelectEl?.createEl(
+							"option",
+							{
+								text: name,
+								value: name,
+							}
+						);
 
 						// 새로 생성된 인덱스나 이전에 선택된 인덱스 선택
 						if (
 							name === selectIndex ||
-							(!selectIndex && name === this.plugin.settings.pineconeIndexName)
+							(!selectIndex &&
+								name === this.plugin.settings.pineconeIndexName)
 						) {
 							(optionEl as HTMLOptionElement).selected = true;
 							// 설정에 저장
@@ -260,7 +260,7 @@ class CreatePineconeIndexModal extends Modal {
 	constructor(
 		app: App,
 		plugin: SmartSeekerPlugin,
-		onIndexCreated: (indexName: string) => Promise<void>,
+		onIndexCreated: (indexName: string) => Promise<void>
 	) {
 		super(app);
 		this.plugin = plugin;
@@ -275,10 +275,11 @@ class CreatePineconeIndexModal extends Modal {
 
 		const indexNameInputContainer = new Setting(contentEl)
 			.setName("생성할 인덱스의 이름을 입력하세요.")
-			.setDesc("인덱스 이름은 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다.")
+			.setDesc(
+				"인덱스 이름은 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다."
+			)
 			.addText((text) => {
-				text
-					.setPlaceholder("인덱스 이름을 입력하세요")
+				text.setPlaceholder("인덱스 이름을 입력하세요")
 					.onChange((value) => {
 						// 입력값이 유효한지 확인
 						const isValid = /^[a-z0-9-]*$/.test(value);
@@ -324,7 +325,9 @@ class CreatePineconeIndexModal extends Modal {
 				this.close();
 			} catch (error) {
 				console.error("인덱스 생성 실패:", error);
-				new Notice("인덱스 생성에 실패했습니다. API 키를 확인해주세요.");
+				new Notice(
+					"인덱스 생성에 실패했습니다. API 키를 확인해주세요."
+				);
 			} finally {
 				submitButton.disabled = false;
 			}
