@@ -1,3 +1,4 @@
+import { SettingTab } from "@/app/settings/settingTab";
 import { SearchViewContainer, VIEW_TYPE_SEARCH } from "@/features/noteSearch";
 import { QuickSearchModal } from "@/features/quickSearch/QuickSearchModal";
 import {
@@ -10,7 +11,6 @@ import { LogLevel, Logger } from "@/helpers/logger";
 import NoteHashStorage from "@/helpers/storage/NoteHashStorage";
 import calculateTokenCount from "@/helpers/utils/calculateTokenCount";
 import { createPineconeClient } from "@/services/PineconeManager";
-import { SettingTab } from "@/settings/settingTab";
 import {
 	DEFAULT_MIN_TOKEN_COUNT,
 	PLUGIN_APP_ID,
