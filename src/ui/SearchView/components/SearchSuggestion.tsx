@@ -71,11 +71,7 @@ const SearchSuggestion = forwardRef<HTMLDivElement, SearchSuggestionProps>(
 								suggestion.type === "group" ? " mod-group" : ""
 							}`}
 							onClick={() => {
-								if (
-									!suggestion.type &&
-									suggestion.title &&
-									onSuggestionClick
-								) {
+								if (!suggestion.type && suggestion.title && onSuggestionClick) {
 									onSuggestionClick(suggestion.title);
 									onClose?.();
 								}
@@ -99,16 +95,14 @@ const SearchSuggestion = forwardRef<HTMLDivElement, SearchSuggestionProps>(
 								</div>
 							</div>
 							{suggestion.icon && (
-								<div className="suggestion-aux">
-									{suggestion.icon}
-								</div>
+								<div className="suggestion-aux">{suggestion.icon}</div>
 							)}
 						</div>
 					))}
 				</div>
 			</div>
 		);
-	}
+	},
 );
 
 export default SearchSuggestion;

@@ -48,7 +48,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 
 	const logger = useMemo(
 		() => new Logger("SearchView", settings?.logLevel),
-		[settings?.logLevel]
+		[settings?.logLevel],
 	);
 
 	const queryByContent = async (searchQuery: string) => {
@@ -70,7 +70,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		} else if (isPathSearch) {
 			// 쌍따옴표로 감싸진 경로를 처리하거나 공백이 없는 경로를 처리
 			const pathMatch = searchQuery.match(
-				/^path:(?:"([^"]+)"|([^\s]+))(?:\s+(.*))?$/
+				/^path:(?:"([^"]+)"|([^\s]+))(?:\s+(.*))?$/,
 			);
 			if (pathMatch) {
 				path = pathMatch[1] || pathMatch[2]; // 쌍따옴표 안의 값 또는 공백이 없는 값
@@ -79,7 +79,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 		} else if (isFileSearch) {
 			// 쌍따옴표로 감싸진 파일명을 처리하거나 공백이 없는 파일명을 처리
 			const fileMatch = searchQuery.match(
-				/^file:(?:"([^"]+)"|([^\s]+))(?:\s+(.*))?$/
+				/^file:(?:"([^"]+)"|([^\s]+))(?:\s+(.*))?$/,
 			);
 			if (fileMatch) {
 				filename = fileMatch[1] || fileMatch[2]; // 쌍따옴표 안의 값 또는 공백이 없는 값
@@ -105,20 +105,20 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 					tags: {
 						$in: [tag],
 					},
-			  }
+				}
 			: isPathSearch
-			? {
-					folderPaths: {
-						$eq: path,
-					},
-			  }
-			: isFileSearch
-			? {
-					filename: {
-						$eq: filename,
-					},
-			  }
-			: undefined;
+				? {
+						folderPaths: {
+							$eq: path,
+						},
+					}
+				: isFileSearch
+					? {
+							filename: {
+								$eq: filename,
+							},
+						}
+					: undefined;
 
 		logger.debug("isTagSearch:", isTagSearch);
 		logger.debug("isPathSearch:", isPathSearch);
@@ -155,7 +155,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 	});
 
 	const validateAndGetFile = async (
-		id: string
+		id: string,
 	): Promise<{ file: TFile; match: any }> => {
 		const match = searchResults.find((item) => item.id === id);
 		if (!match) {
@@ -216,7 +216,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 			e.preventDefault();
 			mutate(searchQuery);
 		},
-		[mutate, searchQuery]
+		[mutate, searchQuery],
 	);
 
 	const handleClearSearch = useCallback(() => {
@@ -290,17 +290,13 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 					<div className="tree-item-self">
 						<div className="tree-item-inner related-notes-loading">
 							<div className="search-status">
-								<div className="search-loading">
-									Searching...
-								</div>
+								<div className="search-loading">Searching...</div>
 							</div>
 						</div>
 					</div>
 				)}
 				{isSuccess && searchResults.length === 0 && (
-					<div className="search-empty-state">
-						일치하는 결과가 없습니다.
-					</div>
+					<div className="search-empty-state">일치하는 결과가 없습니다.</div>
 				)}
 				{isIdle && searchResults.length === 0 && (
 					<div className="search-empty-state">
@@ -311,16 +307,13 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 				{isSuccess && (
 					<div className="search-results-children">
 						{searchResults.map((match) => {
-							const title = String(
-								match.metadata?.title || "Untitled"
+							const title = String(match.metadata?.title || "Untitled");
+							const subtext = String(match.metadata?.text || "")?.replace(
+								/^(?:\(cont'd\)\s*)?/,
+								"",
 							);
-							const subtext = String(
-								match.metadata?.text || ""
-							)?.replace(/^(?:\(cont'd\)\s*)?/, "");
 							const score =
-								match.score !== undefined
-									? match.score.toFixed(2)
-									: "0.00";
+								match.score !== undefined ? match.score.toFixed(2) : "0.00";
 
 							return (
 								<SearchResultItem
@@ -345,7 +338,10 @@ export class SearchViewContainer extends ItemView {
 	private root: Root | null = null;
 	private queryClient: QueryClient;
 
-	constructor(leaf: WorkspaceLeaf, private settings: PluginSettings) {
+	constructor(
+		leaf: WorkspaceLeaf,
+		private settings: PluginSettings,
+	) {
 		super(leaf);
 		this.queryClient = new QueryClient({
 			defaultOptions: {
@@ -389,7 +385,7 @@ export class SearchViewContainer extends ItemView {
 						</SettingsContext.Provider>
 					</AppContext.Provider>
 				</QueryClientProvider>
-			</StrictMode>
+			</StrictMode>,
 		);
 	}
 }

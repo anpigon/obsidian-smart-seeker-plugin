@@ -17,7 +17,7 @@ export default function getEmbeddingModel(settings: PluginSettings) {
 		// new IndexedDBStore(PLUGIN_APP_ID),
 		{
 			namespace: underlyingEmbeddings.modelName,
-		}
+		},
 	);
 	return cacheBackedEmbeddings;
 }

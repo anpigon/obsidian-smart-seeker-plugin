@@ -1,3 +1,4 @@
+import { QuickSearchModal } from "@/features/quickSearch/QuickSearchModal";
 import DocumentProcessor from "@/helpers/document/DocumentProcessor";
 import { InLocalStore } from "@/helpers/langchain/store/InLocalStore";
 import { LogLevel, Logger } from "@/helpers/logger";
@@ -14,7 +15,6 @@ import {
 	DEFAULT_SETTINGS,
 	type PluginSettings,
 } from "@/shared/constants/settings";
-import { SearchNotesModal } from "@/ui/modals/SearchNotesModal";
 import {
 	RelatedNotesView,
 	VIEW_TYPE_RELATED_NOTES,
@@ -222,7 +222,7 @@ export default class SmartSeekerPlugin extends Plugin {
 					new Notice("Please configure PineconeDB settings first");
 					return;
 				}
-				new SearchNotesModal(this.app, this.settings).open();
+				new QuickSearchModal(this.app, this.settings).open();
 			},
 		});
 

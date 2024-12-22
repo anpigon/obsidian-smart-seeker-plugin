@@ -4,5 +4,5 @@ import { createContext } from "react";
 
 export const AppContext = createContext<App | undefined>(undefined);
 export const SettingsContext = createContext<PluginSettings | undefined>(
-	undefined
+	undefined,
 );

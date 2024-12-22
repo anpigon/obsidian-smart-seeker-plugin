@@ -43,9 +43,7 @@ export default class NoteHashStorage {
 		});
 	}
 
-	private async getDBStore(
-		mode: IDBTransactionMode
-	): Promise<IDBObjectStore> {
+	private async getDBStore(mode: IDBTransactionMode): Promise<IDBObjectStore> {
 		if (!this.db) {
 			await this.initDB();
 		}

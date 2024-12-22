@@ -21,7 +21,7 @@ const SearchResultItem = ({
 	const [isCollapsed, setIsCollapsed] = useState(true);
 
 	const handleToggleCollapsed: React.MouseEventHandler<HTMLDivElement> = (
-		event
+		event,
 	) => {
 		event.stopPropagation();
 		setIsCollapsed(!isCollapsed);
@@ -51,13 +51,8 @@ const SearchResultItem = ({
 				</div>
 			</div>
 			{!isCollapsed && (
-				<div
-					className="search-result-file-matches"
-					onClick={handleMatchClick}
-				>
-					<div className="search-result-file-match tappable">
-						{text}
-					</div>
+				<div className="search-result-file-matches" onClick={handleMatchClick}>
+					<div className="search-result-file-match tappable">{text}</div>
 				</div>
 			)}
 		</div>

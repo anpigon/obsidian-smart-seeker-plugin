@@ -20,7 +20,7 @@ type SearchResult = {
 	source: "pinecone" | "omniSearch";
 };
 
-export class SearchNotesModal extends SuggestModal<SearchResult> {
+export class QuickSearchModal extends SuggestModal<SearchResult> {
 	private logger: Logger;
 	private debouncedGetSuggestions: (query: string) => Promise<SearchResult[]>;
 	private pineconeIndex: Index<RecordMetadata>;
