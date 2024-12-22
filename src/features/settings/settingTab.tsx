@@ -99,7 +99,7 @@ const SettingTab: React.FC = () => {
 			}
 			setPineconeIndex(settings.pineconeIndexName);
 		}
-	}, [pineconeIndexes]);
+	}, [pineconeIndexes, plugin, settings, settings.pineconeIndexName]);
 
 	useEffect(() => {
 		if (isError) {
