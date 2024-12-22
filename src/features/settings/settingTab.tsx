@@ -170,7 +170,7 @@ const SettingTab: React.FC = () => {
 				/>
 			</SettingItem>
 
-			<SettingItem heading name="Pinecone 인덱스 설정" />
+			<SettingItem heading name="Pinecone 설정" />
 			<SettingItem
 				name="Pinecone 인덱스"
 				description="사용할 Pinecone 인덱스를 선택하세요"
