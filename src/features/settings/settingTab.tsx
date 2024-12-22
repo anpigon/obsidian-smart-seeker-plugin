@@ -106,7 +106,7 @@ const SettingTab: React.FC = () => {
 			console.error("Failed to fetch indexes:", error);
 			new Notice("인덱스 목록 조회 실패. API 키를 확인해주세요");
 		}
-	}, [isError]);
+	}, [isError, error]);
 
 	const createApiKeyDescription = useCallback(
 		(description: string, link: string) => {
