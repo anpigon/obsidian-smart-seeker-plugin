@@ -1,4 +1,4 @@
-import { LogLevel } from "src/helpers/logger";
+import { LogLevel } from "@/shared/lib/logger";
 
 export interface PluginSettings {
 	openAIApiKey: string;

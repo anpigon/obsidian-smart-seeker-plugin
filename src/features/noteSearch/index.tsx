@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable no-mixed-spaces-and-tabs */
-import { AppContext, SettingsContext } from "@/helpers/context";
-import { useApp, useSettings } from "@/helpers/hooks";
-import { Logger } from "@/helpers/logger";
+import getEmbeddingModel from "@/shared/api/getEmbeddingModel";
+import { PLUGIN_APP_ID, ZERO_VECTOR } from "@/shared/constants";
+import { PluginSettings } from "@/shared/constants/settings";
+import { AppContext, SettingsContext } from "@/shared/context";
+import { NotFoundError } from "@/shared/errors/NotFoundError";
+import { useApp, useSettings } from "@/shared/hooks";
+import { Logger } from "@/shared/lib/logger";
+import { createPineconeClient } from "@/shared/services/PineconeManager";
 import {
 	openNote,
 	openNoteAndHighlightText,
-} from "@/helpers/utils/editorHelpers";
-import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
-import { PLUGIN_APP_ID, ZERO_VECTOR } from "@/shared/constants";
-import { PluginSettings } from "@/shared/constants/settings";
-import { NotFoundError } from "@/shared/errors/NotFoundError";
-import { createPineconeClient } from "@/shared/services/PineconeManager";
+} from "@/shared/utils/editor/editorHelpers";
 import IconCornerDownLeft from "@/widgets/icons/IconCornerDownLeft";
 import SearchResultItem from "@/widgets/SearchResultItem";
 import {

@@ -1,6 +1,6 @@
+import { LogLevel, Logger } from "@/shared/lib/logger";
+import { createHash } from "@/shared/utils/hash";
 import type { TFile, Vault } from "obsidian";
-import { LogLevel, Logger } from "../../helpers/logger";
-import { createHash } from "../../helpers/utils/hash";
 
 interface CacheData {
 	[key: string]: number[]; // 파일 경로+내용 해시: 임베딩 벡터

@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { useApp, useSettings } from "@/helpers/hooks";
+import { useApp, useSettings } from "@/shared/hooks";
 
-import { Logger } from "@/helpers/logger";
+import getEmbeddingModel from "@/shared/api/getEmbeddingModel";
+import { ZERO_VECTOR } from "@/shared/constants";
+import { NotFoundError } from "@/shared/errors/NotFoundError";
+import { Logger } from "@/shared/lib/logger";
+import { createPineconeClient } from "@/shared/services/PineconeManager";
 import {
 	openNote,
 	openNoteAndHighlightText,
 	removeFrontmatter,
-} from "@/helpers/utils/editorHelpers";
-import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
-import truncateContent from "@/helpers/utils/truncateContent";
-import { ZERO_VECTOR } from "@/shared/constants";
-import { NotFoundError } from "@/shared/errors/NotFoundError";
-import { createPineconeClient } from "@/shared/services/PineconeManager";
+} from "@/shared/utils/editor/editorHelpers";
+import truncateContent from "@/shared/utils/truncateContent";
 import SearchResultItem from "@/widgets/SearchResultItem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Notice, TFile } from "obsidian";

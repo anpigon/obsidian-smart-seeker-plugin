@@ -1,12 +1,17 @@
 import SmartSeekerPlugin from "@/app/main";
+import getEmbeddingModel from "@/shared/api/getEmbeddingModel";
 import {
 	DEFAULT_CHUNK_OVERLAP,
 	DEFAULT_CHUNK_SIZE,
 	ZERO_VECTOR,
 } from "@/shared/constants";
 import type { PluginSettings } from "@/shared/constants/settings";
+import { Logger } from "@/shared/lib/logger";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
 import type { NoteMetadata } from "@/shared/types";
+import { delay } from "@/shared/utils/delay";
+import { getFileNameSafe } from "@/shared/utils/file/fileUtils";
+import { createContentHash, createHash } from "@/shared/utils/hash";
 import { Document } from "@langchain/core/documents";
 import {
 	MarkdownTextSplitter,
@@ -19,12 +24,7 @@ import type {
 	RecordMetadata,
 } from "@pinecone-database/pinecone";
 import { FrontMatterCache, Notice, TFile } from "obsidian";
-import { PineconeStore } from "../langchain/vectorstores";
-import { Logger } from "../logger";
-import { delay } from "../utils/delay";
-import { getFileNameSafe } from "../utils/fileUtils";
-import getEmbeddingModel from "../utils/getEmbeddingModel";
-import { createContentHash, createHash } from "../utils/hash";
+import { PineconeStore } from "../vectorStorage/vectorstores";
 
 interface DocumentChunk {
 	ids: string[];

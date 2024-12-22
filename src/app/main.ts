@@ -1,15 +1,13 @@
 import { SettingTab } from "@/app/settings/settingTab";
+import DocumentProcessor from "@/features/noteProcess/DocumentProcessor";
+import NoteHashStorage from "@/features/noteProcess/storage/NoteHashStorage";
 import { SearchViewContainer, VIEW_TYPE_SEARCH } from "@/features/noteSearch";
 import { QuickSearchModal } from "@/features/quickSearch/QuickSearchModal";
 import {
 	RelatedNotesView,
 	VIEW_TYPE_RELATED_NOTES,
 } from "@/features/relatedNotes";
-import DocumentProcessor from "@/helpers/document/DocumentProcessor";
-import { InLocalStore } from "@/helpers/langchain/store/InLocalStore";
-import { LogLevel, Logger } from "@/helpers/logger";
-import NoteHashStorage from "@/helpers/storage/NoteHashStorage";
-import calculateTokenCount from "@/helpers/utils/calculateTokenCount";
+import { InLocalStore } from "@/features/vectorStorage/store/InLocalStore";
 import {
 	DEFAULT_MIN_TOKEN_COUNT,
 	PLUGIN_APP_ID,
@@ -19,7 +17,9 @@ import {
 	DEFAULT_SETTINGS,
 	type PluginSettings,
 } from "@/shared/constants/settings";
+import { LogLevel, Logger } from "@/shared/lib/logger";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
+import calculateTokenCount from "@/shared/utils/calculateTokenCount";
 import { Pinecone } from "@pinecone-database/pinecone";
 import {
 	type FrontMatterCache,

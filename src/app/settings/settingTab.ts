@@ -1,9 +1,9 @@
 import type SmartSeekerPlugin from "@/app/main";
-import { LogLevel } from "@/helpers/logger";
 import {
 	DEFAULT_EMBEDDING_DIMENSION,
 	PINECONE_CONFIG,
 } from "@/shared/constants";
+import { LogLevel } from "@/shared/lib/logger";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
 import {
 	type App,

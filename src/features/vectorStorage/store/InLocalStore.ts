@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { LogLevel, Logger } from "@/shared/lib/logger";
 import { BaseStore } from "@langchain/core/stores";
 import type { Vault } from "obsidian";
-import { LogLevel, Logger } from "src/helpers/logger";
 
 export class InLocalStore<T = any> extends BaseStore<string, T> {
 	private logger: Logger;
@@ -11,10 +11,7 @@ export class InLocalStore<T = any> extends BaseStore<string, T> {
 
 	protected store: Record<string, T> = {};
 
-	constructor(
-		private vault: Vault,
-		private pluginId: string,
-	) {
+	constructor(private vault: Vault, private pluginId: string) {
 		super();
 		this.initialize();
 	}

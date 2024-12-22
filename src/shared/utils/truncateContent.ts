@@ -2,7 +2,7 @@ import calculateTokenCount from "./calculateTokenCount";
 
 const truncateContent = (
 	content: string | undefined,
-	maxTokens = 8192,
+	maxTokens = 8192
 ): string => {
 	if (!content) return "";
 	let truncatedContent = content.substring(0, maxTokens * 1.2);
@@ -12,7 +12,7 @@ const truncateContent = (
 	) {
 		truncatedContent = truncatedContent.substring(
 			0,
-			truncatedContent.length - 500,
+			truncatedContent.length - 500
 		);
 	}
 	return truncatedContent;
