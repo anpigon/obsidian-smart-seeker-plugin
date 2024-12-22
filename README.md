@@ -35,10 +35,12 @@ src/
 	├── types/
 	├── utils/
 	├── errors/ # Common reusable error handling
-	└── services/ # Common services
-		├── CacheManager.ts
-		├── OpenAIManager.ts
-		└── PineconeManager.ts
+	├── services/ # Common services
+	│	├── CacheManager.ts
+	│	├── OpenAIManager.ts
+	│	└── PineconeManager.ts
+	└── documents/ # Document processing utilities
+	└── vectors/ # Vector storage utilities
 ```
 
 ## Configuration
