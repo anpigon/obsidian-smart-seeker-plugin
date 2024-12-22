@@ -4,12 +4,12 @@ import { DEFAULT_EMBEDDING_DIMENSION } from "@/shared/constants";
 import { useApp, usePlugin, useSettings } from "@/shared/hooks";
 import { LogLevel } from "@/shared/lib/logger";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
-import IconRefresh from "@/widgets/icons/IconRefresh";
 import { SettingItem } from "@/widgets/SettingItem";
+import IconRefresh from "@/widgets/icons/IconRefresh";
 import { useQuery } from "@tanstack/react-query";
 import { type App, Notice, PluginSettingTab } from "obsidian";
 import { StrictMode, useCallback, useEffect, useState } from "react";
-import { createRoot, Root } from "react-dom/client";
+import { type Root, createRoot } from "react-dom/client";
 import CreatePineconeIndexModal from "./CreatePineconeIndexModal";
 
 enum SettingTabKey {
@@ -67,9 +67,7 @@ const SettingTab: React.FC = () => {
 	const fetchPineconeIndexes = async () => {
 		const pc = createPineconeClient(settings.pineconeApiKey);
 		const { indexes = [] } = await pc.listIndexes();
-		const filteredIndexes = indexes.filter(
-			(e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION,
-		);
+		const filteredIndexes = indexes.filter((e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION);
 		return filteredIndexes;
 	};
 
@@ -89,9 +87,7 @@ const SettingTab: React.FC = () => {
 
 	useEffect(() => {
 		if (pineconeIndexes && pineconeIndexes.length > 0) {
-			const selected = pineconeIndexes.find(
-				({ name }) => name === settings.pineconeIndexName,
-			);
+			const selected = pineconeIndexes.find(({ name }) => name === settings.pineconeIndexName);
 			if (!selected) {
 				settings.pineconeIndexName = pineconeIndexes[0].name;
 				plugin.saveSettings();
@@ -107,25 +103,24 @@ const SettingTab: React.FC = () => {
 		}
 	}, [isError, error]);
 
-	const createApiKeyDescription = useCallback(
-		(description: string, link: string) => {
-			return (
-				<>
-					{description}
-					<br />키 발급 바로가기: <a href={link}>{link}</a>
-				</>
-			);
-		},
-		[],
-	);
+	const createApiKeyDescription = useCallback((description: string, link: string) => {
+		return (
+			<>
+				{description}
+				<br />키 발급 바로가기: <a href={link}>{link}</a>
+			</>
+		);
+	}, []);
 
 	const handleOpenAIApiKeyChange = useCallback(
 		(key: SettingTabKey) => async (e: React.ChangeEvent<HTMLInputElement>) => {
 			const apiKeyMap = {
-				[SettingTabKey.OPENAI_API]: () =>
-					(settings.openAIApiKey = e.target.value),
-				[SettingTabKey.PINECONE_API]: () =>
-					(settings.pineconeApiKey = e.target.value),
+				[SettingTabKey.OPENAI_API]: () => {
+					settings.openAIApiKey = e.target.value;
+				},
+				[SettingTabKey.PINECONE_API]: () => {
+					settings.pineconeApiKey = e.target.value;
+				},
 			};
 
 			apiKeyMap[key]?.();
@@ -169,10 +164,7 @@ const SettingTab: React.FC = () => {
 			</SettingItem>
 
 			<SettingItem heading name="Pinecone 인덱스 설정" />
-			<SettingItem
-				name="Pinecone 인덱스"
-				description="사용할 Pinecone 인덱스를 선택하세요"
-			>
+			<SettingItem name="Pinecone 인덱스" description="사용할 Pinecone 인덱스를 선택하세요">
 				<select
 					className="dropdown"
 					disabled={isFetching || pineconeIndexes?.length === 0}
@@ -207,22 +199,16 @@ const SettingTab: React.FC = () => {
 					<IconRefresh />
 				</button>
 			</SettingItem>
-			<SettingItem
-				name="Pinecone 인덱스 생성"
-				description="새로운 Pinecone 인덱스를 생성합니다"
-			>
+			<SettingItem name="Pinecone 인덱스 생성" description="새로운 Pinecone 인덱스를 생성합니다">
 				<button
+					type="button"
 					onClick={async () => {
-						await new CreatePineconeIndexModal(
-							app,
-							plugin,
-							async (indexName: string) => {
-								await refetchPineconeIndexes();
-								setPineconeIndex(indexName);
-								settings.pineconeIndexName = indexName;
-								plugin.saveSettings();
-							},
-						).open();
+						await new CreatePineconeIndexModal(app, plugin, async (indexName: string) => {
+							await refetchPineconeIndexes();
+							setPineconeIndex(indexName);
+							settings.pineconeIndexName = indexName;
+							plugin.saveSettings();
+						}).open();
 					}}
 				>
 					생성
@@ -237,8 +223,7 @@ const SettingTab: React.FC = () => {
 				<select
 					className="dropdown"
 					onChange={async (e) => {
-						settings.logLevel =
-							(parseInt(e.target.value) as LogLevel) ?? LogLevel.INFO;
+						settings.logLevel = (Number.parseInt(e.target.value, 10) as LogLevel) ?? LogLevel.INFO;
 						await plugin.saveSettings();
 					}}
 				>

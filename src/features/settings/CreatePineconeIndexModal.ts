@@ -1,5 +1,8 @@
 import type SmartSeekerPlugin from "@/app/main";
-import { DEFAULT_EMBEDDING_DIMENSION, PINECONE_CONFIG } from "@/shared/constants";
+import {
+	DEFAULT_EMBEDDING_DIMENSION,
+	PINECONE_CONFIG,
+} from "@/shared/constants";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
 import { type App, Modal, Notice, Setting, type TextComponent } from "obsidian";
 
@@ -90,9 +93,11 @@ class CreatePineconeIndexModal extends Modal {
 			}
 		});
 
-		buttonContainer.createEl("button", { text: "취소" }).addEventListener("click", () => {
-			this.close();
-		});
+		buttonContainer
+			.createEl("button", { text: "취소" })
+			.addEventListener("click", () => {
+				this.close();
+			});
 	}
 
 	async createPineconeIndex(indexName: string) {
