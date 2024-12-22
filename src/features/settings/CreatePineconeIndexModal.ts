@@ -1,8 +1,5 @@
 import type SmartSeekerPlugin from "@/app/main";
-import {
-	DEFAULT_EMBEDDING_DIMENSION,
-	PINECONE_CONFIG,
-} from "@/shared/constants";
+import { DEFAULT_EMBEDDING_DIMENSION, PINECONE_CONFIG } from "@/shared/constants";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
 import { type App, Modal, Notice, Setting, type TextComponent } from "obsidian";
 
@@ -79,17 +76,23 @@ class CreatePineconeIndexModal extends Modal {
 				this.close();
 			} catch (error) {
 				console.error("인덱스 생성 실패:", error);
-				new Notice("인덱스 생성에 실패했습니다. API 키를 확인해주세요.");
+				let errorMessage = "인덱스 생성에 실패했습니다.";
+				if (error.message?.includes("unauthorized")) {
+					errorMessage += " API 키를 확인해주세요.";
+				} else if (error.message?.includes("already exists")) {
+					errorMessage += " 이미 존재하는 인덱스 이름입니다.";
+				} else if (error.message?.includes("quota")) {
+					errorMessage += " Pinecone 할당량을 초과했습니다.";
+				}
+				new Notice(errorMessage);
 			} finally {
 				submitButton.disabled = false;
 			}
 		});
 
-		buttonContainer
-			.createEl("button", { text: "취소" })
-			.addEventListener("click", () => {
-				this.close();
-			});
+		buttonContainer.createEl("button", { text: "취소" }).addEventListener("click", () => {
+			this.close();
+		});
 	}
 
 	async createPineconeIndex(indexName: string) {
