@@ -33,7 +33,8 @@ src/
 └── shared/ # Shared utilities and types
 	├── api/ # OpenAI and Pinecone integration
 	├── types/
-	└── utils/
+	├── utils/
+	└── errors/ # Common reusable error handling
 ```
 
 ## Configuration
