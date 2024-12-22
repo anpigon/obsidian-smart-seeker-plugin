@@ -1,6 +1,9 @@
 import type SmartSeekerPlugin from "@/app/main";
-import { DEFAULT_EMBEDDING_DIMENSION, PINECONE_CONFIG } from "@/constants";
 import { LogLevel } from "@/helpers/logger";
+import {
+	DEFAULT_EMBEDDING_DIMENSION,
+	PINECONE_CONFIG,
+} from "@/shared/constants";
 import {
 	type App,
 	Modal,

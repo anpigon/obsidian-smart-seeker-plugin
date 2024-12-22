@@ -3,8 +3,8 @@ import {
 	DEFAULT_CHUNK_OVERLAP,
 	DEFAULT_CHUNK_SIZE,
 	ZERO_VECTOR,
-} from "@/constants";
-import type { PluginSettings } from "@/constants/settings";
+} from "@/shared/constants";
+import type { PluginSettings } from "@/shared/constants/settings";
 import type { NoteMetadata } from "@/types";
 import { Document } from "@langchain/core/documents";
 import {
