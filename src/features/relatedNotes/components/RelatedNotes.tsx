@@ -9,9 +9,9 @@ import {
 } from "@/helpers/utils/editorHelpers";
 import getEmbeddingModel from "@/helpers/utils/getEmbeddingModel";
 import truncateContent from "@/helpers/utils/truncateContent";
-import { createPineconeClient } from "@/services/PineconeManager";
 import { ZERO_VECTOR } from "@/shared/constants";
 import { NotFoundError } from "@/shared/errors/NotFoundError";
+import { createPineconeClient } from "@/shared/services/PineconeManager";
 import SearchResultItem from "@/widgets/SearchResultItem";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Notice, TFile } from "obsidian";
@@ -26,7 +26,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 	const settings = useSettings();
 	const logger = useMemo(
 		() => new Logger("RelatedNotes", settings?.logLevel),
-		[settings?.logLevel],
+		[settings?.logLevel]
 	);
 
 	const queryClient = useQueryClient();
@@ -44,7 +44,10 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 		deleteTargetIdRef.current = null;
 	};
 
-	const queryByFileContent = async (query: string, excludeFilePath: string) => {
+	const queryByFileContent = async (
+		query: string,
+		excludeFilePath: string
+	) => {
 		if (!settings?.pineconeApiKey || !settings?.pineconeIndexName) {
 			throw new Error("Pinecone API key or index name is not set");
 		}
@@ -116,7 +119,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 			await index.deleteMany(ids);
 
 			new Notice(
-				`Successfully removed "${find?.metadata?.title}" from Pinecone.`,
+				`Successfully removed "${find?.metadata?.title}" from Pinecone.`
 			);
 			queryClient.invalidateQueries({
 				queryKey: ["related-notes"],
@@ -129,7 +132,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 	};
 
 	const validateAndGetFile = async (
-		id: string,
+		id: string
 	): Promise<{ file: TFile; match: any }> => {
 		const match = matches.find((item) => item.id === id);
 		if (!match) {
@@ -189,7 +192,7 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 		if (error) {
 			console.error("Error fetching related notes:", error);
 			new Notice(
-				"Error fetching related notes. Please check the console for details.",
+				"Error fetching related notes. Please check the console for details."
 			);
 		}
 	}, [error]);
@@ -198,7 +201,8 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 		return (
 			<div className="tree-item-self">
 				<div className="tree-item-inner related-notes-loading">
-					Please add your Pinecone API key and index name in the settings.
+					Please add your Pinecone API key and index name in the
+					settings.
 				</div>
 			</div>
 		);
@@ -250,13 +254,16 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 					<div className="search-results-children">
 						{isSuccess &&
 							matches.map((match) => {
-								const title = String(match.metadata?.title || "Untitled");
-								const subtext = String(match.metadata?.text || "")?.replace(
-									/^(?:\(cont'd\)\s*)?/,
-									"",
+								const title = String(
+									match.metadata?.title || "Untitled"
 								);
+								const subtext = String(
+									match.metadata?.text || ""
+								)?.replace(/^(?:\(cont'd\)\s*)?/, "");
 								const score =
-									match.score !== undefined ? match.score.toFixed(2) : "0.00";
+									match.score !== undefined
+										? match.score.toFixed(2)
+										: "0.00";
 								return (
 									<SearchResultItem
 										key={match.id}
@@ -281,9 +288,15 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 			<dialog ref={deleteConfirmDialogRef} className="modal">
 				<div className="modal-content">
 					<h2>Remove from Pinecone?</h2>
-					<p>The file was not found. Do you want to remove it from Pinecone?</p>
+					<p>
+						The file was not found. Do you want to remove it from
+						Pinecone?
+					</p>
 					<div className="modal-button-container">
-						<button className="mod-cta" onClick={handlePineconeDelete}>
+						<button
+							className="mod-cta"
+							onClick={handlePineconeDelete}
+						>
 							Yes
 						</button>
 						<button onClick={closeConfirmDialog}>No</button>

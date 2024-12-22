@@ -5,6 +5,7 @@ import {
 	ZERO_VECTOR,
 } from "@/shared/constants";
 import type { PluginSettings } from "@/shared/constants/settings";
+import { createPineconeClient } from "@/shared/services/PineconeManager";
 import type { NoteMetadata } from "@/shared/types";
 import { Document } from "@langchain/core/documents";
 import {
@@ -18,7 +19,6 @@ import type {
 	RecordMetadata,
 } from "@pinecone-database/pinecone";
 import { FrontMatterCache, Notice, TFile } from "obsidian";
-import { createPineconeClient } from "src/services/PineconeManager";
 import { PineconeStore } from "../langchain/vectorstores";
 import { Logger } from "../logger";
 import { delay } from "../utils/delay";

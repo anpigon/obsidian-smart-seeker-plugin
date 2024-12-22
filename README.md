@@ -34,7 +34,11 @@ src/
 	├── api/ # OpenAI and Pinecone integration
 	├── types/
 	├── utils/
-	└── errors/ # Common reusable error handling
+	├── errors/ # Common reusable error handling
+	└── services/ # Common services
+		├── CacheManager.ts
+		├── OpenAIManager.ts
+		└── PineconeManager.ts
 ```
 
 ## Configuration
