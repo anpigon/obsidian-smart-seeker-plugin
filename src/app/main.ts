@@ -1,10 +1,10 @@
-import { SettingTab } from "@/app/settings/settingTab";
 import { SearchViewContainer, VIEW_TYPE_SEARCH } from "@/features/noteSearch";
 import { QuickSearchModal } from "@/features/quickSearch/QuickSearchModal";
 import {
 	RelatedNotesView,
 	VIEW_TYPE_RELATED_NOTES,
 } from "@/features/relatedNotes";
+import SettingTab from "@/features/settings/settingTab";
 import {
 	DEFAULT_MIN_TOKEN_COUNT,
 	PLUGIN_APP_ID,

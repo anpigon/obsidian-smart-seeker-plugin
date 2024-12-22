@@ -3,7 +3,7 @@ import {
 	DEFAULT_EMBEDDING_DIMENSION,
 	PINECONE_CONFIG,
 } from "@/shared/constants";
-import { LogLevel } from "@/shared/lib/logger";
+import { AppContext, PluginContext, SettingsContext } from "@/shared/context";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
 import {
 	type App,
@@ -13,8 +13,12 @@ import {
 	Setting,
 	TextComponent,
 } from "obsidian";
+import { StrictMode } from "react";
+import { createRoot, Root } from "react-dom/client";
+import SettingTabContainer from "./components/SettingTabContainer";
 
-export class SettingTab extends PluginSettingTab {
+export default class SmartSeekerSettingTab extends PluginSettingTab {
+	root: Root | null = null;
 	plugin: SmartSeekerPlugin;
 	indexListEl: HTMLElement | null = null;
 	indexSelectEl: HTMLSelectElement | null = null;
@@ -31,108 +35,126 @@ export class SettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
+		this.root = createRoot(containerEl);
 
-		// OpenAI API 설정
-		new Setting(containerEl)
-			.setName("OpenAI API 키")
-			.setDesc(this.createOpenAIApiKeyDescription())
-			.addText((text) => {
-				text.inputEl.type = "password";
-				text
-					.setPlaceholder("sk-...")
-					.setValue(this.plugin.settings.openAIApiKey)
-					.onChange(async (value) => {
-						this.plugin.settings.openAIApiKey = value;
-						await this.plugin.saveSettings();
-					});
-			});
-
-		// Pinecone API 설정
-		new Setting(containerEl)
-			.setName("Pinecone API 키")
-			.setDesc(this.createPineconeApiKeyDescription())
-			.addText((text) => {
-				text.inputEl.type = "password";
-				text
-					.setPlaceholder("pc-...")
-					.setValue(this.plugin.settings.pineconeApiKey)
-					.onChange(async (value) => {
-						this.plugin.settings.pineconeApiKey = value;
-						await this.plugin.saveSettings();
-					});
-			});
-
-		// 인덱스 관리 섹션
-		containerEl.createEl("h3", { text: "Pinecone 인덱스" });
-
-		// 인덱스 선택 드롭다운
-		const indexSetting = new Setting(containerEl)
-			.setName("Pinecone 인덱스")
-			.setDesc("사용할 Pinecone 인덱스를 선택하세요")
-			.addDropdown((dropdown) => {
-				dropdown.onChange(async (value) => {
-					this.plugin.settings.pineconeIndexName = value;
-					await this.plugin.saveSettings();
-				});
-				this.indexSelectEl = dropdown.selectEl;
-			});
-
-		// 새로고침 버튼
-		indexSetting.addButton((button) =>
-			button
-				.setIcon("refresh-cw")
-				.setTooltip("Pinecone 인덱스 목록 새로고침")
-				.onClick(async () => {
-					try {
-						await this.fetchPineconeIndexes();
-						new Notice("인덱스 목록을 새로고침했습니다");
-					} catch (error) {
-						new Notice("인덱스 목록 조회 실패. API 키를 확인해주세요");
-						console.error("Failed to fetch indexes:", error);
-					}
-				}),
+		this.root?.render(
+			<StrictMode>
+				<AppContext.Provider value={this.app}>
+					<PluginContext.Provider value={this.plugin}>
+						<SettingsContext.Provider value={this.plugin.settings}>
+							<SettingTabContainer />
+						</SettingsContext.Provider>
+					</PluginContext.Provider>
+				</AppContext.Provider>
+			</StrictMode>,
 		);
 
-		// Pinecone DB 인덱스 생성 버튼
-		new Setting(containerEl)
-			.setName("Pinecone 인덱스 생성")
-			.setDesc("새로운 Pinecone 인덱스를 생성합니다")
-			.addButton((button) =>
-				button.setButtonText("생성").onClick(() => {
-					new CreatePineconeIndexModal(
-						this.app,
-						this.plugin,
-						async (indexName: string) => {
-							await this.fetchPineconeIndexes(indexName);
-						},
-					).open();
-				}),
-			);
+		// // OpenAI API 설정
+		// new Setting(containerEl)
+		// 	.setName("OpenAI API 키")
+		// 	.setDesc(this.createOpenAIApiKeyDescription())
+		// 	.addText((text) => {
+		// 		text.inputEl.type = "password";
+		// 		text.setPlaceholder("sk-...")
+		// 			.setValue(this.plugin.settings.openAIApiKey)
+		// 			.onChange(async (value) => {
+		// 				this.plugin.settings.openAIApiKey = value;
+		// 				await this.plugin.saveSettings();
+		// 			});
+		// 	});
 
-		// 개발자 옵션 섹션
-		containerEl.createEl("h3", { text: "개발자 옵션" });
+		// // Pinecone API 설정
+		// new Setting(containerEl)
+		// 	.setName("Pinecone API 키")
+		// 	.setDesc(this.createPineconeApiKeyDescription())
+		// 	.addText((text) => {
+		// 		text.inputEl.type = "password";
+		// 		text.setPlaceholder("pc-...")
+		// 			.setValue(this.plugin.settings.pineconeApiKey)
+		// 			.onChange(async (value) => {
+		// 				this.plugin.settings.pineconeApiKey = value;
+		// 				await this.plugin.saveSettings();
+		// 			});
+		// 	});
 
-		// 로깅 레벨 설정
-		new Setting(containerEl)
-			.setName("로깅 레벨")
-			.setDesc(
-				"개발자 로깅 레벨을 설정합니다. DEBUG는 모든 로그를, ERROR는 오류 로그만 표시합니다.",
-			)
-			.addDropdown((dropdown) => {
-				dropdown
-					.addOption(LogLevel.DEBUG.toString(), "DEBUG")
-					.addOption(LogLevel.INFO.toString(), "INFO")
-					.addOption(LogLevel.WARN.toString(), "WARN")
-					.addOption(LogLevel.ERROR.toString(), "ERROR")
-					.addOption(LogLevel.NONE.toString(), "NONE")
-					.setValue(this.plugin.settings.logLevel.toString())
-					.onChange(async (value) => {
-						this.plugin.settings.logLevel = parseInt(value);
-						await this.plugin.saveSettings();
-					});
-			});
+		// // 인덱스 관리 섹션
+		// containerEl.createEl("h3", { text: "Pinecone 인덱스" });
 
-		this.initialize();
+		// // 인덱스 선택 드롭다운
+		// const indexSetting = new Setting(containerEl)
+		// 	.setName("Pinecone 인덱스")
+		// 	.setDesc("사용할 Pinecone 인덱스를 선택하세요")
+		// 	.addDropdown((dropdown) => {
+		// 		dropdown.onChange(async (value) => {
+		// 			this.plugin.settings.pineconeIndexName = value;
+		// 			await this.plugin.saveSettings();
+		// 		});
+		// 		this.indexSelectEl = dropdown.selectEl;
+		// 	});
+
+		// // 새로고침 버튼
+		// indexSetting.addButton((button) =>
+		// 	button
+		// 		.setIcon("refresh-cw")
+		// 		.setTooltip("Pinecone 인덱스 목록 새로고침")
+		// 		.onClick(async () => {
+		// 			try {
+		// 				await this.fetchPineconeIndexes();
+		// 				new Notice("인덱스 목록을 새로고침했습니다");
+		// 			} catch (error) {
+		// 				new Notice(
+		// 					"인덱스 목록 조회 실패. API 키를 확인해주세요"
+		// 				);
+		// 				console.error("Failed to fetch indexes:", error);
+		// 			}
+		// 		})
+		// );
+
+		// // Pinecone DB 인덱스 생성 버튼
+		// new Setting(containerEl)
+		// 	.setName("Pinecone 인덱스 생성")
+		// 	.setDesc("새로운 Pinecone 인덱스를 생성합니다")
+		// 	.addButton((button) =>
+		// 		button.setButtonText("생성").onClick(() => {
+		// 			new CreatePineconeIndexModal(
+		// 				this.app,
+		// 				this.plugin,
+		// 				async (indexName: string) => {
+		// 					await this.fetchPineconeIndexes(indexName);
+		// 				}
+		// 			).open();
+		// 		})
+		// 	);
+
+		// // 개발자 옵션 섹션
+		// containerEl.createEl("h3", { text: "개발자 옵션" });
+
+		// // 로깅 레벨 설정
+		// new Setting(containerEl)
+		// 	.setName("로깅 레벨")
+		// 	.setDesc(
+		// 		"개발자 로깅 레벨을 설정합니다. DEBUG는 모든 로그를, ERROR는 오류 로그만 표시합니다."
+		// 	)
+		// 	.addDropdown((dropdown) => {
+		// 		dropdown
+		// 			.addOption(LogLevel.DEBUG.toString(), "DEBUG")
+		// 			.addOption(LogLevel.INFO.toString(), "INFO")
+		// 			.addOption(LogLevel.WARN.toString(), "WARN")
+		// 			.addOption(LogLevel.ERROR.toString(), "ERROR")
+		// 			.addOption(LogLevel.NONE.toString(), "NONE")
+		// 			.setValue(this.plugin.settings.logLevel.toString())
+		// 			.onChange(async (value) => {
+		// 				this.plugin.settings.logLevel = parseInt(value);
+		// 				await this.plugin.saveSettings();
+		// 			});
+		// 	});
+
+		// this.initialize();
+	}
+
+	hide(): void {
+		this.root?.unmount();
+		super.hide();
 	}
 
 	private createApiKeyDescription(
