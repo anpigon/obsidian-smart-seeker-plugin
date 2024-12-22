@@ -55,7 +55,17 @@ const SettingTab: React.FC = () => {
 	const plugin = usePlugin();
 	const settings = useSettings();
 
-	const [pineconeIndex, setPineconeIndex] = useState<string | null>(null);
+	const [pineconeIndex, setPineconeIndex] = useState<string | null>(
+		settings.pineconeIndexName,
+	);
+	const [embeddingModel, setEmbeddingModel] = useState<
+		(typeof EMBEDDING_MODEL_OPTIONS)[0] | null
+	>(
+		EMBEDDING_MODEL_OPTIONS.find((e) => {
+			const [provider, id] = settings.embeddingModel.split("/");
+			return e.provider === provider && e.id === id;
+		}) || EMBEDDING_MODEL_OPTIONS[0],
+	);
 
 	const handlePineconeIndexChange = useCallback(
 		async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -71,7 +81,9 @@ const SettingTab: React.FC = () => {
 		const pc = createPineconeClient(settings.pineconeApiKey);
 		const { indexes = [] } = await pc.listIndexes();
 		const filteredIndexes = indexes.filter(
-			(e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION,
+			(e) =>
+				e.dimension ===
+				(embeddingModel?.dimension ?? DEFAULT_EMBEDDING_DIMENSION),
 		);
 		return filteredIndexes;
 	};
@@ -173,14 +185,19 @@ const SettingTab: React.FC = () => {
 				/>
 			</SettingItem>
 
-			<SettingItem heading name="임베딩 모델" />
+			<SettingItem heading name="모델" />
 			<SettingItem
-				name="임베딩 모델 선택"
+				name="임베딩 모델"
 				description="사용할 임베딩 모델을 선택하세요"
 			>
 				<select
 					className="dropdown"
 					onChange={async (e) => {
+						const [provider, id] = e.target.value.split("/");
+						const model = EMBEDDING_MODEL_OPTIONS.find(
+							(e) => e.provider === provider && e.id === id,
+						);
+						setEmbeddingModel(model ?? null);
 						settings.embeddingModel = e.target.value;
 						await plugin.saveSettings();
 					}}
