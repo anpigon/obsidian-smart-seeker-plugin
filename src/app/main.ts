@@ -1,3 +1,22 @@
+import {
+	DEFAULT_MIN_TOKEN_COUNT,
+	PLUGIN_APP_ID,
+	ZERO_VECTOR,
+} from "@/constants";
+import { DEFAULT_SETTINGS, type PluginSettings } from "@/constants/settings";
+import DocumentProcessor from "@/helpers/document/DocumentProcessor";
+import { InLocalStore } from "@/helpers/langchain/store/InLocalStore";
+import { LogLevel, Logger } from "@/helpers/logger";
+import NoteHashStorage from "@/helpers/storage/NoteHashStorage";
+import calculateTokenCount from "@/helpers/utils/calculateTokenCount";
+import { createPineconeClient } from "@/services/PineconeManager";
+import { SettingTab } from "@/settings/settingTab";
+import { SearchNotesModal } from "@/ui/modals/SearchNotesModal";
+import {
+	RelatedNotesView,
+	VIEW_TYPE_RELATED_NOTES,
+} from "@/ui/RelatedNotesView";
+import { SearchViewContainer, VIEW_TYPE_SEARCH } from "@/ui/SearchView";
 import { Pinecone } from "@pinecone-database/pinecone";
 import {
 	type FrontMatterCache,
@@ -9,25 +28,6 @@ import {
 	TFolder,
 	WorkspaceLeaf,
 } from "obsidian";
-import {
-	DEFAULT_MIN_TOKEN_COUNT,
-	PLUGIN_APP_ID,
-	ZERO_VECTOR,
-} from "./constants";
-import { DEFAULT_SETTINGS, type PluginSettings } from "./constants/settings";
-import DocumentProcessor from "./helpers/document/DocumentProcessor";
-import { InLocalStore } from "./helpers/langchain/store/InLocalStore";
-import { LogLevel, Logger } from "./helpers/logger";
-import NoteHashStorage from "./helpers/storage/NoteHashStorage";
-import calculateTokenCount from "./helpers/utils/calculateTokenCount";
-import { createPineconeClient } from "./services/PineconeManager";
-import { SettingTab } from "./settings/settingTab";
-import { SearchNotesModal } from "./ui/modals/SearchNotesModal";
-import {
-	RelatedNotesView,
-	VIEW_TYPE_RELATED_NOTES,
-} from "./ui/RelatedNotesView";
-import { SearchViewContainer, VIEW_TYPE_SEARCH } from "./ui/SearchView";
 
 export default class SmartSeekerPlugin extends Plugin {
 	private logger = new Logger("SmartSeekerPlugin", LogLevel.DEBUG);
@@ -51,7 +51,9 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	private registerVaultEvents(): void {
 		if (!this.app.workspace.layoutReady) {
-			this.logger.warn("Workspace not ready, skipping event registration");
+			this.logger.warn(
+				"Workspace not ready, skipping event registration"
+			);
 			return;
 		}
 
@@ -67,14 +69,14 @@ export default class SmartSeekerPlugin extends Plugin {
 		// this.registerEvent(this.app.metadataCache.on('changed', async (file: TFile) => this.onFileChange(file)));
 		this.registerEvent(
 			this.app.vault.on("rename", async (file: TFile, oldPath: string) =>
-				this.onFileRename(file, oldPath),
-			),
+				this.onFileRename(file, oldPath)
+			)
 		);
 
 		this.registerEvent(
 			this.app.vault.on("delete", async (file: TFile) =>
-				this.onFileDelete(file),
-			),
+				this.onFileDelete(file)
+			)
 		);
 
 		// 파일 탐색기의 폴더 컨텍스트 메뉴에 이벤트 리스너 추가
@@ -87,26 +89,26 @@ export default class SmartSeekerPlugin extends Plugin {
 					// folder가 TFolder 인스턴스인 경우에만 메뉴 추가
 					if (fileOrFolder instanceof TFolder) {
 						menu.addItem((item) => {
-							item
-								.setTitle("폴더 내 노트를 RAG 검색용으로 저장")
+							item.setTitle("폴더 내 노트를 RAG 검색용으로 저장")
 								.setSection("RAG 검색용")
 								.setIcon("folder")
-								.onClick(() => this.processFolderFiles(fileOrFolder));
+								.onClick(() =>
+									this.processFolderFiles(fileOrFolder)
+								);
 						});
 					} else if (
 						fileOrFolder instanceof TFile &&
 						fileOrFolder.extension === "md"
 					) {
 						menu.addItem((item) => {
-							item
-								.setTitle("노트를 RAG 검색용으로 저장")
+							item.setTitle("노트를 RAG 검색용으로 저장")
 								.setSection("RAG 검색용")
 								.setIcon("file")
 								.onClick(() => this.processFile(fileOrFolder));
 						});
 					}
-				},
-			),
+				}
+			)
 		);
 
 		// 주기적인 임베딩 처리
@@ -135,10 +137,12 @@ export default class SmartSeekerPlugin extends Plugin {
 				.filter((file) => file.path.startsWith(folder.path));
 
 			new Notice(
-				`📚 ${folder.name} 폴더에서 ${files.length}개의 노트를 찾았습니다.`,
+				`📚 ${folder.name} 폴더에서 ${files.length}개의 노트를 찾았습니다.`
 			);
 
-			const result = await this.documentProcessor.processMultiFiles(files);
+			const result = await this.documentProcessor.processMultiFiles(
+				files
+			);
 			this.logger.debug(`[Process] Completed:`, result);
 		} catch (error) {
 			this.logger.error("Error processing note:", error);
@@ -195,7 +199,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 		if (missingSettings.length > 0) {
 			this.logger.warn(
-				`Missing required settings: ${missingSettings.join(", ")}`,
+				`Missing required settings: ${missingSettings.join(", ")}`
 			);
 			return false;
 		}
@@ -208,7 +212,10 @@ export default class SmartSeekerPlugin extends Plugin {
 			id: "search-notes",
 			name: "Search notes",
 			callback: () => {
-				if (!this.settings.pineconeApiKey || !this.settings.pineconeIndexName) {
+				if (
+					!this.settings.pineconeApiKey ||
+					!this.settings.pineconeIndexName
+				) {
 					new Notice("Please configure PineconeDB settings first");
 					return;
 				}
@@ -223,7 +230,8 @@ export default class SmartSeekerPlugin extends Plugin {
 			checkCallback: (checking) => {
 				if (checking) {
 					return Boolean(
-						this.settings.pineconeApiKey && this.settings.pineconeIndexName,
+						this.settings.pineconeApiKey &&
+							this.settings.pineconeIndexName
 					);
 				}
 				this.openRelatedNotesView();
@@ -236,7 +244,8 @@ export default class SmartSeekerPlugin extends Plugin {
 			checkCallback: (checking) => {
 				if (checking) {
 					return Boolean(
-						this.settings.pineconeApiKey && this.settings.pineconeIndexName,
+						this.settings.pineconeApiKey &&
+							this.settings.pineconeIndexName
 					);
 				}
 				this.openSearchView();
@@ -251,21 +260,27 @@ export default class SmartSeekerPlugin extends Plugin {
 		this.logger.setLevel(this.settings.logLevel);
 
 		// Initialize Pinecone client
-		this.pineconeClient = createPineconeClient(this.settings.pineconeApiKey);
+		this.pineconeClient = createPineconeClient(
+			this.settings.pineconeApiKey
+		);
 
 		// Register views
 		this.registerView(
 			VIEW_TYPE_RELATED_NOTES,
-			(leaf: WorkspaceLeaf) => new RelatedNotesView(leaf, this.settings),
+			(leaf: WorkspaceLeaf) => new RelatedNotesView(leaf, this.settings)
 		);
 		this.registerView(
 			VIEW_TYPE_SEARCH,
-			(leaf: WorkspaceLeaf) => new SearchViewContainer(leaf, this.settings),
+			(leaf: WorkspaceLeaf) =>
+				new SearchViewContainer(leaf, this.settings)
 		);
 
 		// Add icon to ribbon
 		this.addRibbonIcon("magnifying-glass", "Search Notes", () => {
-			if (!this.settings.pineconeApiKey || !this.settings.pineconeIndexName) {
+			if (
+				!this.settings.pineconeApiKey ||
+				!this.settings.pineconeIndexName
+			) {
 				new Notice("Please configure PineconeDB settings first");
 				return;
 			}
@@ -309,7 +324,11 @@ export default class SmartSeekerPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			await this.loadData()
+		);
 	}
 
 	async saveSettings() {
@@ -322,7 +341,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 	async proccessFrotmatter(file: TFile) {
 		return new Promise<FrontMatterCache>((resolve) =>
-			this.app.fileManager.processFrontMatter(file, resolve),
+			this.app.fileManager.processFrontMatter(file, resolve)
 		);
 	}
 
@@ -348,7 +367,7 @@ export default class SmartSeekerPlugin extends Plugin {
 	// 토큰 수 검증 함수
 	private validateTokenCount(
 		text: string,
-		minTokenCount: number = DEFAULT_MIN_TOKEN_COUNT,
+		minTokenCount: number = DEFAULT_MIN_TOKEN_COUNT
 	): boolean {
 		try {
 			const tokenCount = calculateTokenCount(text);
@@ -356,7 +375,7 @@ export default class SmartSeekerPlugin extends Plugin {
 
 			if (tokenCount < minTokenCount) {
 				this.logger.info(
-					`Note skipped due to insufficient tokens (${tokenCount}/${minTokenCount})`,
+					`Note skipped due to insufficient tokens (${tokenCount}/${minTokenCount})`
 				);
 				return false;
 			}
@@ -385,19 +404,21 @@ export default class SmartSeekerPlugin extends Plugin {
 			// 마지막 편집 시간 업데이트
 			this.lastEditTime = Date.now();
 			this.logger.debug(
-				`마지막 편집 시간 업데이트 완료: ${new Date(this.lastEditTime)}`,
+				`마지막 편집 시간 업데이트 완료: ${new Date(this.lastEditTime)}`
 			);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
-			this.logger.error(`Failed to process note ${file.path}: ${errorMessage}`);
+			this.logger.error(
+				`Failed to process note ${file.path}: ${errorMessage}`
+			);
 		}
 	}
 
 	private createResultMessage(
 		total: number,
 		processed: number,
-		skipped: number,
+		skipped: number
 	): string {
 		const parts = [];
 
@@ -432,7 +453,9 @@ export default class SmartSeekerPlugin extends Plugin {
 			await this.documentProcessor.processMultiFiles(files);
 			const totalCount = files.length;
 
-			this.logger.debug(`${totalCount} notes successfully saved to PineconeDB`);
+			this.logger.debug(
+				`${totalCount} notes successfully saved to PineconeDB`
+			);
 
 			new Notice(`📊 총 ${totalCount}개 노트 처리`, 5000);
 
@@ -442,7 +465,7 @@ export default class SmartSeekerPlugin extends Plugin {
 			}
 		} catch (error) {
 			this.logger.error(
-				`Failed to process notes: ${error?.message || error.toString()}`,
+				`Failed to process notes: ${error?.message || error.toString()}`
 			);
 		} finally {
 			this.isProcessing = false;
@@ -474,20 +497,22 @@ export default class SmartSeekerPlugin extends Plugin {
 					const ids = results.matches.map((e) => e.id);
 					await pineconeIndex.deleteMany(ids);
 					this.logger.info(
-						`Note successfully deleted from PineconeDB: ${file.path}`,
+						`Note successfully deleted from PineconeDB: ${file.path}`
 					);
 				}
 			} catch (pineconeError) {
 				// Pinecone 관련 오류 처리
 				this.logger.error("Pinecone 삭제 오류:", pineconeError);
 				this.logger.error(
-					"⚠️ Pinecone DB에서 노트 삭제 실패. 로컬 참조만 삭제됩니다.",
+					"⚠️ Pinecone DB에서 노트 삭제 실패. 로컬 참조만 삭제됩니다."
 				);
 
 				// 네트워크 연결 문제인 경우
-				if (pineconeError.message.includes("failed to reach Pinecone")) {
+				if (
+					pineconeError.message.includes("failed to reach Pinecone")
+				) {
 					this.logger.error(
-						"🌐 Pinecone 서버 연결 실패. 네트워크 연결을 확인해주세요.",
+						"🌐 Pinecone 서버 연결 실패. 네트워크 연결을 확인해주세요."
 					);
 				}
 			}
@@ -497,7 +522,9 @@ export default class SmartSeekerPlugin extends Plugin {
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
-			this.logger.error(`Failed to delete note ${file.path}: ${errorMessage}`);
+			this.logger.error(
+				`Failed to delete note ${file.path}: ${errorMessage}`
+			);
 			// new Notice(`Failed to delete note: ${errorMessage}`);
 		}
 	}

@@ -1,3 +1,5 @@
+import type SmartSeekerPlugin from "@/app/main";
+import { DEFAULT_EMBEDDING_DIMENSION, PINECONE_CONFIG } from "@/constants";
 import { LogLevel } from "@/helpers/logger";
 import {
 	type App,
@@ -7,9 +9,7 @@ import {
 	Setting,
 	TextComponent,
 } from "obsidian";
-import { DEFAULT_EMBEDDING_DIMENSION, PINECONE_CONFIG } from "src/constants";
 import { createPineconeClient } from "src/services/PineconeManager";
-import type SmartSeekerPlugin from "../main";
 
 export class SettingTab extends PluginSettingTab {
 	plugin: SmartSeekerPlugin;
@@ -35,8 +35,7 @@ export class SettingTab extends PluginSettingTab {
 			.setDesc(this.createOpenAIApiKeyDescription())
 			.addText((text) => {
 				text.inputEl.type = "password";
-				text
-					.setPlaceholder("sk-...")
+				text.setPlaceholder("sk-...")
 					.setValue(this.plugin.settings.openAIApiKey)
 					.onChange(async (value) => {
 						this.plugin.settings.openAIApiKey = value;
@@ -50,8 +49,7 @@ export class SettingTab extends PluginSettingTab {
 			.setDesc(this.createPineconeApiKeyDescription())
 			.addText((text) => {
 				text.inputEl.type = "password";
-				text
-					.setPlaceholder("pc-...")
+				text.setPlaceholder("pc-...")
 					.setValue(this.plugin.settings.pineconeApiKey)
 					.onChange(async (value) => {
 						this.plugin.settings.pineconeApiKey = value;
@@ -84,10 +82,12 @@ export class SettingTab extends PluginSettingTab {
 						await this.fetchPineconeIndexes();
 						new Notice("인덱스 목록을 새로고침했습니다");
 					} catch (error) {
-						new Notice("인덱스 목록 조회 실패. API 키를 확인해주세요");
+						new Notice(
+							"인덱스 목록 조회 실패. API 키를 확인해주세요"
+						);
 						console.error("Failed to fetch indexes:", error);
 					}
-				}),
+				})
 		);
 
 		// Pinecone DB 인덱스 생성 버튼
@@ -101,9 +101,9 @@ export class SettingTab extends PluginSettingTab {
 						this.plugin,
 						async (indexName: string) => {
 							await this.fetchPineconeIndexes(indexName);
-						},
+						}
 					).open();
-				}),
+				})
 			);
 
 		// 개발자 옵션 섹션
@@ -113,7 +113,7 @@ export class SettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("로깅 레벨")
 			.setDesc(
-				"개발자 로깅 레벨을 설정합니다. DEBUG는 모든 로그를, ERROR는 오류 로그만 표시합니다.",
+				"개발자 로깅 레벨을 설정합니다. DEBUG는 모든 로그를, ERROR는 오류 로그만 표시합니다."
 			)
 			.addDropdown((dropdown) => {
 				dropdown
@@ -134,13 +134,13 @@ export class SettingTab extends PluginSettingTab {
 
 	private createApiKeyDescription(
 		description: string,
-		linkUrl: string,
+		linkUrl: string
 	): DocumentFragment {
 		const fragment = document.createDocumentFragment();
 		fragment.append(
 			description,
 			document.createElement("br"),
-			"키 발급 바로가기: ",
+			"키 발급 바로가기: "
 		);
 		const a = document.createElement("a", { is: "external-link" });
 		a.href = linkUrl;
@@ -153,14 +153,14 @@ export class SettingTab extends PluginSettingTab {
 	private createPineconeApiKeyDescription(): DocumentFragment {
 		return this.createApiKeyDescription(
 			"벡터 데이터베이스 연동을 위한 Pinecone API 키를 입력하세요.",
-			"https://app.pinecone.io/organizations/-/projects/-/keys",
+			"https://app.pinecone.io/organizations/-/projects/-/keys"
 		);
 	}
 
 	private createOpenAIApiKeyDescription(): DocumentFragment {
 		return this.createApiKeyDescription(
 			"OpenAI API 키를 입력하세요.",
-			"https://platform.openai.com/api-keys",
+			"https://platform.openai.com/api-keys"
 		);
 	}
 
@@ -179,7 +179,7 @@ export class SettingTab extends PluginSettingTab {
 		try {
 			const { indexes = [] } = await pc.listIndexes();
 			const filteredIndexes = indexes.filter(
-				(e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION,
+				(e) => e.dimension === DEFAULT_EMBEDDING_DIMENSION
 			);
 
 			if (this.indexSelectEl) {
@@ -194,15 +194,19 @@ export class SettingTab extends PluginSettingTab {
 					optionEl.disabled = true;
 				} else {
 					for (const { name } of filteredIndexes) {
-						const optionEl = this.indexSelectEl?.createEl("option", {
-							text: name,
-							value: name,
-						});
+						const optionEl = this.indexSelectEl?.createEl(
+							"option",
+							{
+								text: name,
+								value: name,
+							}
+						);
 
 						// 새로 생성된 인덱스나 이전에 선택된 인덱스 선택
 						if (
 							name === selectIndex ||
-							(!selectIndex && name === this.plugin.settings.pineconeIndexName)
+							(!selectIndex &&
+								name === this.plugin.settings.pineconeIndexName)
 						) {
 							(optionEl as HTMLOptionElement).selected = true;
 							// 설정에 저장
@@ -235,7 +239,7 @@ class CreatePineconeIndexModal extends Modal {
 	constructor(
 		app: App,
 		plugin: SmartSeekerPlugin,
-		onIndexCreated: (indexName: string) => Promise<void>,
+		onIndexCreated: (indexName: string) => Promise<void>
 	) {
 		super(app);
 		this.plugin = plugin;
@@ -250,10 +254,11 @@ class CreatePineconeIndexModal extends Modal {
 
 		const indexNameInputContainer = new Setting(contentEl)
 			.setName("생성할 인덱스의 이름을 입력하세요.")
-			.setDesc("인덱스 이름은 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다.")
+			.setDesc(
+				"인덱스 이름은 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다."
+			)
 			.addText((text) => {
-				text
-					.setPlaceholder("인덱스 이름을 입력하세요")
+				text.setPlaceholder("인덱스 이름을 입력하세요")
 					.onChange((value) => {
 						// 입력값이 유효한지 확인
 						const isValid = /^[a-z0-9-]*$/.test(value);
@@ -299,7 +304,9 @@ class CreatePineconeIndexModal extends Modal {
 				this.close();
 			} catch (error) {
 				console.error("인덱스 생성 실패:", error);
-				new Notice("인덱스 생성에 실패했습니다. API 키를 확인해주세요.");
+				new Notice(
+					"인덱스 생성에 실패했습니다. API 키를 확인해주세요."
+				);
 			} finally {
 				submitButton.disabled = false;
 			}
