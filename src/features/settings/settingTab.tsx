@@ -8,7 +8,7 @@ import { useApp, usePlugin, useSettings } from "@/shared/hooks";
 import { LogLevel } from "@/shared/lib/logger";
 import { createPineconeClient } from "@/shared/services/PineconeManager";
 import { SettingItem } from "@/widgets/SettingItem";
-import IconRefresh from "@/widgets/icons/IconRefresh";
+import IconRefreshCW from "@/widgets/icons/IconRefreshCW";
 import { useQuery } from "@tanstack/react-query";
 import { type App, Notice, PluginSettingTab } from "obsidian";
 import { StrictMode, useCallback, useEffect, useState } from "react";
@@ -246,7 +246,7 @@ const SettingTab: React.FC = () => {
 						}
 					}}
 				>
-					<IconRefresh />
+					<IconRefreshCW />
 				</button>
 			</SettingItem>
 			<SettingItem
