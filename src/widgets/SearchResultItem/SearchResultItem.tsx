@@ -33,10 +33,12 @@ const SearchResultItem = ({
 
 	return (
 		<div className="tree-item search-result is-collapsed">
+			{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
 			<div
 				className="tree-item-self search-result-file-title is-clickable"
 				onClick={handleTitleClick}
 			>
+				{/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
 				<div
 					className={`tree-item-icon collapse-icon ${isCollapsed ? "is-collapsed" : ""}`}
 					onClick={handleToggleCollapsed}
@@ -49,6 +51,7 @@ const SearchResultItem = ({
 				</div>
 			</div>
 			{!isCollapsed && (
+				// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 				<div className="search-result-file-matches" onClick={handleMatchClick}>
 					<div className="search-result-file-match tappable">{text}</div>
 				</div>

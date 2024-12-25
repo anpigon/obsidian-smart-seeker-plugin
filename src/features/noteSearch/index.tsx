@@ -265,6 +265,8 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 						onBlur={handleBlur}
 					/>
 					{searchQuery && (
+						// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+						// biome-ignore lint/a11y/useFocusableInteractive: <explanation>
 						<div
 							role="button"
 							className="search-input-clear-button"
