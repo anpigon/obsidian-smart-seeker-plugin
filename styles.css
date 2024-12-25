@@ -105,20 +105,20 @@ If your plugin does not need CSS, delete this file.
 }
 
 .related-note-item {
-    margin-bottom: 12px;
-    padding: 8px;
-    border-radius: 4px;
-    background-color: var(--background-secondary);
+	margin-bottom: 12px;
+	padding: 8px;
+	border-radius: 4px;
+	background-color: var(--background-secondary);
 }
 
 .related-note-title {
-    font-weight: 500;
-    margin-bottom: 4px;
-    cursor: pointer;
+	font-weight: 500;
+	margin-bottom: 4px;
+	cursor: pointer;
 }
 
 .related-note-title:hover {
-    color: var(--text-accent);
+	color: var(--text-accent);
 }
 
 .related-note-subtext {
@@ -138,13 +138,13 @@ If your plugin does not need CSS, delete this file.
 }
 
 .related-note-score {
-    font-size: var(--font-smallest);
-    color: var(--text-muted);
+	font-size: var(--font-smallest);
+	color: var(--text-muted);
 }
 
 .related-notes-error {
-    color: var(--text-error);
-    padding: 10px;
+	color: var(--text-error);
+	padding: 10px;
 }
 
 .related-notes-loading {
@@ -175,11 +175,13 @@ input.index-name-input.invalid {
 } */
 
 /* smart-seeker-search-view */
-div.workspace-leaf-content[data-type="smart-seeker-search-view"] .search-result-container {
+div.workspace-leaf-content[data-type="smart-seeker-search-view"]
+	.search-result-container {
 	padding: var(--size-4-3) 1px var(--size-4-4);
 }
-div.workspace-leaf-content[data-type="smart-seeker-search-view"] .suggestion-item:not(.mod-group):hover {
-    background-color: var(--background-modifier-hover);
+div.workspace-leaf-content[data-type="smart-seeker-search-view"]
+	.suggestion-item:not(.mod-group):hover {
+	background-color: var(--background-modifier-hover);
 }
 
 dialog.modal:not([open]) {

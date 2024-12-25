@@ -19,16 +19,23 @@ import {
 	QueryClientProvider,
 	useMutation,
 } from "@tanstack/react-query";
-import { IconName, ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import {
-	FormEvent,
+	type IconName,
+	ItemView,
+	Notice,
+	type TFile,
+	type WorkspaceLeaf,
+} from "obsidian";
+import {
+	type FormEvent,
 	StrictMode,
 	useCallback,
 	useMemo,
 	useRef,
 	useState,
 } from "react";
-import { Root, createRoot } from "react-dom/client";
+import { type Root, createRoot } from "react-dom/client";
+
 import SearchSuggestion from "./components/SearchSuggestion";
 
 export const VIEW_TYPE_SEARCH = `${PLUGIN_APP_ID}-search-view`;
@@ -259,6 +266,7 @@ const SearchView = ({ onClose }: SearchViewProps) => {
 					/>
 					{searchQuery && (
 						<div
+							role="button"
 							className="search-input-clear-button"
 							aria-label="검색어 지우기"
 							onClick={handleClearSearch}
