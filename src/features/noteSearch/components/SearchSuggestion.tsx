@@ -63,6 +63,13 @@ const SearchSuggestion = forwardRef<HTMLDivElement, SearchSuggestionProps>(
 						onClose?.();
 					}
 				}}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						if (e.target === e.currentTarget) {
+							onClose?.();
+						}
+					}
+				}}
 			>
 				<div className="suggestion">
 					{suggestions.map((suggestion, index) => (
