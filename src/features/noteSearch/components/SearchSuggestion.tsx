@@ -53,6 +53,12 @@ const SearchSuggestion = forwardRef<HTMLDivElement, SearchSuggestionProps>(
 			// },
 		];
 
+		const handleSuggestionClick = (suggestion: string) => {
+			console.debug("suggestion", suggestion);
+			onSuggestionClick?.(suggestion);
+			onClose?.();
+		};
+
 		return (
 			<div
 				ref={ref}
@@ -74,17 +80,17 @@ const SearchSuggestion = forwardRef<HTMLDivElement, SearchSuggestionProps>(
 				<div className="suggestion">
 					{suggestions.map((suggestion, index) => (
 						<div
-							key={index}
+							key={suggestion.title}
 							className={`suggestion-item mod-complex search-suggest-item${
 								suggestion.type === "group" ? " mod-group" : ""
 							}`}
-							onClick={() => {
-								if (!suggestion.type && suggestion.title && onSuggestionClick) {
-									onSuggestionClick(suggestion.title);
-									onClose?.();
+							tabIndex={0}
+							onClick={handleSuggestionClick.bind(null, suggestion.title)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" || e.key === " ") {
+									handleSuggestionClick(suggestion.title);
 								}
 							}}
-							tabIndex={0}
 						>
 							<div className="suggestion-content">
 								<div
