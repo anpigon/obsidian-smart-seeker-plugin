@@ -15,7 +15,8 @@ const SearchSuggestion = forwardRef<HTMLDivElement, SearchSuggestionProps>(
 				type: "group",
 				title: "검색 옵션",
 				icon: (
-					<a
+					<button
+						type="button"
 						className="list-item-part search-suggest-icon clickable-icon"
 						aria-label="더보기"
 						onClick={(e) => {
@@ -23,7 +24,7 @@ const SearchSuggestion = forwardRef<HTMLDivElement, SearchSuggestionProps>(
 						}}
 					>
 						<IconInfo />
-					</a>
+					</button>
 				),
 			},
 			{
