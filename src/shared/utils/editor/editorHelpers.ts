@@ -1,4 +1,4 @@
-import { App, MarkdownView, TFile, WorkspaceLeaf } from "obsidian";
+import { type App, MarkdownView, TFile, type WorkspaceLeaf } from "obsidian";
 
 interface TextRange {
 	from: number;

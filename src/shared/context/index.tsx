@@ -1,6 +1,6 @@
-import SmartSeekerPlugin from "@/app/main";
+import type SmartSeekerPlugin from "@/app/main";
 import type { PluginSettings } from "@/shared/constants/settings";
-import { App } from "obsidian";
+import type { App } from "obsidian";
 import { createContext } from "react";
 
 export const AppContext = createContext<App | null>(null);

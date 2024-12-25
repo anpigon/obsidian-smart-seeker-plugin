@@ -23,7 +23,7 @@ interface RelatedNotesProps {
 }
 
 const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
-	const app = useApp()!;
+	const app = useApp();
 	const settings = useSettings();
 	const logger = useMemo(
 		() => new Logger("RelatedNotes", settings?.logLevel),
@@ -273,10 +273,16 @@ const RelatedNotes = ({ currentFile }: RelatedNotesProps) => {
 					<h2>Remove from Pinecone?</h2>
 					<p>The file was not found. Do you want to remove it from Pinecone?</p>
 					<div className="modal-button-container">
-						<button className="mod-cta" onClick={handlePineconeDelete}>
+						<button
+							type="button"
+							className="mod-cta"
+							onClick={handlePineconeDelete}
+						>
 							Yes
 						</button>
-						<button onClick={closeConfirmDialog}>No</button>
+						<button type="button" onClick={closeConfirmDialog}>
+							No
+						</button>
 					</div>
 				</div>
 			</dialog>

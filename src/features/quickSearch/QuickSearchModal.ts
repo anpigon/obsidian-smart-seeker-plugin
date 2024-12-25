@@ -109,16 +109,18 @@ export class QuickSearchModal extends SuggestModal<SearchResult> {
 					};
 				}) || [];
 
-			const omniSearchResults = await window.omnisearch?.search?.(query);
+			const omniSearchResults =
+				(await window.omnisearch?.search?.(query)) ?? [];
 			this.logger.debug("omniSearchResults", omniSearchResults);
 
-			omniSearchResults?.forEach((result) => {
-				const score = result.score;
-				const title = result.basename;
-				const filePath = result.path;
-				const fromLine = result.matches?.[0].offset;
-				const toLine = result.matches?.[result.matches.length - 1].offset;
-				const text = result.excerpt;
+			for (const result of omniSearchResults) {
+				const score = result.score ?? 0;
+				const title = result.basename ?? "Untitled";
+				const filePath = result.path ?? "";
+				const fromLine = result.matches?.[0]?.offset ?? 0;
+				const toLine =
+					result.matches?.[result.matches?.length - 1]?.offset ?? 0;
+				const text = result.excerpt ?? "";
 
 				results.push({
 					title,
@@ -129,7 +131,7 @@ export class QuickSearchModal extends SuggestModal<SearchResult> {
 					toLine,
 					source: "omniSearch",
 				});
-			});
+			}
 
 			return results?.sort((a, b) => b.score - a.score);
 		} catch (error) {

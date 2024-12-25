@@ -1,4 +1,4 @@
-import SmartSeekerPlugin from "@/app/main";
+import type SmartSeekerPlugin from "@/app/main";
 import getEmbeddingModel from "@/shared/api/getEmbeddingModel";
 import {
 	DEFAULT_CHUNK_OVERLAP,
@@ -24,7 +24,7 @@ import type {
 	QueryResponse,
 	RecordMetadata,
 } from "@pinecone-database/pinecone";
-import { FrontMatterCache, Notice, TFile } from "obsidian";
+import { type FrontMatterCache, Notice, type TFile } from "obsidian";
 
 interface DocumentChunk {
 	ids: string[];
@@ -215,7 +215,7 @@ export default class DocumentProcessor {
 			// 기존 문서들의 고유-ID를 검색 데이터베이스에@update
 			if (existsChunks.length > 0) {
 				this.logger.debug("updateMetadata start");
-				notice.setMessage(`🔄 기존 노트 청크 메타데이터 업데이트 중... (0%)`);
+				notice.setMessage("🔄 기존 노트 청크 메타데이터 업데이트 중... (0%)");
 				const updates = existsChunks
 					.filter((doc) => doc.id)
 					.map((doc) => ({

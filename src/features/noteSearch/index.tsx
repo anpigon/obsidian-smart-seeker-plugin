@@ -23,7 +23,7 @@ import {
 	type IconName,
 	ItemView,
 	Notice,
-	type TFile,
+	TFile,
 	type WorkspaceLeaf,
 } from "obsidian";
 import {

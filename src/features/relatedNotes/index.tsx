@@ -2,9 +2,9 @@ import { PLUGIN_APP_ID } from "@/shared/constants";
 import type { PluginSettings } from "@/shared/constants/settings";
 import { AppContext, SettingsContext } from "@/shared/context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { IconName, ItemView, TFile, WorkspaceLeaf } from "obsidian";
+import { type IconName, ItemView, TFile, type WorkspaceLeaf } from "obsidian";
 import { StrictMode } from "react";
-import { Root, createRoot } from "react-dom/client";
+import { type Root, createRoot } from "react-dom/client";
 import RelatedNotes from "./components/RelatedNotes";
 
 export const VIEW_TYPE_RELATED_NOTES = `${PLUGIN_APP_ID}-related-notes-view`;

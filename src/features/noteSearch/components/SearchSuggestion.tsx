@@ -84,6 +84,7 @@ const SearchSuggestion = forwardRef<HTMLDivElement, SearchSuggestionProps>(
 							className={`suggestion-item mod-complex search-suggest-item${
 								suggestion.type === "group" ? " mod-group" : ""
 							}`}
+							// biome-ignore lint/a11y/noNoninteractiveTabindex: <explanation>
 							tabIndex={0}
 							onClick={handleSuggestionClick.bind(null, suggestion.title)}
 							onKeyDown={(e) => {

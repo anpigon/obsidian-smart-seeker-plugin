@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import { FC, PropsWithChildren, ReactNode } from "react";
+import type { FC, PropsWithChildren, ReactNode } from "react";
 
 interface SettingItemProps extends PropsWithChildren {
 	as?: ReactNode;
