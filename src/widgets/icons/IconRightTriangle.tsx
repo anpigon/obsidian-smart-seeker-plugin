@@ -11,7 +11,8 @@ const IconRightTriangle = () => (
 		strokeLinejoin="round"
 		className="svg-icon right-triangle"
 	>
-		<path d="M3 8L12 17L21 8"></path>
+		<title>Right Triangle</title>
+		<path d="M3 8L12 17L21 8" />
 	</svg>
 );
 

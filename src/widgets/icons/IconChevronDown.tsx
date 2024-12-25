@@ -11,7 +11,8 @@ const IconChevronDown = () => (
 		strokeLinejoin="round"
 		className="svg-icon lucide-chevron-down"
 	>
-		<path d="m6 9 6 6 6-6"></path>
+		<title>Chevron Down</title>
+		<path d="m6 9 6 6 6-6" />
 	</svg>
 );
 
