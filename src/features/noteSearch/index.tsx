@@ -12,8 +12,8 @@ import {
 	openNote,
 	openNoteAndHighlightText,
 } from "@/shared/utils/editor/editorHelpers";
-import IconCornerDownLeft from "@/widgets/icons/IconCornerDownLeft";
 import SearchResultItem from "@/widgets/SearchResultItem";
+import IconCornerDownLeft from "@/widgets/icons/IconCornerDownLeft";
 import {
 	QueryClient,
 	QueryClientProvider,
@@ -38,7 +38,7 @@ interface SearchViewProps {
 }
 
 const SearchView = ({ onClose }: SearchViewProps) => {
-	const app = useApp()!;
+	const app = useApp();
 	const settings = useSettings();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [searchResults, setSearchResults] = useState<any[]>([]);
